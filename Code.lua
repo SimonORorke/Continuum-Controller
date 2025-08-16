@@ -78,119 +78,303 @@ userNames = {"U1","U2","U3","U4","U5","U6","U7","U8","U9","U10","U11","U12","U13
             "U97", "U98", "U99", "U100", "U101", "U102", "U103", "U104", 
             "U105", "U106", "U107", "U108", "U109", "U110", "U111","U112",
             "U113", "U114", "U115", "U116", "U117", "U118", "U119", "120", 
-            "U121", "U122", "U123", "U124", "U125", "U126", "U127","U128"} 
+            "U121", "U122", "U123", "U124", "U125", "U126", "U127","U128"}
 
--- Hard Coded Continuum 10.09 Presets
--- Perhaps read them in for future release - but still ned the same space
-strings = {"Bowed BiqBank", "Bowed Dbl Reed", "Bowed KinBanjo", "Bowed Mood", "BuzzStrings", "Chromatic Harp",
-        "Cimbalom Cont", "Cimbalom ZPtch", "Country Reson", "Dulcimer Ghost", "Eastern Slider", "El Guitar", 
-        "El Guitar Sat", "Haegum", "Harm Break", "Harm Viol", "Hoop Lute", "Hyper Pizz",
-        "JupiterMission", "Karplus&Modman", "KineticCabinet", "Kinetic Kokyu", "Kin Soundbrd", "Kin AkouBass",
-        "Kin AkouBass 1", "Koto", "Lap Steel", "Mel Ped Steel", "Micro WG v1", "Micro WG v2", "Micro WG v3",
-        "Model Str Wind", "Mountain Slide", "Mount SliderC1", "NGoni", "NGoni-Kinetic", "North Lights", 
-        "Pluck Soup Can","Pusher", "Resizable Gtr", "Resodynamic", "Rhythm & Bass", "Roto String", "Rub",
-        "Rub String", "SiTan", "SiloStr Pizz", "Silver Mirror", "SineBnk FM Str", "Singing Bamboo", "Sing Bamboo 2",
-        "Sineseong-ri", "SlideyPizz", "Small Steel", "Snap Bass", "Snap String", "Spic TremDual", "Spic TremSing",
-        "Squeak Balloon", "Stellar Bowls", "StretchStrm1T", "StretchStrm2T", "StretchStrm3T", "StretchStrV2T",
-        "StretchStrV4T", "StrumGtr3HRSo", "StrumGtrRhy T", "Sympathy Str", "SynchOrbits", "Tanpura", "Tap Sitar", 
-        "Tapestry", "Touch Guitar", "Tun Tanpura", "Uki Pizz 1", "Uki Pizz 2", "Vln PizzSnap", "VlnVlaCelCb1", 
-        "VlnVlaCelCb2", "VlnVlaCelCb1C1", "VlnVlaCelCb3", "VlnVlaCelCb4", "VlnVlaCelCbAmb", "VlnVlaCelCbBr", 
-        "VlnVlaVlcCbFl", "VlnVlaVLcCb+","WaterphoneStr", "xpStrings"}
+local haveSystemPresetsBeenUpdated = false
+local isAccumulatingSystemPresetContext = false
+local isAccumulatingSystemPresetName = false
+local isProcessingSystemPresets = false
+local receivedSystemPresetName = ""
 
-winds = {"Bagpipes", "Brass Mute", "Calliope", "Chinese Clar", "Clarinet", "Crumb Horn", "Double Reed", "Empyrean",
-        "Flip Tube", "Fragaria Field", "French Sax", "GrainSilo wind", "Jemonica", "Jenny Trumpet", "JennyDo", 
-        "Jerrys Horn", "Metal Reed", "MicroDlyPipeWG", "Miles", "MilesBird", "Morphing Reed", "OvertoneWind", 
-        "PanPipe Solo", "Panpipe Loops", "Pipedreams", "Saxmosis", "Sine2Sax", "SineBank Horn", "Single Reed",
-        "Slide Wind EM", "Sop Recorder", "Space Flute", "Spinning Oboe", "Spinning Duet", "Spit Tube", "Tin Whistle",
-        "Touch Reed T", "VBrass 1", "VBrass 2", "Wind EM", "Wtube Air Reed", "Wtube Dbl Reed", "Wtube Sin Reed",
-        "Woodwind", "ZawiFlute8"}
+-- System preset names grouped by category.
+local systemPresetCategories = {}
+systemPresetCategories = {}
+for category = CAT_STRINGS, CAT_OTHER1 do
+    systemPresetCategories[category] = {}
+end
 
-vocal = {"Add Gnilham", "Add Vocal1", "Add Vocal1 Tr", "Choir", "Choir & Ext", "ChoirOnKeplar", "Choir-Ah",
-        "DistTransChoir", "DualSpectVoice", "FOF FixRes", "FOFVariableRes", "Funny Voice", "Instant Reich",
-        "Jenny Voice", "Kinetic Vinyl", "Larynx Horn", "Lost Choir", 
-        "Mantra Voice", "MorphVoice", "MouthSeq Ch1", "RingMod Voice", "RingModVoice1",
-        "RingMod Voice2", "Should I Stay", "Singing Oscill", "Tibetan Throat", "Touch Voice T", "TwoHandedVoice",
-        "Vocalise", "Vocal Buzzard", "Vowel"}
-  
-keyboard = {"Anthoph Organ", "Apiary", "El Harpsychord", "FM Dream Piano", "FM Piano-Var1", "Grind Calliope",
-        "HarmSpark", "Heaven CorpCh1", "Ice Calliope", "JaymarToyPiano", "Jenerator T", "Kin Clavinet",
-        "Kin ClavinetV1", "Kin Contioline", "Legacy DX EP", "MorphChurchOrg", "Morphing Organ", "MusBoxBecause",
-        "MusBoxBecause1", "MusBoxBells", "Musica Minima", "OldPad Machine", "Org Espressivo", "Organzilla",
-        "PCS Fixed", "PlaneTiv Organ", "Portable Reed", "Positiv Organ", "Quaverer", "Simple Organ", "Tine",
-        "Vibrato Org T", "VintageElectro"}
+local systemPresetContextBuffer = ""
+local systemPresetNameBuffer = ""
 
-classic = {"Ambient Analog", "Analog ADSR", "Analog ADSR V1", "Analog Ovrload", "Another BigOne", "Arp 4 Step",
-        "Arp Resonant", "Autocille", "Bass DistoSine", "Bass Monster", "Bass Pad", "BosonParticles", "CS80+Ladder",
-        "CS80+Ladder II", "CZDirt Bass", "CZDirt Bass V1", "Celest Follow", "ChordGenerator", "Chrono Z","Clin Osc1",
-        "CrossMod2", "CrossMod3", "Cluster Saw", "Cluster Tri", "Dirty Osc v2", "Distortion Man", "Dual 24", "DualLadrSweep",
-        "DualResonators", "Dual Sinespray", "Echo 8va", "FM Trails", "Follower", "Four Pt FM", "Gated OSC",
-        "Jenny Pulse", "JennyTchDrone", "JennyBasicPad", "Kin DirtyOsc", "Kin DirtyOscV1", "Kinetic U-Bass",
-        "Kinetic AnaSeq", "Kinetic SatPad", "Ladder Bass", "Lain Heart", "Living Pad", "NFS Train 900",
-        "Noisy Old Osc", "NotchLightning", "Pleasantness", "Plutonium", "Sawblades", "Sawz", "Sine Chaser", "Sineysitus",
-        "Soothsayer", "Square Bass", "Square FM", "Squaresville", "Synth 01 T", "Synth Brass", "Synth Lead 1", 
-        "Synth Lead 2", "Synth Lead 3", "Synth Lead 4", "Synth Lead 5", "Synth Lead 6", "Three Saws", "TrautoniumLite",
-        "Voice Jumper", "Zwei Baende", "ZweiBaendNoise"}
+-- A dictionary for looking up the system preset category number 
+-- corresponding to the 2-letter category code provided by the instrument
+-- in the system preset list. The category number identifies the category
+-- when loading a preset on the instrument.
+local categoryNos = {}
+categoryNos["CL"] = CAT_CLASSIC
+categoryNos["CV"] = CAT_CVC
+categoryNos["DO"] = CAT_DRONE
+categoryNos["KY"] = CAT_KEYBOARD
+categoryNos["MD"] = CAT_MIDI
+categoryNos["OT"] = CAT_OTHER
+categoryNos["PE"] = CAT_PERCUSSION
+categoryNos["PR"] = CAT_PROCESSOR
+categoryNos["PT"] = CAT_TUNEDPERC
+categoryNos["ST"] = CAT_STRINGS
+categoryNos["VO"] = CAT_VOCAL
+categoryNos["UT"] = CAT_UTILITY
+categoryNos["WI"] = CAT_WINDS
 
-other = {"Acrylic Clock", "Acrylic Clock2", "AroundPeriapsi", "AroundPeriap1", "Bacteria", "BajaronShip", "Beaut Pursuit",
-        "Beaut Pursuit1", "Belle Isle", "Bird Echoer", "Bird Whistler", "Bitty Boop","Bullroarer", "Buzzard", "Cascade", 
-        "CelestialBasin","Centrifuge", "CorktheBottle", "Cowell Triang", "CowellTriang Y","CrossMod1", "Cyncro Echo", "Echo Star", 
-        "EletricCombo T", "Electric Wazoo", "Entanglement", "ExposureEnsem", "FDN Crazyness", "Falling Brook", "Fluter", 
-        "FluterBlossomT", "FollowDly", "GaBuZoMeu", "Geiger Insects", "Ghost Moth", "Glass Chorus", "GlassChorusRev", "Golliclock",
-        "HappyBirthEd20", "Harman Morph", "Harmonic Board", "HarmonicLooper", "HarmonicSkin", "Helix T", "Jenny Attack",
-        "JennyDarkAcid", "JennyDarkAcid1", "Jenny FromTo", "Jenny FromTo 1", "Jenny Loops", "Jenny Random", "JenShepardDown",
-        "JenShepDown V1", "JennyShepardUp", "Juggler", "Kin Overtones", "Kin Bowed FCN", "Kin Disto Analog", "Kin Dragon", "Kin MicroMotor",
-        "Kin RubberSkin", "Kin WB Morph", "LisitheanMotor", "Lonely Data", "Lost Beacon", "M-220", "Major Vision", "Maple Key",
-        "Martian Beach", "MartianLandPad", "Meccano", "Mini Shepard", "MiniShepBreath", "MiniShepReson", "Mojo of FDN",
-        "Moon Witch", "Morph WB Pad 1", "Morph WB Pad 2", "Mr. Kyte", "Mutate Looper", "Natural Law", "Octavator", "Octave Phases", 
-        "Orchester", "Overtones", "PCS Dandelion", "Pad Tie", "Patville", "PhaseCtrlMdMan", "PhicoChromatix", "Pinched FM",
-        "Ping Pong", "Polychromatic", "Pterodactyl", "Pulse", "Random Fun", "Random Texture", "Random Trigger", "Razor Loops",
-        "RubberBndStars", "Scratching FDN", "Seasons Ch1", "Sequencer 1Ch1", "Shimmer", "SimpleandNice",
-        "Sine Wave T", "SinePhases", "SineSpray Rain", "Singing Noise", "Slip Zen", "Slow Evolver", "Sonogram", "Soundboard",
-        "Soundboard2", "Space", "Space Async", "Space Jaw", "Spect MidiClk", "SpiritSubteran", "Sputnik Dream", 
-        "Stasis Field T", "Sub-Harm Gen", "Sub Mainframe", "SuperWave", "Sweet Triangle", "Swept Delay", "Swirl", 
-        "SynthCathedral"}
+-- A dictionary of short preset names, for display on the E1,
+-- corresponding to preset names longer than MAX_NAME_LENGTH characters. 
+-- If a short name is not specified, the long name will be truncated on the E1.
+local shortPresetNames = {}
+shortPresetNames["Acrylic Clock 2"] = "Acrylic Clock2"
+shortPresetNames["Additive Gnilham"] = "Add Gnilham"
+shortPresetNames["Additive Vocal 1 Transform"] = "Add Vocal1 Tr"
+shortPresetNames["Additive Vocal 1"] = "Add Vocal1"
+shortPresetNames["Analog ADSR - Var1"] = "Analog ADSR V1"
+shortPresetNames["Analog Overload"] = "Analog Ovrload"
+shortPresetNames["Another Big One"] = "Another BigOne"
+shortPresetNames["Anthophila Organ"] = "Anthoph Organ"
+shortPresetNames["Around the Periapsis Ch1"] = "AroundPeriap1"
+shortPresetNames["Around the Periapsis"] = "AroundPeriapsi"
+shortPresetNames["Arpeggiator 4 Step"] = "Arp 4 Step"
+shortPresetNames["Arpeggiator Resonant"] = "Arp Resonant"
+shortPresetNames["Bajaron Light Ship"] = "BajaronShip"
+shortPresetNames["Basic Bowed Spring"] = "Bowed Spring"
+shortPresetNames["Basic Spring Bell"] = "Spring Bell"
+shortPresetNames["Beautiful Pursuit Ch1"] = "Beaut Pursuit1"
+shortPresetNames["Beautiful Pursuit"] = "Beaut Pursuit"
+shortPresetNames["Bells in the Fields"] = "Bells Fields"
+shortPresetNames["BiqBank - Basic"] = "BiqBankBasic"
+shortPresetNames["BiqGraph - Basic"] = "BiqGraphBasic"
+shortPresetNames["BiqMouth - Basic"] = "BiqMouthBasic"
+shortPresetNames["Boson Particles"] = "BosonParticles"
+shortPresetNames["Bowed Double Reed"] = "Bowed Dbl Reed"
+shortPresetNames["Celestial Basin"] = "CelestialBasin"
+shortPresetNames["Celestial Following"] = "Celest Follow"
+shortPresetNames["Chinese Clarinet"] = "Chinese Clar"
+shortPresetNames["Choir on Kepler-452b"] = "ChoirOnKeplar"
+shortPresetNames["Chord Generator"] = "ChordGenerator"
+shortPresetNames["Cimbalom - Continuous"] = "Cimbalom Cont"
+shortPresetNames["Cimbalom - Z Pitch"] = "Cimbalom ZPtch"
+shortPresetNames["Clinical Oscillator 1"] = "Clin Osc1"
+shortPresetNames["Cork the Bottle"] = "CorktheBottle"
+shortPresetNames["Country Resonator"] = "Country Reson"
+shortPresetNames["Cowell Triangles Fund on Y"] = "CowellTriang Y"
+shortPresetNames["Cowell Triangles"] = "Cowell Triang"
+shortPresetNames["CVC 10v Linear Z"] = "10v Linear Z"
+shortPresetNames["CVC 10v Square Z"] = "10v Square Z"
+shortPresetNames["CVC 5v C0 Linear Z"] = "5v C0 Linear Z"
+shortPresetNames["CVC 5v C0 Square Z"] = "5v C0 Square Z"
+shortPresetNames["CVC 5v C2 Linear Z"] = "5v C2 Linear Z"
+shortPresetNames["CVC 5v C2 Square Z"] = "5v C2 Square Z"
+shortPresetNames["CVC 5v C4 Linear Z"] = "5v C4 Linear Z"
+shortPresetNames["CVC 5v C4 Square Z"] = "5v C4 Square Z"
+shortPresetNames["CVC Buchla Linear Z"] = "BuchlaLinear Z"
+shortPresetNames["CVC Buchla Square Z"] = "BuchlaSquare Z"
+shortPresetNames["CVC Four Shape Generators"] = "Four SGs"
+shortPresetNames["CVC Voyager Linear Z"] = "VoyagerLinearZ"
+shortPresetNames["CVC Voyager Square Z"] = "VoyagerSquareZ"
+shortPresetNames["CVC Y Shelf Linear Z"] = "YShelf LinearZ"
+shortPresetNames["CVC Y Shelf Square Z"] = "YShelf SquareZ"
+shortPresetNames["CZ Dirt Bass - Var1"] = "CZDirt Bass V1"
+shortPresetNames["Diatonic Cluster Saw"] = "Cluster Saw"
+shortPresetNames["Diatonic Cluster Triangle"] = "Cluster Tri"
+shortPresetNames["Dirty Oscillator v2"] = "Dirty Osc v2"
+shortPresetNames["Distant Transmission Choir"] = "DistTransChoir"
+shortPresetNames["Dolce Cristallo Space"] = "CristalloSpace"
+shortPresetNames["Dolce Cristallo"] = "DolceCristallo"
+shortPresetNames["Drum-Machine Windowed"] = "Drum-Machine"
+shortPresetNames["Dual Ladder Sweep"] = "DualLadrSweep"
+shortPresetNames["Dual Resonators"] = "DualResonators"
+shortPresetNames["Dual Spectra Voice"] = "DualSpectVoice"
+shortPresetNames["Dueling BiqBanks"] = "Duel BiqBanks"
+shortPresetNames["Eastern Slider Ch1"] = "Eastern Slider"
+shortPresetNames["Echo of a Marimba"] = "Echo Marimba"
+shortPresetNames["Effect Modman 1"] = "Effect Modman1"
+shortPresetNames["Electric Comb T"] = "EletricCombo T"
+shortPresetNames["Electric Guitar Saturated"] = "El Guitar Sat"
+shortPresetNames["Electric Guitar"] = "El Guitar"
+shortPresetNames["Electric Harpsychord"] = "El Harpsychord"
+shortPresetNames["Exposure Ensemble"] = "ExposureEnsem"
+shortPresetNames["Filter -  The Ladder"] = "Filter Ladder"
+shortPresetNames["Flutter Blossom T"] = "FluterBlossomT"
+shortPresetNames["FM DreamPiano - Var1"] = "FM Piano-Var1"
+shortPresetNames["FOF VariableRes"] = "FOFVariableRes"
+shortPresetNames["Fragaria Fields"] = "Fragaria Field"
+shortPresetNames["Gamelan Spinner"] = "Gamelan Spin"
+shortPresetNames["Glass Chorus Reverse"] = "GlassChorusRev"
+shortPresetNames["GrainSilo Woodwind"] = "GrainSilo wind"
+shortPresetNames["Grandfather Clock"] = "Grand Clock"
+shortPresetNames["Grinding Stone Calliope"] = "Grind Calliope"
+shortPresetNames["Happy Birthday Ed 20"] = "HappyBirthEd20"
+shortPresetNames["Harmonic Looper"] = "HarmonicLooper"
+shortPresetNames["Harmonic Resonator"] = "Harmonic Reson"
+shortPresetNames["Harmonoid Spark"] = "HarmSpark"
+shortPresetNames["Heavenly Corporation Ch1"] = "Heaven CorpCh1"
+shortPresetNames["Jaymar Toy Piano"] = "JaymarToyPiano"
+shortPresetNames["Jenny Dark Acid - Var1"] = "JennyDarkAcid1"
+shortPresetNames["Jenny Dark Acid"] = "JennyDarkAcid"
+shortPresetNames["Jenny FromTo - Var1"] = "Jenny FromTo 1"
+shortPresetNames["Jenny Shepard Down - Var1"] = "JenShepDown V1"
+shortPresetNames["Jenny Shepard Down"] = "JenShepardDown"
+shortPresetNames["Jenny Shepard Up"] = "JennyShepardUp"
+shortPresetNames["Jenny Touch Drone"] = "JennyTchDrone"
+shortPresetNames["JennyBasic FixRes"] = "Jenny FixRes"
+shortPresetNames["Jupiter Mission"] = "JupiterMission"
+shortPresetNames["Karplus & ModMan"] = "Karplus&Modman"
+shortPresetNames["Kinetic - Bouncing"] = "Kin Bouncing"
+shortPresetNames["Kinetic - Bowed Spring"] = "Kin Bow Spring"
+shortPresetNames["Kinetic - Bowed Waveguide"] = "Kin Bowed WG"
+shortPresetNames["Kinetic - Clavinet - Var1"] = "Kin ClavinetV1"
+shortPresetNames["Kinetic - Clavinet"] = "Kin Clavinet"
+shortPresetNames["Kinetic - Crackling Noise"] = "Kin Crackling"
+shortPresetNames["Kinetic - Dirty Osc - Var1"] = "Kin DirtyOscV1"
+shortPresetNames["Kinetic - Dirty Osc"] = "Kin DirtyOsc"
+shortPresetNames["Kinetic - Filter"] = "Kinetic Filter"
+shortPresetNames["Kinetic - Overtones"] = "Kin Overtones"
+shortPresetNames["Kinetic - Spring Bell"] = "Kin Sprng Bell"
+shortPresetNames["Kinetic - StickSlip Filter"] = "StickSlip Filt"
+shortPresetNames["Kinetic - Tracker"] = "Kin Tracker"
+shortPresetNames["Kinetic - U-Bass"] = "Kinetic U-Bass"
+shortPresetNames["Kinetic - Vinyl"] = "Kinetic Vinyl"
+shortPresetNames["Kinetic - Waveguide"] = "Kin Waveguide"
+shortPresetNames["Kinetic as Filter"] = "Kinetic Filter"
+shortPresetNames["Kinetic Bowed FDN"] = "Kin Bowed FCN"
+shortPresetNames["Kinetic Cabinet"] = "KineticCabinet"
+shortPresetNames["Kinetic Contioline"] = "Kin Contioline"
+shortPresetNames["Kinetic Disto Analog"] = "Kin Disto Analog"
+shortPresetNames["Kinetic Friction"] = "Kin Friction"
+shortPresetNames["Kinetic MicroMotor"] = "Kin MicroMotor"
+shortPresetNames["Kinetic Rubber Skin"] = "Kin RubberSkin"
+shortPresetNames["Kinetic Soundboard"] = "Kin Soundbrd"
+shortPresetNames["Kinetic WG AkouBass - Var1"] = "Kin AkouBass 1"
+shortPresetNames["Kinetic WG AkouBass"] = "Kin AkouBass"
+shortPresetNames["Kinetic-Wavebank Morph"] = "Kin WB Morph"
+shortPresetNames["Kontakt 1 Perform"] = "Kontakt1Perf"
+shortPresetNames["Kyma 3 Initial Round"] = "Kyma Init Rnd"
+shortPresetNames["Kyma 4 Release Round"] = "Kyma 4 Rel Rnd"
+shortPresetNames["Lisithean Motor"] = "LisitheanMotor"
+shortPresetNames["Magic Carillon - Var1"] = "Mag Carillion1"
+shortPresetNames["Magic Carillon - Var2"] = "Mag Carillion2"
+shortPresetNames["Marlin Perkins 1"] = "MarlinPerkins1"
+shortPresetNames["Marlin Perkins 2"] = "MarlinPerkins2"
+shortPresetNames["Martian Landing Pad"] = "MartianLandPad"
+shortPresetNames["Mellow Pedal Steel"] = "Mel Ped Steel"
+shortPresetNames["Metal Rainstick"] = "MetalRainstick"
+shortPresetNames["Metallic Pattern Gen"] = "Metal Pat Gen"
+shortPresetNames["MicroDelay PipeWG"] = "MicroDlyPipeWG"
+shortPresetNames["MicroDelay WaveGuide v1"] = "Micro WG v1"
+shortPresetNames["MicroDelay WaveGuide v2"] = "Micro WG v2"
+shortPresetNames["MicroDelay WaveGuide v3"] = "Micro WG v3"
+shortPresetNames["Mini Shepard Breathing"] = "MiniShepBreath"
+shortPresetNames["Mini Shepard Resonant"] = "MiniShepReson"
+shortPresetNames["Model String Wind"] = "Model Str Wind"
+shortPresetNames["ModMan - Pulsed"] = "ModMan Pulsed"
+shortPresetNames["Morphing Church Organ"] = "MorphChurchOrg"
+shortPresetNames["Morphing Wavebank Pad 1"] = "Morph WB Pad 1"
+shortPresetNames["Morphing Wavebank Pad 2"] = "Morph WB Pad 2"
+shortPresetNames["Mountain Slider Ch1"] = "Mount SliderC1"
+shortPresetNames["Mountain Slider"] = "Mountain Slide"
+shortPresetNames["Mouth Sequence Ch1"] = "MouthSeq Ch1"
+shortPresetNames["MtoStereo Delay"] = "Stereo Delay"
+shortPresetNames["Music Box Because Ch1"] = "MusBoxBecause1"
+shortPresetNames["Music Box Because"] = "MusBoxBecause"
+shortPresetNames["Music Box Bells"] = "MusBoxBells"
+shortPresetNames["NGoni - Kinetic"] = "NGoni-Kinetic"
+shortPresetNames["Noise - Out of Phase"] = "Noise Phased"
+shortPresetNames["Noise - White at -35 RMS"] = "Noise-35dB RMS"
+shortPresetNames["Noise - White Stereo"] = "NoiseWhiteSter"
+shortPresetNames["Noisy Old Oscillator"] = "Noisy Old Osc"
+shortPresetNames["Northern Lights"] = "North Lights"
+shortPresetNames["Notch Lightning"] = "NotchLightning"
+shortPresetNames["Old Pad Machine"] = "OldPad Machine"
+shortPresetNames["Omnisphere 1 Perform"] = "Omni 1 Perform"
+shortPresetNames["Omnisphere 2 Round"] = "Omni 2 Round"
+shortPresetNames["Omnisphere 3 Initial Round"] = "Omni 3 InitRnd"
+shortPresetNames["Omnisphere 4 Semitone"] = "Omni 4 Semitone"
+shortPresetNames["Omnisphere 5 Mono"] = "Omni 5 Mono"
+shortPresetNames["Organo Espressivo"] = "Org Espressivo"
+shortPresetNames["Osc - A440 at -35"] = "Osc 440-35dB"
+shortPresetNames["Osc - Formula Delay"] = "Osc Form Delay"
+shortPresetNames["Osc - Pitch via Z"] = "OscPitch via Z"
+shortPresetNames["Osc - Random Pitch"] = "Osc Rand Pitch"
+shortPresetNames["Osc - Sine Wave"] = "Osc Sine Wave"
+shortPresetNames["Osc - Subtractive Synth"] = "Osc Sub Synth"
+shortPresetNames["Osc - Waveshaping"] = "Osc Waveshape"
+shortPresetNames["Phase Controled ModMan"] = "PhaseCtrlMdMan"
+shortPresetNames["Philco Chromatic"] = "PhicoChromatix"
+shortPresetNames["Plane Tiv Organ"] = "PlaneTiv Organ"
+shortPresetNames["Plucked Soup Can"] = "Pluck Soup Can"
+shortPresetNames["Remembrance Bells"] = "Remember Bells"
+shortPresetNames["Resizable Guitar"] = "Resizable Gtr"
+shortPresetNames["Resonant Drum 1"] = "Resonant Drum1"
+shortPresetNames["Resonant Drum 2"] = "Resonant Drum2"
+shortPresetNames["Rhythm And Bass"] = "Rhythm & Bass"
+shortPresetNames["Ring Mod - Basic"] = "Ring Mod Basic"
+shortPresetNames["Ring Mod - Voice 1"] = "RingModVoice1"
+shortPresetNames["Ring Mod - Voice 2"] = "RingMod Voice2"
+shortPresetNames["Ring Mod - Voice"] = "RingMod Voice"
+shortPresetNames["Rubber Band Stars"] = "RubberBndStars"
+shortPresetNames["Sequencer 1 Ch1"] = "Sequencer 1Ch1"
+shortPresetNames["Should I Stay or Should I Go"] = "Should I Stay"
+shortPresetNames["SiloString Pizz"] = "SiloStr Pizz"
+shortPresetNames["Simple and Nice"] = "SimpleandNice"
+shortPresetNames["SineBank - Basic"] = "SineBank Basic"
+shortPresetNames["SineBank FM String"] = "SineBnk FM Str"
+shortPresetNames["SineSpray - Basic"] = "SineSprayBasic"
+shortPresetNames["SineSpray Rain via Surface"] = "SineSpray Rain"
+shortPresetNames["Singing Bamboo 2"] = "Sing Bamboo 2"
+shortPresetNames["Singing Oscillators"] = "Singing Oscill"
+shortPresetNames["Small Cloud Gamelan"] = "Small Gamelan"
+shortPresetNames["Soprano Recorder"] = "Sop Recorder"
+shortPresetNames["Spectral Marimba"] = "SpectraMarimba"
+shortPresetNames["Spectrum with MidiClock"] = "Spect MidiClk"
+shortPresetNames["Spiccato Tremolo Dual"] = "Spic TremDual"
+shortPresetNames["Spiccato Tremolo Single"] = "Spic TremSing"
+shortPresetNames["Spinning Metal Rings"] = "SpinMetalRings"
+shortPresetNames["Spiritus Subteranne"] = "SpiritSubteran"
+shortPresetNames["Spring Shimming Bell"] = "Shimming Bell"
+shortPresetNames["Sputnik's Dream"] = "Sputnik Dream"
+shortPresetNames["Squeaky Balloon String"] = "Squeak Balloon"
+shortPresetNames["Steel Pan Kalimba"] = "Steel Kalimba"
+shortPresetNames["Stretch String m1 T"] = "StretchStrm1T"
+shortPresetNames["Stretch String m2 T"] = "StretchStrm2T"
+shortPresetNames["Stretch String m3 T"] = "StretchStrm3T"
+shortPresetNames["Stretch String v2 T"] = "StretchStrV2T"
+shortPresetNames["Stretch String v4 T"] = "StretchStrV4T"
+shortPresetNames["Strummed Gtr 3HRSolo"] = "StrumGtr3HRSo"
+shortPresetNames["Strummed Gtr Rhythm T 950"] = "StrumGtrRhy T"
+shortPresetNames["Sub-Harmonic Generator"] = "Sub-Harm Gen"
+shortPresetNames["Submit Job to Mainframe"] = "Sub Mainframe"
+shortPresetNames["Sympathy String"] = "Sympathy Str"
+shortPresetNames["Synchronous Orbits"] = "SynchOrbits"
+shortPresetNames["Synthetic Cathedral"] = "SynthCathedral"
+shortPresetNames["The Long Goodbye"] = "TheLongGoodbye"
+shortPresetNames["The Slow Descent"] = "TheSlowDescent"
+shortPresetNames["The Touch Guitar"] = "Touch Guitar"
+shortPresetNames["The Wind on Callisto"] = "Wind on Callisto"
+shortPresetNames["Through the Photodiode"] = "ThruPhotodiode"
+shortPresetNames["Tibetan Throat Stick"] = "Tibetan Throat"
+shortPresetNames["Tremolo Resonator"] = "Trem Resonator"
+shortPresetNames["Tunable Tanpura"] = "Tun Tanpura"
+shortPresetNames["Two Handed Voice"] = "TwoHandedVoice"
+shortPresetNames["Uki Pizz w Snap"] = "Vln PizzSnap"
+shortPresetNames["Unanswered Question"] = "Unans Question"
+shortPresetNames["Underwater Ceramics"] = "Underwater Cer"
+shortPresetNames["Vibrato Organ T"] = "Vibrato Org T"
+shortPresetNames["Vintage Electro"] = "VintageElectro"
+shortPresetNames["Vln Vla Cel Bass 1"] = "VlnVlaCelCb1"
+shortPresetNames["Vln Vla Cel Bass 2 Ch1"] = "VlnVlaCelCb1C1"
+shortPresetNames["Vln Vla Cel Bass 2"] = "VlnVlaCelCb2"
+shortPresetNames["Vln Vla Cel Bass 3"] = "VlnVlaCelCb3"
+shortPresetNames["Vln Vla Cel Bass 4"] = "VlnVlaCelCb4"
+shortPresetNames["Vln Vla Cel Bass Ambience"] = "VlnVlaCelCbAmb"
+shortPresetNames["Vln Vla Cel Bass Bridge"] = "VlnVlaCelCbBr"
+shortPresetNames["VlnVlaVlcCbFull"] = "VlnVlaVlcCbFl"
+shortPresetNames["VlnVlaVlcCbPlus"] = "VlnVlaVLcCb+"
+shortPresetNames["Vocalized Buzzard"] = "Vocal Buzzard"
+shortPresetNames["Voice of the Woods"] = "Voice of Woods"
+shortPresetNames["Waterphone Strings"] = "WaterphoneStr"
+shortPresetNames["WaveBank - Basic"] = "WaveBank Basic"
+shortPresetNames["Windtube Air Reed"] = "Wtube Air Reed"
+shortPresetNames["Windtube Double Reed"] = "Wtube Dbl Reed"
+shortPresetNames["Windtube Single Reed"] = "Wtube Sin Reed"
+shortPresetNames["Winter Skipping Pond"] = "WinterSkipPond"
+shortPresetNames["Zwei Baende with Noise"] = "ZweiBaendNoise"
 
-other1 = {"Tesla Coil", "Tesla's Dream", "TheLongGoodbye", "TheSlowDescent", "Wind on Callisto","Three Cycles", 
-        "Three Sines", "ThruPhotodiode","Tick Bodies", "Transistor", "Transporter", "TriMod", "Unans Question",
-        "Unstable Wave", "Venusian Beach", "Victrola", "Victrola 2", "Voice of Woods", "Voyager", "Waterphonie", "WaveShaped",
-        "Whirligigs", "WindBeach", "WinterSkipPond", "Wobble Plate", "Zazipad", "Zipper"}
-
-percussion = {"Creaker", "Drum-Machine", "Drum-Set", "Icicles 1", "Icicles 2", "Jaw Stick 1", "Jaw Stick 2", "Kinetic Kick",
-        "MetalRainstick", "Resonant Drum1", "Resonant Drum2", "Wind Drum"}
-
-tunedPerc = {"Bell Rub", "Bells Fields", "Bells of Digul", "Bouncer", "Bowed Bells", "Carbon Marimba", "Cumulus", "Cycle Kalimba",
-        "DolceCristallo", "CristalloSpace", "Dripaphone", "Duel BiqBanks", "Echo Marimba", "FM Bell T", "FM Bells",
-        "Gamelan Spin", "Genie Bottle", "Glas Pfeifen", "Glass Rings", "Grand Clock", "Ishango Bone", "JPR Marimba",
-        "MarlinPerkins1", "MarlinPerkins2", "Metallic Glass", "Metal Pat Gen", "Mutable Bowl", "Overtone Bar",
-        "Plinklies", "Pulsar", "Remember Bells", "Silver Bar", "Sine Kalimba", "Small Gamelan", "SpectraMarimba", 
-        "SpinMetalRings", "Shimming Bell", "Steel Kalimba", "Sympathetica", "Tick Tube", "Trem Resonator",
-        "Tubular Bells", "Uki Bells", "Underwater Cer", "Zuie", "mBiraski", "mBiraski Ch1"}
-
-processor = {"Ambient Delay", "Analog Echo", "Analog Echo Ext", "Bandpass Sweep", "Chorus 1", "Chorus 2", "Chorus 3", 
-             "Effect Modman", "Effect Modman1", "FDN Base", "FDN Space", "Flanger", "Harmonic Reson", 
-             "Karplus Effect", "Kin Friction", "Leslie", "Stereo Delay", "Multitap", "Phaser", "RingMod Voice", "Shaper", 
-             "The Satur"}
-
-drones = {"Bad Weather", "Countdown", "Countdown 2", "Drum-Machine", "Earthquake", "Feelings Drone", "Hal Dreams",
-        "Hals Meditation", "Kinetic Evil Bell", "Mag Carillion", "Mag Carillion1", "Mag Carillion2", "Roller",
-        "Rosetta Alarm", "SineSpray Rain", "Splat", "Throat Battle", "Two Chords", "TwoOneDrone"}
-
-midiVals = {"Kontakt1Mono", "Kontakt1Perf", "Kyma 1", "Kyma 2 Round", "Kyma Init Rnd", "Kyma 4 Rel Rnd", "MPE 04 Voice",
-        "MPE 06 Voice", "MPE 08 Voice", "MPE 12 Voice", "MPE+ 08 Voice", "Omni 1 Perform", "Omni 2 Round",
-        "Omni 3 InitRnd", "Omni 4 Semitone", "Omni 5 Mono"} -- can't use midi as name
-
-cvc = {"10v Linear Z", "10v Square Z", "5v C0 Linear Z", "5v C0 Square Z", "5v C2 Linear Z", "5v C2 Square Z",
-        "5v C4 Linear Z", "5v C4 Square Z", "BuchlaLinear Z", "BuchlaSquare Z", "Four SGs", "VoyagerLinearZ",
-        "VoyagerSquareZ", "YShelf LinearZ", "YShelf SquareZ"}
-
-utility = {"Audio Through", "Bowed Spring", "Basic Jenny", "Basic LeCaine", "Spring Bell", "BiqBankBasic",
-        "BiqGraphBasic", "BiqMouthBasic", "Empty", "Filter Ladder", "Gated Sine", "HarMan Basic", "Jenny FixRes",
-        "Karplus 1", "Karplus 2", "Karplus Pipe", "Kin Bouncing", "Kin Bow Spring", "Kin Bowed WG", "Kin Crackling",
-        "Kinetic Filter", "Kin Sprng Bell", "StickSlip Filt", "Kin Tracker", "Kinetic Vinyl", "Kin Waveguide",
-        "Kinetic Filter", "ModMan Pulsed", "Noise Phased", "Noise Pink", "NoiseWhiteSter", "Noise-35dB RMS",
-        "Osc 440-35dB", "Osc Form Delay", "OscPitch via Z", "Osc Rand Pitch", "Osc Sine Wave", "Osc Sub Synth",
-        "Osc Waveshape", "Ring Mod Basic", "SineBank Basic", "SineSprayBasic", "WaveBank Basic"}
---]]
   -- Clear the Info text
   function clearInfo() 
      info.setText("")
@@ -503,6 +687,24 @@ end -- CC event processing
 
 function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message Events
   local msg = midiMessage
+    if (msg.channel ~= 16) then
+        return
+    end
+    if ( msg.controllerNumber==109 and msg.value==49) then
+        -- Start of system preset list (beginSysNames)    
+        --print("Start of system preset list")
+        isProcessingSystemPresets = true
+        print("Start of system preset list")
+        return
+    end
+    if (msg.controllerNumber==109 and msg.value==40) then
+        -- End of system preset list (endSysNames)    
+        isProcessingSystemPresets = false
+        print("End of system preset list")
+        onEndOfSystemPresetList()
+        return
+    end
+    
      if (msg.controllerNumber==109 and msg.value==54) then -- Start User Names Found
         --print("Start getting names")
         userNameProcessing = true
@@ -516,10 +718,20 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
           userNameProcessing = false
         end
         userNameProcessing = false
-        userNameIndex=0  
+        userNameIndex=0
+        if not haveSystemPresetsBeenUpdated then
+            getSystemPresets()
+        end
      end
 
-     if (msg.controllerNumber==56 and msg.value==0) then -- Current Name output in User list
+     if (msg.controllerNumber==56 and msg.value==0) then
+         -- Start of system or user preset name stream
+         if isProcessingSystemPresets then
+             isAccumulatingSystemPresetName = true
+             systemPresetNameBuffer = ""
+             return
+         end
+         -- Processing user presets  
            userNameIndex = userNameIndex + 1 -- Index Lua arrays from 1
            nameInProgress = true
            matrixStream=false -- Has no CC56=127 terminator - new stream terminates it       
@@ -539,11 +751,38 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
            matrixStream=false -- Has no CC56=127 terminator - new stream terminates it       
      end
 
-     if (msg.controllerNumber==56 and msg.value==1) then -- Context data - only get if Macros needed
-           macroString = ""
-           contextProcessed = true
-           matrixStream=false -- Has no CC56=127 terminator - new stream terminates it
-     end
+    if (msg.controllerNumber==56 and msg.value==1) then
+        -- Start of macro or system preset context stream 
+        if isProcessingSystemPresets then
+            -- System preset context data, which will include 
+            -- the 2-letter category code.
+            isAccumulatingSystemPresetContext = true
+            systemPresetContextBuffer = ""
+            return
+        end
+        -- Macro context data
+        macroString = ""
+        contextProcessed = true
+        matrixStream=false -- Has no CC56=127 terminator - new stream terminates it
+    end
+     --if (msg.controllerNumber==56 and msg.value==1) then -- Context data - only get if Macros needed
+     --      macroString = ""
+     --      contextProcessed = true
+     --      matrixStream=false -- Has no CC56=127 terminator - new stream terminates it
+     --end
+
+    if msg.controllerNumber==56 and msg.value==127 then -- End of stream
+        if isAccumulatingSystemPresetName then
+            isAccumulatingSystemPresetName = false
+            receivedSystemPresetName = systemPresetNameBuffer
+            return
+        end
+        if isAccumulatingSystemPresetContext then
+            isAccumulatingSystemPresetContext = false
+            onSystemPresetContextReceived()
+            return
+        end
+    end
 
       if (nameInProgress and msg.controllerNumber==56 and msg.value==127) then -- Stream Ends
           nameInProgress=false
@@ -573,7 +812,19 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
 end
 
 
-function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure) 
+function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
+    if (isAccumulatingSystemPresetName) then
+        -- Accumulate system preset name buffer
+        systemPresetNameBuffer =
+            systemPresetNameBuffer ..string.char(noteNumber)..string.char(pressure)
+        return
+    end
+    if (isAccumulatingSystemPresetContext) then
+        -- Accumulate system preset context buffer
+        systemPresetContextBuffer =
+            systemPresetContextBuffer ..string.char(noteNumber)..string.char(pressure)
+        return
+    end
       if (convInProgress) then
          convString = convString..math.floor(noteNumber).."|"..math.floor(pressure).."|"
          --print("CS=|"..convString.."|")--debugit       
@@ -2321,7 +2572,10 @@ end
 
 -- Store the current Preset category selected
 function selectPresetCategory(valueObject, value)
--- Reset Preset index to beginning
+    if not haveSystemPresetsBeenUpdated then
+        return
+    end
+    -- Reset Preset index to beginning
    curSystemPreset = 0
    local ctrl = controls.get(273) -- Preset index
    local controlValue = ctrl:getValue("value")
@@ -2340,7 +2594,10 @@ function selectPresetCategory(valueObject, value)
 end
 
 -- Get the preset name and index based on Category set
-function selectSystemPreset(valueObject, value)  
+function selectSystemPreset(valueObject, value)
+    if not haveSystemPresetsBeenUpdated then
+        return
+    end
    curSystemPreset = getMaxPresetIndex(math.floor(value))
    local ctrl = controls.get(278)
    if (curSystemPreset == 0) then
@@ -2350,98 +2607,110 @@ function selectSystemPreset(valueObject, value)
    end
 end
 
--- To use one control for preset index select the index can;t exceed the max
+-- To use one control for preset index select the index can't exceed the max
 -- number of presets in a given category. This will change from instrument
 -- to instrument (so probably best to create a separate version for each instrument)
 -- Or see if this can be dynamically read for a later version
-
+-- DOES THE ABOVE COMMENT NEED TO BE MODIFIED OR REMOVED?  SIMON
+-- Currently this should work for the Continuum and the EganMatrix module.
 function getMaxPresetIndex (pIndex) -- cap inex at max range for each category
+    if #systemPresetCategories == 0 then
+        return
+    end
    local ctrl = controls.get(273)
    local controlValue = ctrl:getValue("value")
    local ctrlMsg = controlValue:getMessage()
-  if (curCategory == CAT_STRINGS) then -- Strings
-     -- print ("pIndex: "..pIndex)
-     if (pIndex > 88) then
-       ctrlMsg:setValue(88)     
-       return pIndex - 1        
-     end
-     curPresetName = strings[pIndex]   
-  elseif (curCategory == CAT_WINDS) then -- Winds
-     if (pIndex > 45) then
-       ctrlMsg:setValue(45)      
-       return pIndex - 1
-     end  
-     curPresetName = winds[pIndex]     
-  elseif (curCategory == CAT_VOCAL) then -- Vocal
-     if (pIndex > 31) then
-       ctrlMsg:setValue(31)      
-       return pIndex - 1
-     end  
-     curPresetName = vocal[pIndex]      
-  elseif (curCategory == CAT_KEYBOARD) then -- Keyboard
-     if (pIndex > 33) then
-       ctrlMsg:setValue(33)      
-       return pIndex - 1
-     end
-     curPresetName = keyboard[pIndex]       
-  elseif (curCategory == CAT_CLASSIC) then -- Classic
-     if (pIndex > 72) then
-       ctrlMsg:setValue(72)      
-       return pIndex - 1
-     end
-     curPresetName = classic[pIndex]     
-  elseif (curCategory == CAT_OTHER) then -- Other
-     curPresetName = other[pIndex]  -- Other contains > 128 - see other 2 for second half
-  elseif (curCategory == CAT_PERCUSSION) then -- Percussion
-     if (pIndex > 12) then
-       ctrlMsg:setValue(12)      
-       return pIndex - 1
-     end
-     curPresetName = percussion[pIndex]         
-  elseif (curCategory == CAT_TUNEDPERC) then -- Tuned Percussion
-     if (pIndex > 47) then
-       ctrlMsg:setValue(47)      
-       return pIndex - 1
-     end
-     curPresetName = tunedPerc[pIndex]         
-  elseif (curCategory == CAT_PROCESSOR) then -- Processor
-     if (pIndex > 22) then
-       ctrlMsg:setValue(22)      
-       return pIndex - 1
-     end
-     curPresetName = processor[pIndex]    
-  elseif (curCategory == CAT_DRONE) then -- Drone
-     if (pIndex > 19) then
-       ctrlMsg:setValue(19) 
-       return pIndex - 1
-     end 
-     curPresetName = drones[pIndex]        
-  elseif (curCategory == CAT_MIDI) then -- Midi
-     if (pIndex >16) then
-       ctrlMsg:setValue(16)      
-       return pIndex - 1
-     end
-     curPresetName = midiVals[pIndex]    
-  elseif (curCategory == CAT_CVC) then -- CVC
-     if (pIndex > 15) then
-       ctrlMsg:setValue(15)      
-       return pIndex - 1
-     end
-     curPresetName = cvc[pIndex]         
-  elseif (curCategory == CAT_UTILITY) then -- Utility
-     if (pIndex > 43) then
-       ctrlMsg:setValue(43)      
-       return pIndex - 1
-     end  
-     curPresetName = utility[pIndex]       
-  elseif (curCategory == CAT_OTHER1) then -- Other1 (150 presets in Other 150-128 = 22 cor CC32=1)
-     if (pIndex > 27) then
-       ctrlMsg:setValue(27)      
-       return pIndex - 1
-     end
-     curPresetName = other1[pIndex]                      
-  end
-  return pIndex 
+    local systemPresetNames = systemPresetCategories[curCategory]
+    local systemPresetNamesCount = #systemPresetNames
+    if (pIndex > systemPresetNamesCount) then
+        ctrlMsg:setValue(systemPresetNamesCount)
+        return pIndex - 1
+    end
+    curPresetName = systemPresetNames[pIndex]
+    return pIndex
+  --if (curCategory == CAT_STRINGS) then -- Strings
+  --   -- print ("pIndex: "..pIndex)
+  --   if (pIndex > 88) then
+  --     ctrlMsg:setValue(88)     
+  --     return pIndex - 1        
+  --   end
+  --   curPresetName = strings[pIndex]   
+  --elseif (curCategory == CAT_WINDS) then -- Winds
+  --   if (pIndex > 45) then
+  --     ctrlMsg:setValue(45)      
+  --     return pIndex - 1
+  --   end  
+  --   curPresetName = winds[pIndex]     
+  --elseif (curCategory == CAT_VOCAL) then -- Vocal
+  --   if (pIndex > 31) then
+  --     ctrlMsg:setValue(31)      
+  --     return pIndex - 1
+  --   end  
+  --   curPresetName = vocal[pIndex]      
+  --elseif (curCategory == CAT_KEYBOARD) then -- Keyboard
+  --   if (pIndex > 33) then
+  --     ctrlMsg:setValue(33)      
+  --     return pIndex - 1
+  --   end
+  --   curPresetName = keyboard[pIndex]       
+  --elseif (curCategory == CAT_CLASSIC) then -- Classic
+  --   if (pIndex > 72) then
+  --     ctrlMsg:setValue(72)      
+  --     return pIndex - 1
+  --   end
+  --   curPresetName = classic[pIndex]     
+  --elseif (curCategory == CAT_OTHER) then -- Other
+  --   curPresetName = other[pIndex]  -- Other contains > 128 - see other 2 for second half
+  --elseif (curCategory == CAT_PERCUSSION) then -- Percussion
+  --   if (pIndex > 12) then
+  --     ctrlMsg:setValue(12)      
+  --     return pIndex - 1
+  --   end
+  --   curPresetName = percussion[pIndex]         
+  --elseif (curCategory == CAT_TUNEDPERC) then -- Tuned Percussion
+  --   if (pIndex > 47) then
+  --     ctrlMsg:setValue(47)      
+  --     return pIndex - 1
+  --   end
+  --   curPresetName = tunedPerc[pIndex]         
+  --elseif (curCategory == CAT_PROCESSOR) then -- Processor
+  --   if (pIndex > 22) then
+  --     ctrlMsg:setValue(22)      
+  --     return pIndex - 1
+  --   end
+  --   curPresetName = processor[pIndex]    
+  --elseif (curCategory == CAT_DRONE) then -- Drone
+  --   if (pIndex > 19) then
+  --     ctrlMsg:setValue(19) 
+  --     return pIndex - 1
+  --   end 
+  --   curPresetName = drones[pIndex]        
+  --elseif (curCategory == CAT_MIDI) then -- Midi
+  --   if (pIndex >16) then
+  --     ctrlMsg:setValue(16)      
+  --     return pIndex - 1
+  --   end
+  --   curPresetName = midiVals[pIndex]    
+  --elseif (curCategory == CAT_CVC) then -- CVC
+  --   if (pIndex > 15) then
+  --     ctrlMsg:setValue(15)      
+  --     return pIndex - 1
+  --   end
+  --   curPresetName = cvc[pIndex]         
+  --elseif (curCategory == CAT_UTILITY) then -- Utility
+  --   if (pIndex > 43) then
+  --     ctrlMsg:setValue(43)      
+  --     return pIndex - 1
+  --   end  
+  --   curPresetName = utility[pIndex]       
+  --elseif (curCategory == CAT_OTHER1) then -- Other1 (150 presets in Other 150-128 = 22 cor CC32=1)
+  --   if (pIndex > 27) then
+  --     ctrlMsg:setValue(27)      
+  --     return pIndex - 1
+  --   end
+  --   curPresetName = other1[pIndex]                      
+  --end
+  --return pIndex 
 end
 
 -- Load the System Preset
@@ -2491,6 +2760,136 @@ function assignPedal1 (valueObject, value)
    -- print ("Pedal1 val: "..ped1Val)
    matrixPoke(52, ped1Val) -- set assignment
 end
+
+
+function getSystemPresets()
+    print("getSystemPresets")
+    -- Request system preset names (sysToMidi).
+    midi.sendControlChange(DEVICE_PORT, 16, 109, 39)
+end
+
+function countSystemPresetsInCategories()
+    local categoryCount = #systemPresetCategories
+    for category = 1, categoryCount do
+        local presetNames = systemPresetCategories[category]
+        local presetCount = #presetNames
+        print("Category "..category.." has "..presetCount.." system presets.")
+    end
+end
+
+function onEndOfSystemPresetList()
+    haveSystemPresetsBeenUpdated = true
+    countSystemPresetsInCategories()
+    -- The order of system preset names within categories is crucial,
+    -- as the index of the preset within the category has to be specified
+    -- when loading a preset on the instrument.
+    -- So sort the preset names into the required order 
+    -- before replacing the long ones with short ones,
+    -- in case including short names in the sort might change the order.
+    -- Commenting out sort does not explain loss of all presets
+    sortSystemPresetNames()
+    countSystemPresetsInCategories()
+    replaceLongSystemPresetNamesWithShortNames()
+    countSystemPresetsInCategories()
+    --selectPresetCategory(nil, nil)
+    --selectSystemPreset()
+end
+
+function onSystemPresetContextReceived()
+    if (not receivedSystemPresetName) or #receivedSystemPresetName == 0 then
+        print("onSystemPresetContextReceived: Cannot find system preset name")
+        return
+    end
+    if (not systemPresetContextBuffer or #systemPresetContextBuffer == 0) then
+        print("onSystemPresetContextReceived: Cannot find context string for "
+                ..receivedSystemPresetName)
+        return
+    end
+    local context = systemPresetContextBuffer
+    -- The system preset's two-letter category code has been received.
+    -- It needs to be parsed from the context data that has been appended to curName.
+    -- The context data looks like "C=CC", usually followed by filter codes,
+    -- where CC is the category code.  We currently don't use the filter codes.
+    local categoryCode = string.sub(context, 3, 4)
+    if not categoryCode then
+        print("onSystemPresetContextReceived: Cannot find category for "
+                ..receivedSystemPresetName.." in ".. context)
+        return
+    end
+    local categoryNo = categoryNos[categoryCode]
+    if not categoryNo then
+        print("onSystemPresetContextReceived: Cannot find "..categoryCode..
+                " category number for "..receivedSystemPresetName)
+        return
+    end
+    -- Now that we know the new system preset's name and category number,
+    -- we can add the name to the category's system preset table.
+    local categoryPresetCount = #systemPresetCategories[categoryNo]
+    if categoryNo == CAT_OTHER and categoryPresetCount == 128 then
+        categoryNo = CAT_OTHER1
+        categoryPresetCount = #systemPresetCategories[categoryNo]
+    end 
+    local newPresetNo = categoryPresetCount + 1
+    systemPresetCategories[categoryNo][newPresetNo] = receivedSystemPresetName
+    categoryPresetCount = #systemPresetCategories[categoryNo]
+    --print("onSystemPresetContextReceived: Category "..categoryNo..
+    --        " has "..categoryPresetCount.." presets after adding "..receivedSystemPresetName)
+end
+
+-- To avoid truncation when a system preset name is shown on the E1,
+-- replace any names that are too long with short names.
+function replaceLongSystemPresetNamesWithShortNames()
+    print("replaceLongSystemPresetNamesWithShortNames")
+    local categoryCount = #systemPresetCategories
+    for category = 1, categoryCount do
+        local presetNames = systemPresetCategories[category]
+        local presetCount = #presetNames
+        print("Category "..category.." has "..presetCount.." system presets.")
+        for presetNo = 1, presetCount do
+            local presetName = presetNames[presetNo]
+            local nameLength = #presetName
+            if (nameLength > MAX_NAME_LENGTH) then
+                local shortName = shortPresetNames[presetName]
+                if shortName then
+                    presetNames[presetNo] = shortName
+                else
+                    print("A short name has not been specified for system preset "..presetName)
+                end
+            end
+        end
+    end
+end
+
+-- Sort the system preset names in each category into the order where
+-- the (zero-based) index of each preset in its category can be used
+-- to specify the preset when asking the instrument to load the preset.
+-- The required order is alphabetical except that all upper case comes before
+-- all lower case.  Due to the form of the preset names 
+-- (all words in a preset name start with upper case letters 
+-- except the first word in a few preset names), we can get away with
+-- just comparing the cases of the first character of the names.
+-- Example: "Zebras Neighing" comes before "aZebraNeighing".
+function sortSystemPresetNames()
+    print("sortSystemPresetNames")
+    local categoryCount = #systemPresetCategories
+    for category = 1, categoryCount do
+        table.sort(
+                systemPresetCategories[category],
+                function (a, b)
+                    print("Comparing "..a.." with "..b)
+                    local aStartsWithLower = string.match(a[1], "%l")
+                    local bStartsWithLower = string.match(b[1], "%l")
+                    if (not aStartsWithLower) and bStartsWithLower then
+                        return true
+                    end
+                    if aStartsWithLower and (not bStartsWithLower) then
+                        return false
+                    end
+                    return (a < b)
+                end)
+    end
+end
+
 -- Set Pedal 2 Assignment
 function assignPedal2 (valueObject, value)
    if (pedal2Init == false) then
