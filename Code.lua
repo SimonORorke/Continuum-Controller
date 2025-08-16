@@ -84,9 +84,12 @@ local haveSystemPresetsBeenUpdated = false
 local isAccumulatingSystemPresetContext = false
 local isAccumulatingSystemPresetName = false
 local isProcessingSystemPresets = false
+local receivedSystemPresetBankLsb = 0
+local receivedSystemPresetContext = 0
 local receivedSystemPresetName = ""
+local receivedSystemPresetProgramNo = 0
 
--- System preset names grouped by category.
+-- System presets grouped by category.
 local systemPresetCategories = {}
 systemPresetCategories = {}
 for category = CAT_STRINGS, CAT_OTHER1 do
@@ -724,6 +727,13 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         end
      end
 
+    if msg.controllerNumber == 32 then
+        if isProcessingSystemPresets then
+            receivedSystemPresetBankLsb = msg.value
+        end
+        return
+    end
+
      if (msg.controllerNumber==56 and msg.value==0) then
          -- Start of system or user preset name stream
          if isProcessingSystemPresets then
@@ -779,7 +789,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         end
         if isAccumulatingSystemPresetContext then
             isAccumulatingSystemPresetContext = false
-            onSystemPresetContextReceived()
+            receivedSystemPresetContext = trimTrailingNullChar(systemPresetContextBuffer)
             return
         end
     end
@@ -1158,6 +1168,16 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
       end              
 
 end -- of pPress settings
+
+function midi.onProgramChange(midiInput, channel, programNumber)
+    if (channel ~= 16) then
+        return
+    end
+    if isProcessingSystemPresets then
+        receivedSystemPresetProgramNo = programNumber
+        onSystemPresetReceived()
+    end
+end
 
 function clearMacros() -- Set all Macros to 0 and set names to blank
     local ctrl --= controls.get(25)
@@ -2614,19 +2634,16 @@ end
 -- DOES THE ABOVE COMMENT NEED TO BE MODIFIED OR REMOVED?  SIMON
 -- Currently this should work for the Continuum and the EganMatrix module.
 function getMaxPresetIndex (pIndex) -- cap inex at max range for each category
-    if #systemPresetCategories == 0 then
-        return
-    end
    local ctrl = controls.get(273)
    local controlValue = ctrl:getValue("value")
    local ctrlMsg = controlValue:getMessage()
-    local systemPresetNames = systemPresetCategories[curCategory]
-    local systemPresetNamesCount = #systemPresetNames
-    if (pIndex > systemPresetNamesCount) then
-        ctrlMsg:setValue(systemPresetNamesCount)
+    local systemPresets = systemPresetCategories[curCategory]
+    local systemPresetCount = #systemPresets
+    if (pIndex > systemPresetCount) then
+        ctrlMsg:setValue(systemPresetCount)
         return pIndex - 1
     end
-    curPresetName = systemPresetNames[pIndex]
+    curPresetName = systemPresets[pIndex].name
     return pIndex
   --if (curCategory == CAT_STRINGS) then -- Strings
   --   -- print ("pIndex: "..pIndex)
@@ -2748,16 +2765,6 @@ function loadSystemPreset(valueObject, value)
    midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values 
 end    
 
-function countSystemPresetsInCategories()
-    local categoryCount = #systemPresetCategories
-    print("Counting system presets in "..categoryCount.." categories.")
-    for category = 1, categoryCount do
-        local presetNames = systemPresetCategories[category]
-        local presetCount = #presetNames
-        print("Category "..category.." has "..presetCount.." system presets.")
-    end
-end
-
 function getSystemPresets()
     print("getSystemPresets")
     -- Request system preset names (sysToMidi).
@@ -2766,40 +2773,27 @@ end
 
 function onEndOfSystemPresetList()
     haveSystemPresetsBeenUpdated = true
-    --countSystemPresetsInCategories()
-    -- The order of system preset names within categories is crucial,
-    -- as the index of the preset within the category has to be specified
-    -- when loading a preset on the instrument.
-    -- So sort the preset names into the required order 
-    -- before replacing the long ones with short ones,
-    -- in case including short names in the sort might change the order.
-    sortSystemPresetNames()
-    --countSystemPresetsInCategories()
     replaceLongSystemPresetNamesWithShortNames()
-    countSystemPresetsInCategories()
-    --selectPresetCategory(nil, nil)
-    --selectSystemPreset()
+    local categoryCount = #systemPresetCategories
+    print("Counting system presets in "..categoryCount.." categories.")
+    for category = 1, categoryCount do
+        local presetNames = systemPresetCategories[category]
+        local presetCount = #presetNames
+        print("Category "..category.." has "..presetCount.." system presets.")
+    end
+    selectPresetCategory(nil, nil)
+    selectSystemPreset()
 end
 
-function onSystemPresetContextReceived()
-    if (not receivedSystemPresetName) or #receivedSystemPresetName == 0 then
-        print("onSystemPresetContextReceived: Cannot find system preset name")
-        return
-    end
-    if (not systemPresetContextBuffer or #systemPresetContextBuffer == 0) then
-        print("onSystemPresetContextReceived: Cannot find context string for "
-                ..receivedSystemPresetName)
-        return
-    end
-    local context = systemPresetContextBuffer
+function onSystemPresetReceived()
     -- The system preset's two-letter category code has been received.
     -- It needs to be parsed from the context data that has been appended to curName.
     -- The context data looks like "C=CC", usually followed by filter codes,
     -- where CC is the category code.  We currently don't use the filter codes.
-    local categoryCode = string.sub(context, 3, 4)
+    local categoryCode = string.sub(receivedSystemPresetContext, 3, 4)
     if not categoryCode then
         print("onSystemPresetContextReceived: Cannot find category for "
-                ..receivedSystemPresetName.." in ".. context)
+                ..receivedSystemPresetName.." in ".. receivedSystemPresetContext)
         return
     end
     local categoryNo = categoryNos[categoryCode]
@@ -2816,41 +2810,27 @@ function onSystemPresetContextReceived()
         categoryPresetCount = #systemPresetCategories[categoryNo]
     end 
     local newPresetNo = categoryPresetCount + 1
-    systemPresetCategories[categoryNo][newPresetNo] = receivedSystemPresetName
-    categoryPresetCount = #systemPresetCategories[categoryNo]
-    --print("onSystemPresetContextReceived: Category "..categoryNo..
-    --        " has "..categoryPresetCount.." presets after adding "..receivedSystemPresetName)
+    systemPresetCategories[categoryNo][newPresetNo] = {
+        name = receivedSystemPresetName, 
+        bankLsb = receivedSystemPresetBankLsb,
+        programNo = receivedSystemPresetProgramNo
+    } 
 end
 
 -- To avoid truncation when a system preset name is shown on the E1,
 -- replace any names that are too long with short names.
 function replaceLongSystemPresetNamesWithShortNames()
-    print("replaceLongSystemPresetNamesWithShortNames")
     local categoryCount = #systemPresetCategories
     for category = 1, categoryCount do
-        --print("    Category "..category)
-        --print("    Getting preset names")
-        local presetNames = systemPresetCategories[category]
-        --print("    Getting preset count")
-        local presetCount = #presetNames
-        --print("    Preset count = "..presetCount)
+        local presets = systemPresetCategories[category]
+        local presetCount = #presets
         for presetNo = 1, presetCount do
-            --print("        Preset no = "..presetNo)
-            --print("        Getting preset name")
-            local presetName = presetNames[presetNo]
-            --print("        Preset name = "..presetName)
-            --print("        Getting name length")
+            local presetName = presets[presetNo].name
             local nameLength = #presetName
-            --print("        Name length = "..nameLength)
             if (nameLength > MAX_NAME_LENGTH) then
-                --print("        Getting short name")
-                --local shortName = getShortNames(presetName)
                 local shortName = shortPresetNames[presetName]
                 if shortName then
-                    --print("        Short name = "..shortName)
-                    systemPresetCategories[category][presetNo] = shortName
-                    --print("        Set preset name to short name")
-                    --shortNamesClaimedCount = shortNamesClaimedCount + 1
+                    systemPresetCategories[category][presetNo].name = shortName
                 else
                     print("A short name has not been specified for system preset "
                             ..presetName)
@@ -2860,43 +2840,11 @@ function replaceLongSystemPresetNamesWithShortNames()
     end
 end
 
--- Sort the system preset names in each category into the order where
--- the (zero-based) index of each preset in its category can be used
--- to specify the preset when asking the instrument to load the preset.
--- The required order is alphabetical except that all upper case comes before
--- all lower case.  Due to the form of the preset names 
--- (all words in a preset name start with upper case letters 
--- except the first word in a few preset names), we can get away with
--- just comparing the cases of the first character of the names.
--- Example: "Zebras Neighing" comes before "aZebraNeighing".
-function sortSystemPresetNames()
-    print("sortSystemPresetNames")
-    local categoryCount = #systemPresetCategories
-    for category = 1, categoryCount do
-        table.sort(
-                systemPresetCategories[category],
-                function (a, b)
-                    --print("Comparing "..a.." with "..b)
-                    local aStartsWithLower = string.match(a[1], "%l")
-                    local bStartsWithLower = string.match(b[1], "%l")
-                    if (not aStartsWithLower) and bStartsWithLower then
-                        return true
-                    end
-                    if aStartsWithLower and (not bStartsWithLower) then
-                        return false
-                    end
-                    return (a < b)
-                end)
-    end
-end
-
 function trimTrailingNullChar(text)
     local textLength = string.len(text)
     local lastCharNo = string.byte(text, textLength)
     if lastCharNo == 0 then
-        --print("trimTrailingNullChar: Trimming")
         local result = string.sub(text,1, textLength - 1)
-        --print("    result = '"..result.."'")
         return result
     end
     return text
