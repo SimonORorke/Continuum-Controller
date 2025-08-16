@@ -774,7 +774,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     if msg.controllerNumber==56 and msg.value==127 then -- End of stream
         if isAccumulatingSystemPresetName then
             isAccumulatingSystemPresetName = false
-            receivedSystemPresetName = systemPresetNameBuffer
+            receivedSystemPresetName = trimTrailingNullChar(systemPresetNameBuffer) 
             return
         end
         if isAccumulatingSystemPresetContext then
@@ -2773,7 +2773,7 @@ function onEndOfSystemPresetList()
     -- So sort the preset names into the required order 
     -- before replacing the long ones with short ones,
     -- in case including short names in the sort might change the order.
-    --sortSystemPresetNames()
+    sortSystemPresetNames()
     --countSystemPresetsInCategories()
     replaceLongSystemPresetNamesWithShortNames()
     countSystemPresetsInCategories()
@@ -2844,17 +2844,16 @@ function replaceLongSystemPresetNamesWithShortNames()
             --print("        Name length = "..nameLength)
             if (nameLength > MAX_NAME_LENGTH) then
                 --print("        Getting short name")
+                --local shortName = getShortNames(presetName)
                 local shortName = shortPresetNames[presetName]
                 if shortName then
                     --print("        Short name = "..shortName)
                     systemPresetCategories[category][presetNo] = shortName
                     --print("        Set preset name to short name")
+                    --shortNamesClaimedCount = shortNamesClaimedCount + 1
                 else
-                    --if presetName == "Bowed Double Reed" then
-                    --    
-                    --end
                     print("A short name has not been specified for system preset "
-                            ..presetName.." (category "..category..")")
+                            ..presetName)
                 end
             end
         end
@@ -2877,7 +2876,7 @@ function sortSystemPresetNames()
         table.sort(
                 systemPresetCategories[category],
                 function (a, b)
-                    print("Comparing "..a.." with "..b)
+                    --print("Comparing "..a.." with "..b)
                     local aStartsWithLower = string.match(a[1], "%l")
                     local bStartsWithLower = string.match(b[1], "%l")
                     if (not aStartsWithLower) and bStartsWithLower then
@@ -2889,6 +2888,18 @@ function sortSystemPresetNames()
                     return (a < b)
                 end)
     end
+end
+
+function trimTrailingNullChar(text)
+    local textLength = string.len(text)
+    local lastCharNo = string.byte(text, textLength)
+    if lastCharNo == 0 then
+        --print("trimTrailingNullChar: Trimming")
+        local result = string.sub(text,1, textLength - 1)
+        --print("    result = '"..result.."'")
+        return result
+    end
+    return text
 end
 
 -- Set Pedal 1 Assignment
