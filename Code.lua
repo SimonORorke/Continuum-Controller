@@ -17,7 +17,7 @@ local CAT_MIDI = 11
 local CAT_CVC = 12
 local CAT_UTILITY = 13
 local CAT_OTHER1 = 14
-
+local MAX_NAME_LENGTH = 14
 
 -- Global Initialization flags
 storeInitialized = false -- Don't call certain things on Electra One startup procedure
@@ -2747,29 +2747,10 @@ function loadSystemPreset(valueObject, value)
    resetMute()
    midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values 
 end    
--- Set Pedal 1 Assignment
-function assignPedal1 (valueObject, value)
-   if (pedal1Init == false) then
-      pedal1Init = true
-      return
-   end
-   local ctrl = controls.get(143)
-   local controlValue = ctrl:getValue("value")
-   local ctrlMsg = controlValue:getMessage()
-   local ped1Val = ctrlMsg:getValue()
-   -- print ("Pedal1 val: "..ped1Val)
-   matrixPoke(52, ped1Val) -- set assignment
-end
-
-
-function getSystemPresets()
-    print("getSystemPresets")
-    -- Request system preset names (sysToMidi).
-    midi.sendControlChange(DEVICE_PORT, 16, 109, 39)
-end
 
 function countSystemPresetsInCategories()
     local categoryCount = #systemPresetCategories
+    print("Counting system presets in "..categoryCount.." categories.")
     for category = 1, categoryCount do
         local presetNames = systemPresetCategories[category]
         local presetCount = #presetNames
@@ -2777,18 +2758,23 @@ function countSystemPresetsInCategories()
     end
 end
 
+function getSystemPresets()
+    print("getSystemPresets")
+    -- Request system preset names (sysToMidi).
+    midi.sendControlChange(DEVICE_PORT, 16, 109, 39)
+end
+
 function onEndOfSystemPresetList()
     haveSystemPresetsBeenUpdated = true
-    countSystemPresetsInCategories()
+    --countSystemPresetsInCategories()
     -- The order of system preset names within categories is crucial,
     -- as the index of the preset within the category has to be specified
     -- when loading a preset on the instrument.
     -- So sort the preset names into the required order 
     -- before replacing the long ones with short ones,
     -- in case including short names in the sort might change the order.
-    -- Commenting out sort does not explain loss of all presets
-    sortSystemPresetNames()
-    countSystemPresetsInCategories()
+    --sortSystemPresetNames()
+    --countSystemPresetsInCategories()
     replaceLongSystemPresetNamesWithShortNames()
     countSystemPresetsInCategories()
     --selectPresetCategory(nil, nil)
@@ -2842,18 +2828,33 @@ function replaceLongSystemPresetNamesWithShortNames()
     print("replaceLongSystemPresetNamesWithShortNames")
     local categoryCount = #systemPresetCategories
     for category = 1, categoryCount do
+        --print("    Category "..category)
+        --print("    Getting preset names")
         local presetNames = systemPresetCategories[category]
+        --print("    Getting preset count")
         local presetCount = #presetNames
-        print("Category "..category.." has "..presetCount.." system presets.")
+        --print("    Preset count = "..presetCount)
         for presetNo = 1, presetCount do
+            --print("        Preset no = "..presetNo)
+            --print("        Getting preset name")
             local presetName = presetNames[presetNo]
+            --print("        Preset name = "..presetName)
+            --print("        Getting name length")
             local nameLength = #presetName
+            --print("        Name length = "..nameLength)
             if (nameLength > MAX_NAME_LENGTH) then
+                --print("        Getting short name")
                 local shortName = shortPresetNames[presetName]
                 if shortName then
-                    presetNames[presetNo] = shortName
+                    --print("        Short name = "..shortName)
+                    systemPresetCategories[category][presetNo] = shortName
+                    --print("        Set preset name to short name")
                 else
-                    print("A short name has not been specified for system preset "..presetName)
+                    --if presetName == "Bowed Double Reed" then
+                    --    
+                    --end
+                    print("A short name has not been specified for system preset "
+                            ..presetName.." (category "..category..")")
                 end
             end
         end
@@ -2888,6 +2889,20 @@ function sortSystemPresetNames()
                     return (a < b)
                 end)
     end
+end
+
+-- Set Pedal 1 Assignment
+function assignPedal1 (valueObject, value)
+    if (pedal1Init == false) then
+        pedal1Init = true
+        return
+    end
+    local ctrl = controls.get(143)
+    local controlValue = ctrl:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    local ped1Val = ctrlMsg:getValue()
+    -- print ("Pedal1 val: "..ped1Val)
+    matrixPoke(52, ped1Val) -- set assignment
 end
 
 -- Set Pedal 2 Assignment
