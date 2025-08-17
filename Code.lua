@@ -17,7 +17,7 @@ local CAT_MIDI = 11
 local CAT_CVC = 12
 local CAT_UTILITY = 13
 local CAT_OTHER1 = 14
--- Names longer than this will be truncated when shown on controls.
+-- Names longer than this will be truncated when shown on controls. SOR
 local MAX_NAME_LENGTH = 14 
 
 -- Global Initialization flags
@@ -81,6 +81,8 @@ userNames = {"U1","U2","U3","U4","U5","U6","U7","U8","U9","U10","U11","U12","U13
             "U113", "U114", "U115", "U116", "U117", "U118", "U119", "120", 
             "U121", "U122", "U123", "U124", "U125", "U126", "U127","U128"}
 
+-- The remainder of the variables in this setup section wer added by SOR
+-- for getting system presets.
 local firmwareVersion
 local hasFirmwareVersionAlreadyBeenReceived = false
 local haveSystemPresetsBeenUpdated = false
@@ -93,7 +95,7 @@ local systemPresetContextBuffer = ""
 local systemPresetNameBuffer = ""
 local versionText = ""
 
--- System presets grouped by category.
+-- System presets grouped by category. SOR
 local systemPresetCategories = {}
 systemPresetCategories = {}
 for category = CAT_STRINGS, CAT_OTHER1 do
@@ -103,7 +105,7 @@ end
 -- A dictionary for looking up the system preset category number 
 -- corresponding to the 2-letter category code provided by the instrument
 -- in the system preset list. The category number identifies the category
--- when loading a preset on the instrument.
+-- when loading a preset on the instrument. SOR
 local categoryNos = {}
 categoryNos["CL"] = CAT_CLASSIC
 categoryNos["CV"] = CAT_CVC
@@ -121,7 +123,8 @@ categoryNos["WI"] = CAT_WINDS
 
 -- A dictionary of short preset names, for display on the E1,
 -- corresponding to preset names longer than MAX_NAME_LENGTH characters. 
--- If a short name is not specified, the long name will be truncated on the E1.
+-- If a short name is not specified, 
+-- the long name will be truncated on the E1. SOR
 local shortPresetNames = {}
 shortPresetNames["Acrylic Clock 2"] = "Acrylic Clock2"
 shortPresetNames["Additive Gnilham"] = "Add Gnilham"
@@ -396,6 +399,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
   end
   if (chan == 16 and cc == 103) then -- Firmware Low Address
       lowVersion = value
+      -- Amended by SOR for getting system presets.
       if not hasFirmwareVersionAlreadyBeenReceived then
           print("First time firmware version received")
           -- There's no specific command to request the firmware version.
@@ -708,6 +712,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     if (msg.channel ~= 16) then
         return
     end
+    -- Added by SOR for getting system presets.
     if ( msg.controllerNumber==109 and msg.value==49) then
         -- Start of system preset list (beginSysNames)    
         --print("Start of system preset list")
@@ -715,6 +720,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         print("Start of system preset list")
         return
     end
+    -- Added by SOR for getting system presets.
     if (msg.controllerNumber==109 and msg.value==40) then
         -- End of system preset list (endSysNames)    
         isGettingSystemPresets = false
@@ -738,6 +744,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         end
         userNameProcessing = false
         userNameIndex=0
+         -- Added by SOR for getting system presets.
         if not haveSystemPresetsBeenUpdated then
             getSystemPresets()
         else
@@ -747,6 +754,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         end
      end
 
+     -- Amended by SOR for getting system presets.
      if (msg.controllerNumber==56 and msg.value==0) then
          -- Start of system or user preset name stream
          if isGettingSystemPresets then
@@ -774,6 +782,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
            matrixStream=false -- Has no CC56=127 terminator - new stream terminates it       
      end
 
+    -- Amended by SOR for getting system presets.
     if (msg.controllerNumber==56 and msg.value==1) then
         -- Start of macro or system preset context stream 
         if isGettingSystemPresets then
@@ -788,12 +797,8 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         contextProcessed = true
         matrixStream=false -- Has no CC56=127 terminator - new stream terminates it
     end
-     --if (msg.controllerNumber==56 and msg.value==1) then -- Context data - only get if Macros needed
-     --      macroString = ""
-     --      contextProcessed = true
-     --      matrixStream=false -- Has no CC56=127 terminator - new stream terminates it
-     --end
 
+    -- Added by SOR for getting system presets.
     if msg.controllerNumber==56 and msg.value==127 then -- End of stream
         if isAccumulatingSystemPresetName then
             isAccumulatingSystemPresetName = false
@@ -837,12 +842,14 @@ end
 
 
 function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
+    -- Added by SOR for getting system presets.
     if (isAccumulatingSystemPresetName) then
         -- Accumulate system preset name buffer
         systemPresetNameBuffer =
             systemPresetNameBuffer ..string.char(noteNumber)..string.char(pressure)
         return
     end
+    -- Added by SOR for getting system presets.
     if (isAccumulatingSystemPresetContext) then
         -- Accumulate system preset context buffer
         systemPresetContextBuffer =
@@ -2635,8 +2642,9 @@ end
 -- number of presets in a given category. This will change from instrument
 -- to instrument (so probably best to create a separate version for each instrument)
 -- Or see if this can be dynamically read for a later version
--- DOES THE ABOVE COMMENT NEED TO BE MODIFIED OR REMOVED?  SIMON
+-- DOES THE ABOVE COMMENT NEED TO BE MODIFIED OR REMOVED?  SOR
 -- Currently this should work for the Continuum and the EganMatrix module.
+-- Amended by SOR for getting system presets.
 function getMaxPresetIndex (pIndex) -- cap inex at max range for each category
    local ctrl = controls.get(273)
    local controlValue = ctrl:getValue("value")
@@ -2767,14 +2775,16 @@ function loadSystemPreset(valueObject, value)
    clearMacros()
    resetMute()
    midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values 
-end    
+end
 
+-- Added by SOR for getting system presets.
 function getSystemPresets()
     print("getSystemPresets")
     -- Request system preset names (sysToMidi).
     midi.sendControlChange(DEVICE_PORT, 16, 109, 39)
 end
 
+-- Added by SOR for getting system presets.
 function onEndOfSystemPresetList()
     haveSystemPresetsBeenUpdated = true
     replaceLongSystemPresetNamesWithShortNames()
@@ -2792,6 +2802,7 @@ function onEndOfSystemPresetList()
     selectSystemPreset()
 end
 
+-- Added by SOR for getting system presets.
 function onSystemPresetReceived()
     -- The system preset's two-letter category code has been received.
     -- It needs to be parsed from the context data that has been appended to curName.
@@ -2820,6 +2831,7 @@ function onSystemPresetReceived()
     systemPresetCategories[categoryNo][newPresetNo] = receivedSystemPresetName 
 end
 
+-- Added by SOR for getting system presets.
 -- To avoid truncation when a system preset name is shown on the E1,
 -- replace any names that are too long with short names.
 function replaceLongSystemPresetNamesWithShortNames()
@@ -2835,6 +2847,8 @@ function replaceLongSystemPresetNamesWithShortNames()
                 if shortName then
                     systemPresetCategories[category][presetNo] = shortName
                 else
+                    -- Keep this print. We will need it for identifying new
+                    -- long names introduced in future firmware versions. SOR
                     print("A short name has not been specified for system preset "
                             ..presetName)
                 end
@@ -2843,6 +2857,15 @@ function replaceLongSystemPresetNamesWithShortNames()
     end
 end
 
+-- Added by SOR for getting system presets.
+-- The text streams provide characters in pairs,
+-- So if the string received has an odd number of characters,
+-- there will be an null character (ASCII 0) at the end to make it even.
+-- For system preset names,
+-- the null character really messes things up if we don't remove it.
+-- And it is removed for system preset contexts too, just for tidiness.
+-- If there's already code to remove the null character for user preset names,
+-- I've not spotted it. Maybe it does not matter in that case.
 function trimTrailingNullChar(text)
     local textLength = string.len(text)
     local lastCharNo = string.byte(text, textLength)
