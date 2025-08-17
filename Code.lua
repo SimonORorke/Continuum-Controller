@@ -2647,7 +2647,7 @@ function getMaxPresetIndex (pIndex) -- cap inex at max range for each category
         ctrlMsg:setValue(systemPresetCount)
         return pIndex - 1
     end
-    curPresetName = systemPresets[pIndex].name
+    curPresetName = systemPresets[pIndex]
     return pIndex
   --if (curCategory == CAT_STRINGS) then -- Strings
   --   -- print ("pIndex: "..pIndex)
@@ -2828,7 +2828,7 @@ function replaceLongSystemPresetNamesWithShortNames()
         local presets = systemPresetCategories[category]
         local presetCount = #presets
         for presetNo = 1, presetCount do
-            local presetName = presets[presetNo].name
+            local presetName = presets[presetNo]
             local nameLength = #presetName
             if (nameLength > MAX_NAME_LENGTH) then
                 local shortName = shortPresetNames[presetName]
