@@ -17,7 +17,8 @@ local CAT_MIDI = 11
 local CAT_CVC = 12
 local CAT_UTILITY = 13
 local CAT_OTHER1 = 14
-local MAX_NAME_LENGTH = 14
+-- Names longer than this will be truncated when shown on controls.
+local MAX_NAME_LENGTH = 14 
 
 -- Global Initialization flags
 storeInitialized = false -- Don't call certain things on Electra One startup procedure
@@ -80,14 +81,19 @@ userNames = {"U1","U2","U3","U4","U5","U6","U7","U8","U9","U10","U11","U12","U13
             "U113", "U114", "U115", "U116", "U117", "U118", "U119", "120", 
             "U121", "U122", "U123", "U124", "U125", "U126", "U127","U128"}
 
+local firmwareVersion
+local hasFirmwareVersionAlreadyBeenReceived = false
 local haveSystemPresetsBeenUpdated = false
 local isAccumulatingSystemPresetContext = false
 local isAccumulatingSystemPresetName = false
 local isProcessingSystemPresets = false
 local receivedSystemPresetBankLsb = 0
-local receivedSystemPresetContext = 0
+local receivedSystemPresetContext = ""
 local receivedSystemPresetName = ""
 local receivedSystemPresetProgramNo = 0
+local systemPresetContextBuffer = ""
+local systemPresetNameBuffer = ""
+local versionText = ""
 
 -- System presets grouped by category.
 local systemPresetCategories = {}
@@ -95,9 +101,6 @@ systemPresetCategories = {}
 for category = CAT_STRINGS, CAT_OTHER1 do
     systemPresetCategories[category] = {}
 end
-
-local systemPresetContextBuffer = ""
-local systemPresetNameBuffer = ""
 
 -- A dictionary for looking up the system preset category number 
 -- corresponding to the 2-letter category code provided by the instrument
@@ -394,9 +397,23 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     highVersion = value
   end
   if (chan == 16 and cc == 103) then -- Firmware Low Address
-    lowVersion = value
-    local version = ((128 * highVersion)  + lowVersion) / 100
-    info.setText("Ver: 1.0/"..version) -- Versions to Info Text
+      lowVersion = value
+      if not hasFirmwareVersionAlreadyBeenReceived then
+          print("First time firmware version received")
+          -- There's no specific command to request the firmware version.
+          -- The instrument sends it more than once: on connecting to E1;
+          -- when sending user presets; when sending system presets, etc.
+          -- We don't want to show the firmware version every time it is received,
+          -- as there may be a progress message in the info text while
+          -- preset data is being received.  
+          -- So save the version info to a variable to be shown again
+          -- when all the preset data has been received.
+          hasFirmwareVersionAlreadyBeenReceived = true
+          firmwareVersion = ((128 * highVersion)  + lowVersion) / 100
+          versionText = "Ver: 1.0/"..firmwareVersion
+          info.setText(versionText) -- Versions to Info Text
+      end
+      return
   end  
   if (chan == 16 and cc == 71) then -- Polyphony
     local ctrl = controls.get(183)
@@ -710,6 +727,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     
      if (msg.controllerNumber==109 and msg.value==54) then -- Start User Names Found
         --print("Start getting names")
+        info.setText("Getting presets...")
         userNameProcessing = true
         firstName = true
         userNameIndex=0
@@ -724,6 +742,10 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         userNameIndex=0
         if not haveSystemPresetsBeenUpdated then
             getSystemPresets()
+        else
+            -- Replace the "Getting presets..." notification 
+            -- on the status bar with the version info.
+            info.setText(versionText)
         end
      end
 
@@ -2774,6 +2796,9 @@ end
 function onEndOfSystemPresetList()
     haveSystemPresetsBeenUpdated = true
     replaceLongSystemPresetNamesWithShortNames()
+    -- Replace the "Getting presets..." notification 
+    -- on the status bar with the version info.
+    info.setText(versionText)
     local categoryCount = #systemPresetCategories
     print("Counting system presets in "..categoryCount.." categories.")
     for category = 1, categoryCount do
