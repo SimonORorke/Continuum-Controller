@@ -86,11 +86,9 @@ local hasFirmwareVersionAlreadyBeenReceived = false
 local haveSystemPresetsBeenUpdated = false
 local isAccumulatingSystemPresetContext = false
 local isAccumulatingSystemPresetName = false
-local isProcessingSystemPresets = false
-local receivedSystemPresetBankLsb = 0
+local isGettingSystemPresets = false
 local receivedSystemPresetContext = ""
 local receivedSystemPresetName = ""
-local receivedSystemPresetProgramNo = 0
 local systemPresetContextBuffer = ""
 local systemPresetNameBuffer = ""
 local versionText = ""
@@ -713,13 +711,13 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     if ( msg.controllerNumber==109 and msg.value==49) then
         -- Start of system preset list (beginSysNames)    
         --print("Start of system preset list")
-        isProcessingSystemPresets = true
+        isGettingSystemPresets = true
         print("Start of system preset list")
         return
     end
     if (msg.controllerNumber==109 and msg.value==40) then
         -- End of system preset list (endSysNames)    
-        isProcessingSystemPresets = false
+        isGettingSystemPresets = false
         print("End of system preset list")
         onEndOfSystemPresetList()
         return
@@ -749,16 +747,9 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         end
      end
 
-    if msg.controllerNumber == 32 then
-        if isProcessingSystemPresets then
-            receivedSystemPresetBankLsb = msg.value
-        end
-        return
-    end
-
      if (msg.controllerNumber==56 and msg.value==0) then
          -- Start of system or user preset name stream
-         if isProcessingSystemPresets then
+         if isGettingSystemPresets then
              isAccumulatingSystemPresetName = true
              systemPresetNameBuffer = ""
              return
@@ -785,7 +776,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
 
     if (msg.controllerNumber==56 and msg.value==1) then
         -- Start of macro or system preset context stream 
-        if isProcessingSystemPresets then
+        if isGettingSystemPresets then
             -- System preset context data, which will include 
             -- the 2-letter category code.
             isAccumulatingSystemPresetContext = true
@@ -812,6 +803,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         if isAccumulatingSystemPresetContext then
             isAccumulatingSystemPresetContext = false
             receivedSystemPresetContext = trimTrailingNullChar(systemPresetContextBuffer)
+            onSystemPresetReceived()
             return
         end
     end
@@ -1190,16 +1182,6 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
       end              
 
 end -- of pPress settings
-
-function midi.onProgramChange(midiInput, channel, programNumber)
-    if (channel ~= 16) then
-        return
-    end
-    if isProcessingSystemPresets then
-        receivedSystemPresetProgramNo = programNumber
-        onSystemPresetReceived()
-    end
-end
 
 function clearMacros() -- Set all Macros to 0 and set names to blank
     local ctrl --= controls.get(25)
@@ -2835,11 +2817,7 @@ function onSystemPresetReceived()
         categoryPresetCount = #systemPresetCategories[categoryNo]
     end 
     local newPresetNo = categoryPresetCount + 1
-    systemPresetCategories[categoryNo][newPresetNo] = {
-        name = receivedSystemPresetName, 
-        bankLsb = receivedSystemPresetBankLsb,
-        programNo = receivedSystemPresetProgramNo
-    } 
+    systemPresetCategories[categoryNo][newPresetNo] = receivedSystemPresetName 
 end
 
 -- To avoid truncation when a system preset name is shown on the E1,
@@ -2855,7 +2833,7 @@ function replaceLongSystemPresetNamesWithShortNames()
             if (nameLength > MAX_NAME_LENGTH) then
                 local shortName = shortPresetNames[presetName]
                 if shortName then
-                    systemPresetCategories[category][presetNo].name = shortName
+                    systemPresetCategories[category][presetNo] = shortName
                 else
                     print("A short name has not been specified for system preset "
                             ..presetName)
