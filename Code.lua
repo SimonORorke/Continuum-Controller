@@ -2603,7 +2603,10 @@ end
 
 -- Store the current Preset category selected
 function selectPresetCategory(valueObject, value)
+    -- Added by SOR for getting system presets.
     if not haveSystemPresetsBeenUpdated then
+        -- This function will be called again, from the Lua code,
+        -- once all the system presets have been received.
         return
     end
     -- Reset Preset index to beginning
@@ -2626,7 +2629,10 @@ end
 
 -- Get the preset name and index based on Category set
 function selectSystemPreset(valueObject, value)
+    -- Added by SOR for getting system presets.
     if not haveSystemPresetsBeenUpdated then
+        -- This function will be called again, from the Lua code,
+        -- once all the system presets have been received.
         return
     end
     curSystemPreset = getMaxPresetIndex(math.floor(value))
