@@ -18,7 +18,7 @@ local CAT_CVC = 12
 local CAT_UTILITY = 13
 local CAT_OTHER1 = 14
 -- Names longer than this will be truncated when shown on controls. SOR
-local MAX_NAME_LENGTH = 14 
+local MAX_NAME_LENGTH = 14
 
 -- Global Initialization flags
 storeInitialized = false -- Don't call certain things on Electra One startup procedure
@@ -71,15 +71,15 @@ macro_vi_name = ""
 macro_vi_val = 0
 -- Dummies to reserve some memory up front
 userNames = {"U1","U2","U3","U4","U5","U6","U7","U8","U9","U10","U11","U12","U13","U14","U15","U16",
-            "U17", "U18", "U19", "U20", "U21", "U22", "U23", "U24", "U25", "U26", "U27", "U28", "U29", "U30", "U31","U32",
-            "U33", "U34", "U35", "U36", "U37", "U38", "U39", "U40", "U41", "U42", "U43", "U44", "U45", "U46", "U47","U48",
-            "U49", "U50", "U51", "U52", "U53", "U54", "U55", "U56", "U57", "U58", "U59", "U60", "U61", "U62", "U63","U64",
-            "U65", "U66", "U67", "U68", "U69", "U70", "U71", "U72", "U73", "U74", "U75", "U76", "U77", "U78", "U79","U80",
-            "U81", "U82", "U83", "U84", "U85", "U86", "U87", "U88", "U89", "U90", "U91", "U92", "U93", "U94", "U95","U96",
-            "U97", "U98", "U99", "U100", "U101", "U102", "U103", "U104", 
-            "U105", "U106", "U107", "U108", "U109", "U110", "U111","U112",
-            "U113", "U114", "U115", "U116", "U117", "U118", "U119", "120", 
-            "U121", "U122", "U123", "U124", "U125", "U126", "U127","U128"}
+             "U17", "U18", "U19", "U20", "U21", "U22", "U23", "U24", "U25", "U26", "U27", "U28", "U29", "U30", "U31","U32",
+             "U33", "U34", "U35", "U36", "U37", "U38", "U39", "U40", "U41", "U42", "U43", "U44", "U45", "U46", "U47","U48",
+             "U49", "U50", "U51", "U52", "U53", "U54", "U55", "U56", "U57", "U58", "U59", "U60", "U61", "U62", "U63","U64",
+             "U65", "U66", "U67", "U68", "U69", "U70", "U71", "U72", "U73", "U74", "U75", "U76", "U77", "U78", "U79","U80",
+             "U81", "U82", "U83", "U84", "U85", "U86", "U87", "U88", "U89", "U90", "U91", "U92", "U93", "U94", "U95","U96",
+             "U97", "U98", "U99", "U100", "U101", "U102", "U103", "U104",
+             "U105", "U106", "U107", "U108", "U109", "U110", "U111","U112",
+             "U113", "U114", "U115", "U116", "U117", "U118", "U119", "120",
+             "U121", "U122", "U123", "U124", "U125", "U126", "U127","U128"}
 
 -- The remainder of the variables in this setup section wer added by SOR
 -- for getting system presets.
@@ -382,333 +382,333 @@ shortPresetNames["Windtube Single Reed"] = "Wtube Sin Reed"
 shortPresetNames["Winter Skipping Pond"] = "WinterSkipPond"
 shortPresetNames["Zwei Baende with Noise"] = "ZweiBaendNoise"
 
-  -- Clear the Info text
-  function clearInfo() 
-     info.setText("")
-  end
+-- Clear the Info text
+function clearInfo()
+    info.setText("")
+end
 
 -- Test getting just CCs
 function midi.onControlChange(midiInput, channel, controllerNumber, value)
-  local midi = midiInput
-  local chan = math.floor (channel)
-  local cc = math.floor (controllerNumber)
-  local val = math.floor (value)
+    local midi = midiInput
+    local chan = math.floor (channel)
+    local cc = math.floor (controllerNumber)
+    local val = math.floor (value)
 
-  if (chan == 16 and cc == 102) then -- Firmware High Address
-    highVersion = value
-  end
-  if (chan == 16 and cc == 103) then -- Firmware Low Address
-      lowVersion = value
-      -- Amended by SOR for getting system presets.
-      if not hasFirmwareVersionAlreadyBeenReceived then
-          print("First time firmware version received")
-          -- There's no specific command to request the firmware version.
-          -- The instrument sends it more than once: on connecting to E1;
-          -- when sending user presets; when sending system presets, etc.
-          -- We don't want to show the firmware version every time it is received,
-          -- as there may be a progress message in the info text while
-          -- preset data is being received.  
-          -- So save the version info to a variable to be shown again
-          -- when all the preset data has been received.
-          hasFirmwareVersionAlreadyBeenReceived = true
-          firmwareVersion = ((128 * highVersion)  + lowVersion) / 100
-          versionText = "Ver: 1.0/"..firmwareVersion
-          info.setText(versionText) -- Versions to Info Text
-      end
-      return
-  end  
-  if (chan == 16 and cc == 71) then -- Polyphony
-    local ctrl = controls.get(183)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    if (val < 16) then
-      ctrlMsg:setValue(val)
-    else
-      print("Polyphony > 15: "..val)
+    if (chan == 16 and cc == 102) then -- Firmware High Address
+        highVersion = value
     end
-  end
-  if (chan == 16 and cc == 72) then -- DSP Polyphony
-    local ctrl = controls.get(234)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  if (chan == 16 and cc == 73) then -- CVC Polyphony
-    local ctrl = controls.get(172)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
+    if (chan == 16 and cc == 103) then -- Firmware Low Address
+        lowVersion = value
+        -- Amended by SOR for getting system presets.
+        if not hasFirmwareVersionAlreadyBeenReceived then
+            print("First time firmware version received")
+            -- There's no specific command to request the firmware version.
+            -- The instrument sends it more than once: on connecting to E1;
+            -- when sending user presets; when sending system presets, etc.
+            -- We don't want to show the firmware version every time it is received,
+            -- as there may be a progress message in the info text while
+            -- preset data is being received.  
+            -- So save the version info to a variable to be shown again
+            -- when all the preset data has been received.
+            hasFirmwareVersionAlreadyBeenReceived = true
+            firmwareVersion = ((128 * highVersion)  + lowVersion) / 100
+            versionText = "Ver: 1.1/"..firmwareVersion
+            info.setText(versionText) -- Versions to Info Text
+        end
+        return
+    end
+    if (chan == 16 and cc == 71) then -- Polyphony
+        local ctrl = controls.get(183)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        if (val < 16) then
+            ctrlMsg:setValue(val)
+        else
+            print("Polyphony > 15: "..val)
+        end
+    end
+    if (chan == 16 and cc == 72) then -- DSP Polyphony
+        local ctrl = controls.get(234)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 16 and cc == 73) then -- CVC Polyphony
+        local ctrl = controls.get(172)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
 
- -- End Read Only Controls
-  if (chan == 1 and cc == 12) then -- Set i
-    local ctrl = controls.get(25)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-    macro_i_name = "" -- clear macro global storage   
-    --loadMacros() -- Load up macro names - setting C12 value is after names have been output on load   
-    macro_i_val = val    
-  end
-  if (chan == 1 and cc == 13) then -- Set ii
-    local ctrl = controls.get(26)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-    macro_ii_name = ""
-    --loadMacros()
-    macro_ii_val = val    
-  end
+    -- End Read Only Controls
+    if (chan == 1 and cc == 12) then -- Set i
+        local ctrl = controls.get(25)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+        macro_i_name = "" -- clear macro global storage   
+        --loadMacros() -- Load up macro names - setting C12 value is after names have been output on load   
+        macro_i_val = val
+    end
+    if (chan == 1 and cc == 13) then -- Set ii
+        local ctrl = controls.get(26)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+        macro_ii_name = ""
+        --loadMacros()
+        macro_ii_val = val
+    end
     if (chan == 1 and cc == 14) then -- Set iii
-    local ctrl = controls.get(27)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-    macro_iii_name = ""  
-    --loadMacros()
-    macro_iii_val = val    
-  end
-  if (chan == 1 and cc == 15) then -- Set iv
-    local ctrl = controls.get(28)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-    macro_iv_name = ""
-    --loadMacros()
-    macro_iv_val = val    
-  end
-  if (chan == 1 and cc == 16) then -- Set v
-    local ctrl = controls.get(29)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-    macro_v_name = ""   
-    --loadMacros()
-    macro_v_val = val    
-  end 
-  if (chan == 1 and cc == 17) then -- Set vi
-    local ctrl = controls.get(30)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-    macro_vi_name = ""
-    loadMacros() -- Load all macros here as this will always be the last macro output 
-    macro_vi_val = val
-  end 
-  -- Gain & Attenuation Settings
-  if (chan == 1 and cc == 26) then -- Pre-Gain
-    local ctrl = controls.get(48)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end 
-  if (chan == 1 and cc == 18) then -- Post-Gain
-    local ctrl = controls.get(45)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  if (chan == 1 and cc == 27) then -- Attenuation
-    local ctrl = controls.get(244)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  -- Recirculator settings
-  if (chan == 1 and cc == 24) then -- Mix
-    local ctrl = controls.get(86)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  if (chan == 1 and cc == 23) then -- R4
-    local ctrl = controls.get(87)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  if (chan == 1 and cc == 22) then -- R3
-    local ctrl = controls.get(88)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  if (chan == 1 and cc == 21) then -- R2
-    local ctrl = controls.get(89)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  if (chan == 1 and cc == 20) then -- R1
-    local ctrl = controls.get(90)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  if (chan == 1 and cc == 95) then -- R5
-    local ctrl = controls.get(91)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  if (chan == 1 and cc == 96) then -- R6
-    local ctrl = controls.get(92)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end 
-  -- EQ
-  if (chan == 1 and cc == 85) then -- Mix
-    local ctrl = controls.get(137)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end 
-  if (chan == 1 and cc == 84) then -- Frequency
-    local ctrl = controls.get(138)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end 
-  if (chan == 1 and cc == 83) then -- Tilt
-    local ctrl = controls.get(139)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end     
-  -- Compressor
-  if (chan == 1 and cc == 93) then -- Tilt
-    local ctrl = controls.get(133)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  if (chan == 1 and cc == 92) then -- Ratio
-    local ctrl = controls.get(134)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  if (chan == 1 and cc == 91) then -- Attack
-    local ctrl = controls.get(135)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  if (chan == 1 and cc == 90) then -- Threshold
-    local ctrl = controls.get(136)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  -- Set Sus, Sos1, Sos2
-   if (chan == 1 and cc == 64) then --Sus
-    local ctrl = controls.get(260)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-   if (chan == 1 and cc == 66) then -- Sos1
-    local ctrl = controls.get(261)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-   if (chan == 1 and cc == 69) then -- Sos2
-    local ctrl = controls.get(262)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end   
--- Audio Input
-  if (chan == 1 and cc == 19) then -- Audio Input Level
-    local ctrl = controls.get(237)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  -- Ped1
-  if (chan == 1 and cc == 76) then -- Ped 1 Min Range
-    local ctrl = controls.get(175)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-   if (chan == 1 and cc == 77) then -- Ped 1 Max Range
-    local ctrl = controls.get(176)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end 
-  -- Ped2
-  if (chan == 1 and cc == 78) then -- Ped 2 Min Range
-    local ctrl = controls.get(177)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  if (chan == 1 and cc == 79) then -- Ped 2 Max Range
-    local ctrl = controls.get(178)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  -- Fine Tune
-  if (chan == 1 and cc == 10) then -- Fine Tune +/- 60 cents
-    local ctrl = controls.get(227)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  -- Rounding
-  if (chan == 1 and cc == 25) then -- Round Rate
-    local ctrl = controls.get(213)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  if (chan == 1 and cc == 65) then -- Round Equal
-    local ctrl = controls.get(228)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(val)
-  end
-  if (chan == 1 and cc == 28) then -- Round Initial
-    local ctrl = controls.get(209)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-   -- print("Round Initial ="..val)
-    if (val == 0) then
-      ctrl:setName("Initial Off")
-      ctrl:setColor(WHITE)
-    elseif (val == 127 or val == 1) then
-      ctrl:setName("Initial On")
-      ctrl:setColor(GREEN)
-    else
-      print("Unexpected Round Initial Read")
+        local ctrl = controls.get(27)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+        macro_iii_name = ""
+        --loadMacros()
+        macro_iii_val = val
     end
-    ctrlMsg:setValue(val)
-  end        
+    if (chan == 1 and cc == 15) then -- Set iv
+        local ctrl = controls.get(28)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+        macro_iv_name = ""
+        --loadMacros()
+        macro_iv_val = val
+    end
+    if (chan == 1 and cc == 16) then -- Set v
+        local ctrl = controls.get(29)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+        macro_v_name = ""
+        --loadMacros()
+        macro_v_val = val
+    end
+    if (chan == 1 and cc == 17) then -- Set vi
+        local ctrl = controls.get(30)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+        macro_vi_name = ""
+        loadMacros() -- Load all macros here as this will always be the last macro output 
+        macro_vi_val = val
+    end
+    -- Gain & Attenuation Settings
+    if (chan == 1 and cc == 26) then -- Pre-Gain
+        local ctrl = controls.get(48)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 18) then -- Post-Gain
+        local ctrl = controls.get(45)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 27) then -- Attenuation
+        local ctrl = controls.get(244)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    -- Recirculator settings
+    if (chan == 1 and cc == 24) then -- Mix
+        local ctrl = controls.get(86)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 23) then -- R4
+        local ctrl = controls.get(87)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 22) then -- R3
+        local ctrl = controls.get(88)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 21) then -- R2
+        local ctrl = controls.get(89)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 20) then -- R1
+        local ctrl = controls.get(90)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 95) then -- R5
+        local ctrl = controls.get(91)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 96) then -- R6
+        local ctrl = controls.get(92)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    -- EQ
+    if (chan == 1 and cc == 85) then -- Mix
+        local ctrl = controls.get(137)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 84) then -- Frequency
+        local ctrl = controls.get(138)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 83) then -- Tilt
+        local ctrl = controls.get(139)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    -- Compressor
+    if (chan == 1 and cc == 93) then -- Tilt
+        local ctrl = controls.get(133)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 92) then -- Ratio
+        local ctrl = controls.get(134)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 91) then -- Attack
+        local ctrl = controls.get(135)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 90) then -- Threshold
+        local ctrl = controls.get(136)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    -- Set Sus, Sos1, Sos2
+    if (chan == 1 and cc == 64) then --Sus
+        local ctrl = controls.get(260)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 66) then -- Sos1
+        local ctrl = controls.get(261)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 69) then -- Sos2
+        local ctrl = controls.get(262)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    -- Audio Input
+    if (chan == 1 and cc == 19) then -- Audio Input Level
+        local ctrl = controls.get(237)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    -- Ped1
+    if (chan == 1 and cc == 76) then -- Ped 1 Min Range
+        local ctrl = controls.get(175)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 77) then -- Ped 1 Max Range
+        local ctrl = controls.get(176)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    -- Ped2
+    if (chan == 1 and cc == 78) then -- Ped 2 Min Range
+        local ctrl = controls.get(177)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 79) then -- Ped 2 Max Range
+        local ctrl = controls.get(178)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    -- Fine Tune
+    if (chan == 1 and cc == 10) then -- Fine Tune +/- 60 cents
+        local ctrl = controls.get(227)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    -- Rounding
+    if (chan == 1 and cc == 25) then -- Round Rate
+        local ctrl = controls.get(213)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 65) then -- Round Equal
+        local ctrl = controls.get(228)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(val)
+    end
+    if (chan == 1 and cc == 28) then -- Round Initial
+        local ctrl = controls.get(209)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        -- print("Round Initial ="..val)
+        if (val == 0) then
+            ctrl:setName("Initial Off")
+            ctrl:setColor(WHITE)
+        elseif (val == 127 or val == 1) then
+            ctrl:setName("Initial On")
+            ctrl:setColor(GREEN)
+        else
+            print("Unexpected Round Initial Read")
+        end
+        ctrlMsg:setValue(val)
+    end
 
-  -- Mono Switch
-  if (chan == 1 and cc == 9) then -- Handle Mono Switch Button
-      local ctrl = controls.get(252)
-      local controlValue = ctrl:getValue("value")
-      local ctrlMsg = controlValue:getMessage()
-      if (val == 0) then
-        ctrl:setName("Mono Off")
-        ctrl:setColor(WHITE)
-        ctrlMsg:setValue(0)
-      else -- Mono Sw can be any value 1..128 with swtiched pedal that puts out continous data
-        ctrl:setName("Mono On")
-        ctrl:setColor(GREEN)
-        ctrlMsg:setValue(127)
-      end
-  end                                      
+    -- Mono Switch
+    if (chan == 1 and cc == 9) then -- Handle Mono Switch Button
+        local ctrl = controls.get(252)
+        local controlValue = ctrl:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        if (val == 0) then
+            ctrl:setName("Mono Off")
+            ctrl:setColor(WHITE)
+            ctrlMsg:setValue(0)
+        else -- Mono Sw can be any value 1..128 with swtiched pedal that puts out continous data
+            ctrl:setName("Mono On")
+            ctrl:setColor(GREEN)
+            ctrlMsg:setValue(127)
+        end
+    end
 end -- CC event processing
 
 function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message Events
-  local msg = midiMessage
+    local msg = midiMessage
     if (msg.channel ~= 16) then
         return
     end
@@ -728,23 +728,23 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         onEndOfSystemPresetList()
         return
     end
-    
-     if (msg.controllerNumber==109 and msg.value==54) then -- Start User Names Found
+
+    if (msg.controllerNumber==109 and msg.value==54) then -- Start User Names Found
         --print("Start getting names")
         info.setText("Getting presets...")
         userNameProcessing = true
         firstName = true
         userNameIndex=0
-     end
-     if (msg.controllerNumber==109 and msg.value==55) then -- End User Names Found
+    end
+    if (msg.controllerNumber==109 and msg.value==55) then -- End User Names Found
         --print("Finished getting names")
         setUserPresetNames()
         if (userNameProcessing == true) then
-          userNameProcessing = false
+            userNameProcessing = false
         end
         userNameProcessing = false
         userNameIndex=0
-         -- Added by SOR for getting system presets.
+        -- Added by SOR for getting system presets.
         if not haveSystemPresetsBeenUpdated then
             getSystemPresets()
         else
@@ -752,35 +752,35 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
             -- on the status bar with the version info.
             info.setText(versionText)
         end
-     end
+    end
 
-     -- Amended by SOR for getting system presets.
-     if (msg.controllerNumber==56 and msg.value==0) then
-         -- Start of system or user preset name stream
-         if isGettingSystemPresets then
-             isAccumulatingSystemPresetName = true
-             systemPresetNameBuffer = ""
-             return
-         end
-         -- Processing user presets  
-           userNameIndex = userNameIndex + 1 -- Index Lua arrays from 1
-           nameInProgress = true
-           matrixStream=false -- Has no CC56=127 terminator - new stream terminates it       
-     end
+    -- Amended by SOR for getting system presets.
+    if (msg.controllerNumber==56 and msg.value==0) then
+        -- Start of system or user preset name stream
+        if isGettingSystemPresets then
+            isAccumulatingSystemPresetName = true
+            systemPresetNameBuffer = ""
+            return
+        end
+        -- Processing user presets  
+        userNameIndex = userNameIndex + 1 -- Index Lua arrays from 1
+        nameInProgress = true
+        matrixStream=false -- Has no CC56=127 terminator - new stream terminates it       
+    end
 
-     if (msg.controllerNumber==56 and msg.value==20) then -- Matrix Stream
-           matrixStream = true
-     end
+    if (msg.controllerNumber==56 and msg.value==20) then -- Matrix Stream
+        matrixStream = true
+    end
 
-     if (msg.controllerNumber==56 and msg.value==14) then -- Convolution Stream
-           convInProgress = true
-          matrixStream=false -- Has no CC56=127 terminator - new stream terminates it 
-     end
+    if (msg.controllerNumber==56 and msg.value==14) then -- Convolution Stream
+        convInProgress = true
+        matrixStream=false -- Has no CC56=127 terminator - new stream terminates it 
+    end
 
-     if (msg.controllerNumber==56 and msg.value==15) then -- Convolution Stream
-           thumbInProgress = true
-           matrixStream=false -- Has no CC56=127 terminator - new stream terminates it       
-     end
+    if (msg.controllerNumber==56 and msg.value==15) then -- Convolution Stream
+        thumbInProgress = true
+        matrixStream=false -- Has no CC56=127 terminator - new stream terminates it       
+    end
 
     -- Amended by SOR for getting system presets.
     if (msg.controllerNumber==56 and msg.value==1) then
@@ -802,7 +802,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     if msg.controllerNumber==56 and msg.value==127 then -- End of stream
         if isAccumulatingSystemPresetName then
             isAccumulatingSystemPresetName = false
-            receivedSystemPresetName = trimTrailingNullChar(systemPresetNameBuffer) 
+            receivedSystemPresetName = trimTrailingNullChar(systemPresetNameBuffer)
             return
         end
         if isAccumulatingSystemPresetContext then
@@ -813,31 +813,31 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         end
     end
 
-      if (nameInProgress and msg.controllerNumber==56 and msg.value==127) then -- Stream Ends
-          nameInProgress=false
-          if (userNameProcessing) then
+    if (nameInProgress and msg.controllerNumber==56 and msg.value==127) then -- Stream Ends
+        nameInProgress=false
+        if (userNameProcessing) then
             if (curName == "" or curName == "-") then
-               curName = "Empty"
+                curName = "Empty"
             end
             if (string.len(curName) > 14) then -- Limit strings for congtrols to 14 chars
-              --print("CurName:|"..curName.."|")
-              local tmpstr = curName
-              curName = string.sub(tmpstr, 1, 14)
+                --print("CurName:|"..curName.."|")
+                local tmpstr = curName
+                curName = string.sub(tmpstr, 1, 14)
             end
             userNames[userNameIndex]=curName -- Store Preset name in name buffer array"
-          elseif (currentNameProcessing == true) then
-          end
-          curName="" -- Reset curName to accumulate the next name
-      elseif (contextInProgress and msg.controllerNumber==56 and msg.value==127) then
-          contextInProgress = false
-      elseif (convInProgress and msg.controllerNumber==56 and msg.value==127) then
-          convInProgress = false      
-          processConvolution() -- Process the Convolution stream                    
-      elseif (matrixStream == true and msg.controllerNumber==56 and msg.value==127) then
-         matrixStream = false  -- Won't hurt anything but 127 is not signal of matrix stream end
-      elseif (thumbInProgress) then
-         thumbInProgress = false
-      end
+        elseif (currentNameProcessing == true) then
+        end
+        curName="" -- Reset curName to accumulate the next name
+    elseif (contextInProgress and msg.controllerNumber==56 and msg.value==127) then
+        contextInProgress = false
+    elseif (convInProgress and msg.controllerNumber==56 and msg.value==127) then
+        convInProgress = false
+        processConvolution() -- Process the Convolution stream                    
+    elseif (matrixStream == true and msg.controllerNumber==56 and msg.value==127) then
+        matrixStream = false  -- Won't hurt anything but 127 is not signal of matrix stream end
+    elseif (thumbInProgress) then
+        thumbInProgress = false
+    end
 end
 
 
@@ -846,167 +846,167 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     if (isAccumulatingSystemPresetName) then
         -- Accumulate system preset name buffer
         systemPresetNameBuffer =
-            systemPresetNameBuffer ..string.char(noteNumber)..string.char(pressure)
+        systemPresetNameBuffer ..string.char(noteNumber)..string.char(pressure)
         return
     end
     -- Added by SOR for getting system presets.
     if (isAccumulatingSystemPresetContext) then
         -- Accumulate system preset context buffer
         systemPresetContextBuffer =
-            systemPresetContextBuffer ..string.char(noteNumber)..string.char(pressure)
+        systemPresetContextBuffer ..string.char(noteNumber)..string.char(pressure)
         return
     end
-      if (convInProgress) then
-         convString = convString..math.floor(noteNumber).."|"..math.floor(pressure).."|"
-         --print("CS=|"..convString.."|")--debugit       
-      end
-      if (nameInProgress) then -- Accumulate name global name buffer
-         curName = curName..string.char(noteNumber)..string.char(pressure)
-      end
-      if (lastNameInProgress) then
-         lastName = lastName..string.char(noteNumber)..string.char(pressure)      
-      end
-      if (contextProcessed and macroInProgress) then -- Accumulate Macro String
+    if (convInProgress) then
+        convString = convString..math.floor(noteNumber).."|"..math.floor(pressure).."|"
+        --print("CS=|"..convString.."|")--debugit       
+    end
+    if (nameInProgress) then -- Accumulate name global name buffer
+        curName = curName..string.char(noteNumber)..string.char(pressure)
+    end
+    if (lastNameInProgress) then
+        lastName = lastName..string.char(noteNumber)..string.char(pressure)
+    end
+    if (contextProcessed and macroInProgress) then -- Accumulate Macro String
         macroString=macroString..string.char(noteNumber)..string.char(pressure)
-      end
+    end
 
-      -- Get Velocity Usage - Read Only
-      -- 0 = Static (127), 1=Dynamic, 2 = Formula 
-      -- Ignore: MNoNote = 3, // do not output keyOn,keyOff,bends -- for CVC+Midi control of Voyager
-      -- Ignore: MMidC = 4, // nn 60 and static velocity all notes (Moog Theremin) 7.44984
-      -- Ignore: MAnnounce = 5, // announce continuum presence for SNBN
-      if (matrixStream == true and channel==16 and noteNumber == 2) then -- Note Message
+    -- Get Velocity Usage - Read Only
+    -- 0 = Static (127), 1=Dynamic, 2 = Formula 
+    -- Ignore: MNoNote = 3, // do not output keyOn,keyOff,bends -- for CVC+Midi control of Voyager
+    -- Ignore: MMidC = 4, // nn 60 and static velocity all notes (Moog Theremin) 7.44984
+    -- Ignore: MAnnounce = 5, // announce continuum presence for SNBN
+    if (matrixStream == true and channel==16 and noteNumber == 2) then -- Note Message
         local curVel = math.floor (pressure)
         local ctrl = controls.get(231)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-        if (curVel < 3) then     
-          ctrlMsg:setValue(curVel)
+        if (curVel < 3) then
+            ctrlMsg:setValue(curVel)
         else
-          print("Not Valid Velocity Mode - Ignore: "..curVel)
-        end 
-      end
-      -- Get CVC info - Read Only (need to bit map parse it)
-      if (matrixStream == true and channel==16 and noteNumber == 63) then -- CVC Info
+            print("Not Valid Velocity Mode - Ignore: "..curVel)
+        end
+    end
+    -- Get CVC info - Read Only (need to bit map parse it)
+    if (matrixStream == true and channel==16 and noteNumber == 63) then -- CVC Info
         local curCVC = math.floor (pressure)
         --print("CURCVC = "..curCVC)
         local cvcMode = curCVC & 7
         local cvcLinear = curCVC & 8
-              if (cvcLinear == 8) then
-                 cvcLinear = 1
-              else
-                 cvcLinear = 0
-              end
+        if (cvcLinear == 8) then
+            cvcLinear = 1
+        else
+            cvcLinear = 0
+        end
         local cvcOutputs = curCVC & 16
-              if (cvcOutputs == 16) then
-                 cvcOutputs = 1
-              else
-                 cvcOutputs = 0
-              end        
+        if (cvcOutputs == 16) then
+            cvcOutputs = 1
+        else
+            cvcOutputs = 0
+        end
         local cvcBase = curCVC & 112
-              if (cvcBase == 32) then
-                 cvcBase = 1
-              elseif (cvcBase == 64) then
-                 cvcBase = 2
-              elseif (cvcBase == 96) then
-                 cvcBase = 3
-              else
-                 cvcBase = 0
-              end              
+        if (cvcBase == 32) then
+            cvcBase = 1
+        elseif (cvcBase == 64) then
+            cvcBase = 2
+        elseif (cvcBase == 96) then
+            cvcBase = 3
+        else
+            cvcBase = 0
+        end
         local ctrl = controls.get(238) -- Which of the 7 modes are set
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(cvcMode)
-             
-             ctrl = controls.get(242) -- Linear or Squared
-             controlValue = ctrl:getValue("value")
-             ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(cvcLinear)
+        ctrlMsg:setValue(cvcMode)
 
-             ctrl = controls.get(243) -- Outputs
-             controlValue = ctrl:getValue("value")
-             ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(cvcOutputs) 
+        ctrl = controls.get(242) -- Linear or Squared
+        controlValue = ctrl:getValue("value")
+        ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(cvcLinear)
 
-             ctrl = controls.get(235) -- Base
-             controlValue = ctrl:getValue("value")
-             ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(cvcBase)               
-      end      
-      -- Get Bend - Read Only
-      if (matrixStream == true and channel==16 and noteNumber == 40) then -- Bend
+        ctrl = controls.get(243) -- Outputs
+        controlValue = ctrl:getValue("value")
+        ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(cvcOutputs)
+
+        ctrl = controls.get(235) -- Base
+        controlValue = ctrl:getValue("value")
+        ctrlMsg = controlValue:getMessage()
+        ctrlMsg:setValue(cvcBase)
+    end
+    -- Get Bend - Read Only
+    if (matrixStream == true and channel==16 and noteNumber == 40) then -- Bend
         local curBend = math.floor (pressure)
         local ctrl = controls.get(277)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(curBend) 
-      end
-      -- Get Base Polyphony - Read Only
-      if (matrixStream == true and channel==16 and noteNumber == 39) then -- Expanced Polyphony
+        ctrlMsg:setValue(curBend)
+    end
+    -- Get Base Polyphony - Read Only
+    if (matrixStream == true and channel==16 and noteNumber == 39) then -- Expanced Polyphony
         local curBasePoly = math.floor (pressure)
         local ctrl = controls.get(106)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(curBasePoly) 
-      end       
-      -- Get Expanded Polyphony - Read Only
-      if (matrixStream == true and channel==16 and noteNumber == 11) then -- Expanced Polyphony
+        ctrlMsg:setValue(curBasePoly)
+    end
+    -- Get Expanded Polyphony - Read Only
+    if (matrixStream == true and channel==16 and noteNumber == 11) then -- Expanced Polyphony
         local curBend = math.floor (pressure)
         local ctrl = controls.get(233)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(curBend) 
-      end      
-      -- Increased Compuation - Read Only
-      if (matrixStream == true and channel==16 and noteNumber == 5) then -- Increased Computation
+        ctrlMsg:setValue(curBend)
+    end
+    -- Increased Compuation - Read Only
+    if (matrixStream == true and channel==16 and noteNumber == 5) then -- Increased Computation
         local incComp = math.floor (pressure)
         local ctrl = controls.get(264)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-             --print("Increased Comp = "..incComp)
-             ctrlMsg:setValue(incComp) 
-      end             
-      -- Get Mono Mode
-      if (matrixStream == true and channel==16 and noteNumber == 46) then -- Mono Mode
+        --print("Increased Comp = "..incComp)
+        ctrlMsg:setValue(incComp)
+    end
+    -- Get Mono Mode
+    if (matrixStream == true and channel==16 and noteNumber == 46) then -- Mono Mode
         local monoMode = math.floor (pressure)
         local ctrl = controls.get(140)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(monoMode) 
-      end
-      -- Get Mono Interval
-      if (matrixStream == true and channel==16 and noteNumber == 48) then -- Mono Interval
+        ctrlMsg:setValue(monoMode)
+    end
+    -- Get Mono Interval
+    if (matrixStream == true and channel==16 and noteNumber == 48) then -- Mono Interval
         local monoInterval = math.floor (pressure)
         -- print("Mono Interval = "..monoInterval)
         local ctrl = controls.get(267)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(monoInterval) 
-      end 
+        ctrlMsg:setValue(monoInterval)
+    end
     --  SplitMode
-        if (matrixStream == true and channel==16 and noteNumber == 1) then -- Split Mode
+    if (matrixStream == true and channel==16 and noteNumber == 1) then -- Split Mode
         local splitMode = math.floor (pressure)
         local ctrl = controls.get(188)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(splitMode) 
-      end  
+        ctrlMsg:setValue(splitMode)
+    end
     -- SplitPoint
-        if (matrixStream == true and channel==16 and noteNumber == 45) then -- Split Mode
+    if (matrixStream == true and channel==16 and noteNumber == 45) then -- Split Mode
         local splitPoint = math.floor (pressure)
         local ctrl = controls.get(236)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(splitPoint) 
-      end
+        ctrlMsg:setValue(splitPoint)
+    end
     -- Round Mode
-        if (matrixStream == true and channel==16 and noteNumber == 10) then -- Round Mode
+    if (matrixStream == true and channel==16 and noteNumber == 10) then -- Round Mode
         local roundMode = math.floor (pressure)
         local ctrl = controls.get(210)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(roundMode) 
-      end      
+        ctrlMsg:setValue(roundMode)
+    end
     -- Recirc On/Off
     --[[
         if (matrixStream == true and channel==16 and noteNumber == 15) then -- Recirculator On/Off
@@ -1028,165 +1028,165 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
                 print("Unexpected Recirculator Control value")
              end 
         end
-    --]]      
-      -- Get Pedal 1 Assignments
-      if (matrixStream == true and channel==16 and noteNumber == 52) then -- Pedal1 Assign
+    --]]
+    -- Get Pedal 1 Assignments
+    if (matrixStream == true and channel==16 and noteNumber == 52) then -- Pedal1 Assign
         local pedal1Assign = math.floor (pressure)
         -- print("pedal1Assign = "..pedal1Assign)
         local ctrl = controls.get(143)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(pedal1Assign) 
-      end 
-      -- Get Pedal 2 Assignments
-      if (matrixStream == true and channel==16 and noteNumber == 53) then -- Pedal2 Assign
+        ctrlMsg:setValue(pedal1Assign)
+    end
+    -- Get Pedal 2 Assignments
+    if (matrixStream == true and channel==16 and noteNumber == 53) then -- Pedal2 Assign
         local pedal2Assign = math.floor (pressure)
         --print("Ped 2 Assign = "..pedal2Assign)
         local ctrl = controls.get(164)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(pedal2Assign) 
-      end
-      
-      -- Get Octave Swith mode
-      if (matrixStream == true and channel==16 and noteNumber == 7) then -- Ocatve SW mode
+        ctrlMsg:setValue(pedal2Assign)
+    end
+
+    -- Get Octave Swith mode
+    if (matrixStream == true and channel==16 and noteNumber == 7) then -- Ocatve SW mode
         local octSwitchMode = math.floor (pressure)
         --print("OctSwitch Mode = "..octSwitchMode)
         local ctrl = controls.get(173)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(octSwitchMode) 
-      end
-      -- Get Octave Range
-      if (matrixStream == true and channel==16 and noteNumber == 54) then -- Octave Swtich Range
+        ctrlMsg:setValue(octSwitchMode)
+    end
+    -- Get Octave Range
+    if (matrixStream == true and channel==16 and noteNumber == 54) then -- Octave Swtich Range
         local octRange = math.floor (pressure)
         --print("Oct Range = "..octRange)
         local ctrl = controls.get(179)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(octRange) 
-      end
-      -- Get Compressor or TANH (parameters are shared so only this needs to be done)
-      if (matrixStream == true and channel==16 and noteNumber == 16) then -- Process Compressor/Tanh
+        ctrlMsg:setValue(octRange)
+    end
+    -- Get Compressor or TANH (parameters are shared so only this needs to be done)
+    if (matrixStream == true and channel==16 and noteNumber == 16) then -- Process Compressor/Tanh
         local cOrT = math.floor (pressure)
         --print("ComporTanh = "..cOrT)
         local ctrl = controls.get(163)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(cOrT)
-        setCompOrTanh(cOrT) 
-      end
--- Get Pedal1 Assignment
-      if (matrixStream == true and channel==16 and noteNumber == 52) then 
+        setCompOrTanh(cOrT)
+    end
+    -- Get Pedal1 Assignment
+    if (matrixStream == true and channel==16 and noteNumber == 52) then
         local ped1 = math.floor (pressure)
         local ctrl = controls.get(143)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(ped1) 
-      end
--- Get Pedal2 Assignment
-      if (matrixStream == true and channel==16 and noteNumber == 53) then 
+        ctrlMsg:setValue(ped1)
+    end
+    -- Get Pedal2 Assignment
+    if (matrixStream == true and channel==16 and noteNumber == 53) then
         local ped2 = math.floor (pressure)
         local ctrl = controls.get(164)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(ped2) 
-      end                         
+        ctrlMsg:setValue(ped2)
+    end
     -- Direction
-      if (matrixStream == true and channel==16 and noteNumber == 9) then -- Ocatve SW mode
+    if (matrixStream == true and channel==16 and noteNumber == 9) then -- Ocatve SW mode
         local direction = math.floor (pressure)
         --print("Direction = "..direction)
         local ctrl = controls.get(253)
         local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()       
+        local ctrlMsg = controlValue:getMessage()
         if (direction == 0) then
-           ctrl:setName("Normal")
-           ctrl:setColor(GREEN)
-           ctrlMsg:setValue(direction)            
+            ctrl:setName("Normal")
+            ctrl:setColor(GREEN)
+            ctrlMsg:setValue(direction)
         elseif (direction == 1) then
-           ctrl:setName("Reverse")
-           ctrl:setColor(RED)
-           ctrlMsg:setValue(direction)            
+            ctrl:setName("Reverse")
+            ctrl:setColor(RED)
+            ctrlMsg:setValue(direction)
         else
-           print("Unexpected Direction: "..direction)
-        end         
-      end
-      -- Preserve Surface
-      if (matrixStream == true and channel==16 and noteNumber == 56) then -- Ocatve SW mode
+            print("Unexpected Direction: "..direction)
+        end
+    end
+    -- Preserve Surface
+    if (matrixStream == true and channel==16 and noteNumber == 56) then -- Ocatve SW mode
         local presSurf = math.floor (pressure)
         --print("Preserve Surface = "..presSurf)
         local ctrl = controls.get(167)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(presSurf)
+        ctrlMsg:setValue(presSurf)
         if (presSurf == 0) then
-           ctrl:setName("Replace")
-           ctrl:setColor(GREEN)
+            ctrl:setName("Replace")
+            ctrl:setColor(GREEN)
         elseif (presSurf == 1) then
-           ctrl:setName("Preserve")
-           ctrl:setColor(RED)                   
+            ctrl:setName("Preserve")
+            ctrl:setColor(RED)
         else
-           print("Unexpected Preserve Surface")
-        end 
-      end
-      -- Preserve Pedals
-      if (matrixStream == true and channel==16 and noteNumber == 57) then -- Ocatve SW mode
+            print("Unexpected Preserve Surface")
+        end
+    end
+    -- Preserve Pedals
+    if (matrixStream == true and channel==16 and noteNumber == 57) then -- Ocatve SW mode
         local presPed = math.floor (pressure)
         --print("Preserve Surface = "..presPed)
         local ctrl = controls.get(168)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(presPed)
+        ctrlMsg:setValue(presPed)
         if (presPed == 0) then
-           ctrl:setName("Replace")
-           ctrl:setColor(GREEN)
+            ctrl:setName("Replace")
+            ctrl:setColor(GREEN)
         elseif (presPed == 1) then
-           ctrl:setName("Preserve")
-           ctrl:setColor(RED)                   
+            ctrl:setName("Preserve")
+            ctrl:setColor(RED)
         else
-           print("Unexpected Preserve Pedals")
-        end 
-      end
-      -- Preserve Midi
-      if (matrixStream == true and channel==16 and noteNumber == 58) then -- Ocatve SW mode
+            print("Unexpected Preserve Pedals")
+        end
+    end
+    -- Preserve Midi
+    if (matrixStream == true and channel==16 and noteNumber == 58) then -- Ocatve SW mode
         local presMid = math.floor (pressure)
         --print("Preserve Surface = "..presMid)
         local ctrl = controls.get(169)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-             ctrlMsg:setValue(presMid)
+        ctrlMsg:setValue(presMid)
         if (presMid == 0) then
-           ctrl:setName("Replace")
-           ctrl:setColor(GREEN)
+            ctrl:setName("Replace")
+            ctrl:setColor(GREEN)
         elseif (presMid == 1) then
-           ctrl:setName("Preserve")
-           ctrl:setColor(RED)                   
+            ctrl:setName("Preserve")
+            ctrl:setColor(RED)
         else
-           print("Unexpected Preserve Midi")
-        end 
-      end                                         
-      -- Process Middle C - Transpose
-      if (matrixStream == true and channel==16 and noteNumber == 44) then -- MiddleC/Transpose
+            print("Unexpected Preserve Midi")
+        end
+    end
+    -- Process Middle C - Transpose
+    if (matrixStream == true and channel==16 and noteNumber == 44) then -- MiddleC/Transpose
         local xposeAssign = math.floor (pressure)
         local ctrl = controls.get(78)
         local controlValue = ctrl:getValue("value")
         --local ctrlMsg = controlValue:getMessage()
         -- print("Transpose Val = "..xposeAssign)
         if (xposeAssign == 0) then
-        -- nothing
+            -- nothing
         elseif (xposeAssign == 60) then
-          ctrl:setName("Transpose Off")
-          ctrl:setColor(WHITE)
+            ctrl:setName("Transpose Off")
+            ctrl:setColor(WHITE)
         elseif (xposeAssign > 60) then
-          xAmt = xposeAssign - 60
-         ctrl:setName("Up "..xAmt.." st")
-         ctrl:setColor(GREEN)
+            xAmt = xposeAssign - 60
+            ctrl:setName("Up "..xAmt.." st")
+            ctrl:setColor(GREEN)
         else
-         xAmt = 60 - xposeAssign
-         ctrl:setName("Down "..xAmt.." st")
-         ctrl:setColor(GREEN)    
-        end              
-      end              
+            xAmt = 60 - xposeAssign
+            ctrl:setName("Down "..xAmt.." st")
+            ctrl:setColor(GREEN)
+        end
+    end
 
 end -- of pPress settings
 
@@ -1194,7 +1194,7 @@ function clearMacros() -- Set all Macros to 0 and set names to blank
     local ctrl --= controls.get(25)
     local controlValue --= ctrl:getValue("value")
     local ctrlMsg --= controlValue:getMessage()
-    for i=25,30 
+    for i=25,30
     do
         ctrl = controls.get(i)
         ctrl:setName("")
@@ -1205,8 +1205,8 @@ function clearMacros() -- Set all Macros to 0 and set names to blank
 end
 
 function getNames(valueObject, value)
-     resetMute() -- reset in case on from previous preset
-     midi.sendControlChange(DEVICE_PORT, 16, 109, 32) -- Send Names Request
+    resetMute() -- reset in case on from previous preset
+    midi.sendControlChange(DEVICE_PORT, 16, 109, 32) -- Send Names Request
 end
 
 --function storeUserSelections()
@@ -1214,372 +1214,372 @@ end
 --end
 
 function getMacroName (str, len)
-   local tmpStr = str
-   local sLen = len
-   local finalStr=""
-   local ix = 1
-   local iy = 0 
-   local iz = 0
-   while (ix <= sLen) 
-   do
-      if (tmpStr:sub(ix,ix) == " " or tmpStr:sub(ix,ix) =="_" or tmpStr:sub(ix,ix) == "#") then
-        -- Handle strange case where # is not getting recognized for some reason - reported the bug
-        iy,iz = string.find(finalStr, "C=") -- "C#" may come after last macro
-        if (iy ~= nil and iz~=nil) then
-           tmpStr = finalStr:sub(1,iy-2)
-           return tmpStr
-        else
-          iy,iz = string.find(finalStr, "A=") -- "Author String should come after last macro
-          if (iy ~= nil and iz~=nil) then
-             tmpStr = finalStr:sub(1,iy-2)
-             return tmpStr
-          else
-            return finalStr
-          end
-        end        
-      end
-      finalStr = finalStr..tmpStr:sub(ix,ix) -- first character in macro name
-      ix = ix + 1
-   end
-   return finalStr
+    local tmpStr = str
+    local sLen = len
+    local finalStr=""
+    local ix = 1
+    local iy = 0
+    local iz = 0
+    while (ix <= sLen)
+    do
+        if (tmpStr:sub(ix,ix) == " " or tmpStr:sub(ix,ix) =="_" or tmpStr:sub(ix,ix) == "#") then
+            -- Handle strange case where # is not getting recognized for some reason - reported the bug
+            iy,iz = string.find(finalStr, "C=") -- "C#" may come after last macro
+            if (iy ~= nil and iz~=nil) then
+                tmpStr = finalStr:sub(1,iy-2)
+                return tmpStr
+            else
+                iy,iz = string.find(finalStr, "A=") -- "Author String should come after last macro
+                if (iy ~= nil and iz~=nil) then
+                    tmpStr = finalStr:sub(1,iy-2)
+                    return tmpStr
+                else
+                    return finalStr
+                end
+            end
+        end
+        finalStr = finalStr..tmpStr:sub(ix,ix) -- first character in macro name
+        ix = ix + 1
+    end
+    return finalStr
 end
 
 function loadMacros()
-  local mStr = macroString
-  local sLen = string.len(mStr)
-  local tLen = sLen
-  local tmpStr = ""
-  local tStr = ""
-  local finalStr = ""
-  local s1 = 0
-  local s2 = 0
-  local lastInd = 0
-  local ifound=false
-  local iifound=false
-  local iiifound=false
-  local vfound=false
-  local vifound=false
-  
-  --initMacros() -- clear out macro data
-  --print("Macro String: "..mStr)--debugit
-  -- Blank out Macros Names.
+    local mStr = macroString
+    local sLen = string.len(mStr)
+    local tLen = sLen
+    local tmpStr = ""
+    local tStr = ""
+    local finalStr = ""
+    local s1 = 0
+    local s2 = 0
+    local lastInd = 0
+    local ifound=false
+    local iifound=false
+    local iiifound=false
+    local vfound=false
+    local vifound=false
 
-  control=controls.get(25)
-  control:setName("")
-  control=controls.get(26)
-  control:setName("")
-  control=controls.get(27)
-  control:setName("")
-  control=controls.get(28)
-  control:setName("")
-  control=controls.get(29)
-  control:setName("")
-  control=controls.get(30)
-  control:setName("") 
- 
+    --initMacros() -- clear out macro data
+    --print("Macro String: "..mStr)--debugit
+    -- Blank out Macros Names.
 
- for i=1,3
- do
-   if (mStr:sub(i,i) == "=") then -- get initial i, ii or v
-      if (i == 2 and mStr:sub(i-1, i-1) =="i") then -- Initial i
-        tmpStr=mStr:sub(i+1,sLen)
+    control=controls.get(25)
+    control:setName("")
+    control=controls.get(26)
+    control:setName("")
+    control=controls.get(27)
+    control:setName("")
+    control=controls.get(28)
+    control:setName("")
+    control=controls.get(29)
+    control:setName("")
+    control=controls.get(30)
+    control:setName("")
+
+
+    for i=1,3
+    do
+        if (mStr:sub(i,i) == "=") then -- get initial i, ii or v
+            if (i == 2 and mStr:sub(i-1, i-1) =="i") then -- Initial i
+                tmpStr=mStr:sub(i+1,sLen)
+                tLen = string.len(tmpStr)
+                finalStr = getMacroName(tmpStr, tLen)
+                --print ("Macro i= "..finalStr)
+                control=controls.get(25)
+                control:setName(finalStr)
+                macro_i_name = finalStr -- store macro name for restore on page change
+            elseif (i == 2 and mStr:sub(i-1, i-1) =="v") then -- Initial v
+                tmpStr=mStr:sub(i+1,sLen)
+                tLen = string.len(tmpStr)
+                finalStr = getMacroName(tmpStr, tLen)
+                --print ("Macro v= "..finalStr)
+                control=controls.get(29)
+                control:setName(finalStr)
+                macro_v_name = finalStr
+            elseif (i==3 and mStr:sub(i-1, i-1)=="i" and mStr:sub(i-2, i-2)=="i") then -- Initial ii
+                tmpStr=mStr:sub(i+1,sLen)
+                tLen = string.len(tmpStr)
+                finalStr = getMacroName(tmpStr, tLen)
+                --print ("Macro ii= "..finalStr)
+                control=controls.get(26)
+                control:setName(finalStr)
+                macro_ii_name = finalStr
+            end -- Eerything else should now have a space before it and can be parse with find     
+            i = i+1
+        end
+
+    end -- for
+
+    -- Handle All regular cases
+    s1,s2 = string.find(mStr, " i=")
+    if (s1 ~= nil and s2 ~= nil) then
+        tmpStr=mStr:sub(s2+1,sLen)
         tLen = string.len(tmpStr)
         finalStr = getMacroName(tmpStr, tLen)
         --print ("Macro i= "..finalStr)
         control=controls.get(25)
         control:setName(finalStr)
-        macro_i_name = finalStr -- store macro name for restore on page change
-      elseif (i == 2 and mStr:sub(i-1, i-1) =="v") then -- Initial v
-        tmpStr=mStr:sub(i+1,sLen)
+        macro_i_name = finalStr
+    end
+    s1,s2 = string.find(mStr, " ii=")
+    if (s1 ~= nil and s2 ~= nil) then
+        tmpStr=mStr:sub(s2+1,sLen)
+        tLen = string.len(tmpStr)
+        finalStr = getMacroName(tmpStr, tLen)
+        --print ("Macro ii= "..finalStr)
+        control=controls.get(26)
+        control:setName(finalStr)
+        macro_ii_name = finalStr
+    end
+    s1,s2 = string.find(mStr, " v=")
+    if (s1 ~= nil and s2 ~= nil) then
+        tmpStr=mStr:sub(s2+1,sLen)
         tLen = string.len(tmpStr)
         finalStr = getMacroName(tmpStr, tLen)
         --print ("Macro v= "..finalStr)
         control=controls.get(29)
         control:setName(finalStr)
-        macro_v_name = finalStr              
-      elseif (i==3 and mStr:sub(i-1, i-1)=="i" and mStr:sub(i-2, i-2)=="i") then -- Initial ii
-        tmpStr=mStr:sub(i+1,sLen)
-        tLen = string.len(tmpStr)       
+        macro_v_name = finalStr
+    end
+    s1,s2 = string.find(mStr, "iv=")
+    if (s1 ~= nil and s2 ~= nil) then
+        tmpStr=mStr:sub(s2+1,sLen)
+        tLen = string.len(tmpStr)
         finalStr = getMacroName(tmpStr, tLen)
-        --print ("Macro ii= "..finalStr)
-        control=controls.get(26)
+        --print ("Macro iv= "..finalStr)
+        control=controls.get(28)
         control:setName(finalStr)
-        macro_ii_name = finalStr          
-      end -- Eerything else should now have a space before it and can be parse with find     
-      i = i+1
-   end    
-   
- end -- for
-
--- Handle All regular cases
-  s1,s2 = string.find(mStr, " i=")
-  if (s1 ~= nil and s2 ~= nil) then
-    tmpStr=mStr:sub(s2+1,sLen)
-    tLen = string.len(tmpStr)
-    finalStr = getMacroName(tmpStr, tLen)
-    --print ("Macro i= "..finalStr)
-    control=controls.get(25)
-    control:setName(finalStr)
-    macro_i_name = finalStr          
-  end  
-  s1,s2 = string.find(mStr, " ii=")
-  if (s1 ~= nil and s2 ~= nil) then
-    tmpStr=mStr:sub(s2+1,sLen)
-    tLen = string.len(tmpStr)
-    finalStr = getMacroName(tmpStr, tLen)
-    --print ("Macro ii= "..finalStr)
-    control=controls.get(26)
-    control:setName(finalStr)    
-    macro_ii_name = finalStr      
-  end  
-  s1,s2 = string.find(mStr, " v=")
-  if (s1 ~= nil and s2 ~= nil) then
-    tmpStr=mStr:sub(s2+1,sLen)
-    tLen = string.len(tmpStr)
-    finalStr = getMacroName(tmpStr, tLen)
-    --print ("Macro v= "..finalStr)
-    control=controls.get(29)
-    control:setName(finalStr)    
-    macro_v_name = finalStr  
-  end   
- s1,s2 = string.find(mStr, "iv=")
-  if (s1 ~= nil and s2 ~= nil) then
-    tmpStr=mStr:sub(s2+1,sLen)
-    tLen = string.len(tmpStr)
-    finalStr = getMacroName(tmpStr, tLen)
-    --print ("Macro iv= "..finalStr)
-    control=controls.get(28)
-    control:setName(finalStr)    
-    macro_iv_name = finalStr      
-  end 
-  s1,s2 = string.find(mStr, "iii=")
-  if (s1 ~= nil and s2 ~= nil) then
-    tmpStr=mStr:sub(s2+1,sLen)
-    tLen = string.len(tmpStr)
-    finalStr = getMacroName(tmpStr, tLen)
-    --print ("Macro vi= "..finalStr)
-    control=controls.get(27)
-    control:setName(finalStr)    
-    macro_iii_name = finalStr  
-  end 
-     -- Process g1/v
-  s1,s2 = string.find(mStr, "g1=")
-  if (s1 ~= nil and s2 ~= nil) then
-    tmpStr=mStr:sub(s2+1,sLen)
-    tLen = string.len(tmpStr)
-    finalStr = getMacroName(tmpStr, tLen)
-    --print ("Macro v= "..finalStr)
-    control=controls.get(29)
-    control:setName(finalStr)    
-    macro_v_name = finalStr  
-  end
-  -- Process vi
+        macro_iv_name = finalStr
+    end
+    s1,s2 = string.find(mStr, "iii=")
+    if (s1 ~= nil and s2 ~= nil) then
+        tmpStr=mStr:sub(s2+1,sLen)
+        tLen = string.len(tmpStr)
+        finalStr = getMacroName(tmpStr, tLen)
+        --print ("Macro vi= "..finalStr)
+        control=controls.get(27)
+        control:setName(finalStr)
+        macro_iii_name = finalStr
+    end
+    -- Process g1/v
+    s1,s2 = string.find(mStr, "g1=")
+    if (s1 ~= nil and s2 ~= nil) then
+        tmpStr=mStr:sub(s2+1,sLen)
+        tLen = string.len(tmpStr)
+        finalStr = getMacroName(tmpStr, tLen)
+        --print ("Macro v= "..finalStr)
+        control=controls.get(29)
+        control:setName(finalStr)
+        macro_v_name = finalStr
+    end
+    -- Process vi
     -- Process g2/vi
-  s1,s2 = string.find(mStr, "vi=")
-  if (s1 ~= nil and s2 ~= nil) then
-    tmpStr=mStr:sub(s2+1,sLen)
-    tLen = string.len(tmpStr)
-    finalStr = getMacroName(tmpStr, tLen)
-    --print ("Macro vi= "..finalStr)
-    control=controls.get(30)
-    control:setName(finalStr)   
-    macro_vi_name = finalStr   
-  end
-  -- Process g2/vi
-  s1,s2 = string.find(mStr, "g2=")
-  if (s1 ~= nil and s2 ~= nil) then
-    tmpStr=mStr:sub(s2+1,sLen)
-    tLen = string.len(tmpStr)
-    finalStr = getMacroName(tmpStr, tLen)
-    --print ("Macro vi= "..finalStr)
-    control=controls.get(30)
-    control:setName(finalStr)    
-    macro_vi_name = finalStr  
-  end
-  macroInProgress = false
+    s1,s2 = string.find(mStr, "vi=")
+    if (s1 ~= nil and s2 ~= nil) then
+        tmpStr=mStr:sub(s2+1,sLen)
+        tLen = string.len(tmpStr)
+        finalStr = getMacroName(tmpStr, tLen)
+        --print ("Macro vi= "..finalStr)
+        control=controls.get(30)
+        control:setName(finalStr)
+        macro_vi_name = finalStr
+    end
+    -- Process g2/vi
+    s1,s2 = string.find(mStr, "g2=")
+    if (s1 ~= nil and s2 ~= nil) then
+        tmpStr=mStr:sub(s2+1,sLen)
+        tLen = string.len(tmpStr)
+        finalStr = getMacroName(tmpStr, tLen)
+        --print ("Macro vi= "..finalStr)
+        control=controls.get(30)
+        control:setName(finalStr)
+        macro_vi_name = finalStr
+    end
+    macroInProgress = false
 end
 
 function loadPreset(valueObject, value) -- Load up a preset on pressing button 1-16 offset for bank
-  macroInProgress = true
-  --nameInProgress = false -- debugit
-  -- Initialize controls for new preset
-  clearInfo()
-  --clearMacros()
-  resetMute()
-  --initMacros()
-  local presetPos = valueObject:getMessage():getValue()
+    macroInProgress = true
+    --nameInProgress = false -- debugit
+    -- Initialize controls for new preset
+    clearInfo()
+    --clearMacros()
+    resetMute()
+    --initMacros()
+    local presetPos = valueObject:getMessage():getValue()
 
-  if (presetPos == 0) then -- adjust for initialization
-  --  -- Changing pages triggers Control #1 with 0 value (not sure why) return
-   return
-  end
-  
-  if (presetPos+presetOffset >=0 and presetPos+presetOffset-1 < 128) then
-     midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- CC0 = 0 (Category 0 = USer Presets)
-     midi.sendControlChange(DEVICE_PORT, 16, 32, 0)  -- CC 32 = 0 (< 129 presets)
-     midi.sendProgramChange(DEVICE_PORT, 16, presetPos+presetOffset-1) -- User Preset Program change 0..127
-     currentPresetIndex = presetPos+presetOffset-1
-     -- Display Current Preset Name  
-     lastName = userNames[presetPos+presetOffset] -- Override last name
-     control = controls.get(50)
-     control:setName(userNames[presetPos+presetOffset])
-     midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values            
-  else
-     print("Unexpected Preset Index: "..presetPos+presetOffset-1)
-  end
+    if (presetPos == 0) then -- adjust for initialization
+        --  -- Changing pages triggers Control #1 with 0 value (not sure why) return
+        return
+    end
 
-  -- Set Sustain, Sos1 and Sos2 off just in case conflict with Tranposition parameters
-     midi.sendControlChange(DEVICE_PORT, 1, 64, 0) -- Sustain off
-     midi.sendControlChange(DEVICE_PORT, 1, 66, 0) -- Sos1 Off
-     midi.sendControlChange(DEVICE_PORT, 1, 69, 0) -- Sos2 Off
-  
+    if (presetPos+presetOffset >=0 and presetPos+presetOffset-1 < 128) then
+        midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- CC0 = 0 (Category 0 = USer Presets)
+        midi.sendControlChange(DEVICE_PORT, 16, 32, 0)  -- CC 32 = 0 (< 129 presets)
+        midi.sendProgramChange(DEVICE_PORT, 16, presetPos+presetOffset-1) -- User Preset Program change 0..127
+        currentPresetIndex = presetPos+presetOffset-1
+        -- Display Current Preset Name  
+        lastName = userNames[presetPos+presetOffset] -- Override last name
+        control = controls.get(50)
+        control:setName(userNames[presetPos+presetOffset])
+        midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values            
+    else
+        print("Unexpected Preset Index: "..presetPos+presetOffset-1)
+    end
 
-  -- Set Active Controls to set 1 qhere you can change macro 
-  -- pages.setActiveControlSet(1)  
+    -- Set Sustain, Sos1 and Sos2 off just in case conflict with Tranposition parameters
+    midi.sendControlChange(DEVICE_PORT, 1, 64, 0) -- Sustain off
+    midi.sendControlChange(DEVICE_PORT, 1, 66, 0) -- Sos1 Off
+    midi.sendControlChange(DEVICE_PORT, 1, 69, 0) -- Sos2 Off
+
+
+    -- Set Active Controls to set 1 qhere you can change macro 
+    -- pages.setActiveControlSet(1)  
 end
 
 function setUserPresetPos (valueObject, value)
-   presetPosSelect = valueObject:getMessage():getValue() -- Store the current preset position selected as user store 
-   
-   group = groups.get(49)
-   control = controls.get(50)
-   if (value == 0) then -- Make red if its in store preset mode
-      control:setColor(ORANGE)
-      group:setLabel("CURRENT PRESET")
-      group:setColor(ORANGE) 
-   else
-      control:setColor(RED)
-      group:setLabel("Store Preset")
-      group:setColor(RED)       
-   end
+    presetPosSelect = valueObject:getMessage():getValue() -- Store the current preset position selected as user store 
+
+    group = groups.get(49)
+    control = controls.get(50)
+    if (value == 0) then -- Make red if its in store preset mode
+        control:setColor(ORANGE)
+        group:setLabel("CURRENT PRESET")
+        group:setColor(ORANGE)
+    else
+        control:setColor(RED)
+        group:setLabel("Store Preset")
+        group:setColor(RED)
+    end
 end
 
 function storeUserPreset (valueObject, value)
-  local stringProcessing = true
-  local strIndex = 1
-  local slen = 0
-  local ascii1 = ""
-  local ascii2 = ""
-  --local presetPos
-  local tStr = ""
-  local s1 = 0
-  local s2 = 0
-  local whichUserButton = 0
-  local control = controls.get(50)
-  local tStr = control:getName()
-  
-  if (presetPosSelect == 0) then -- no write if preset is not selected (initial pick list item)
-    if (storeInitialized == false) then -- handle stupid Electra One init process
-       storeInitialized = true
-       return
-    end   
-    info.setText("Select Preset Pos") 
-    return
-  else
-    clearInfo()
-  end
-  -- Don't initialize this function
-  whichUserButton = (presetPosSelect) % 16
-  if (whichUserButton == 0) then
-       whichUserButton = 16
-  end 
-  local userControl = controls.get(whichUserButton) -- Don't ever change control numbers of user presets
-  userControl:setName(tStr) 
-  getNames(valueObject, value) -- Reset the names to have correct preset displayed
-  
-  if (tStr == "CURRENT PRESET") then -- No preset position was selected to store in - return
-    info.setText("Select User Preset")
-    return
-  end  
-  
-  -- print("Init Storestring = "..tStr) -- debugit
+    local stringProcessing = true
+    local strIndex = 1
+    local slen = 0
+    local ascii1 = ""
+    local ascii2 = ""
+    --local presetPos
+    local tStr = ""
+    local s1 = 0
+    local s2 = 0
+    local whichUserButton = 0
+    local control = controls.get(50)
+    local tStr = control:getName()
 
-  s1,s2 = string.find(tStr,"%.")
-  if (s1 ~= nil and s2 ~= nil) then
-  -- Remove any trailing .n (we won't use that)
-     pStr = tStr:sub(1,s1-1)
-     --print("Storestring= "..pStr)
-  else
-     pStr = tStr
-  end
-  -- For no - remove .dot sufix
- -- if (pStr ~= "-") then
- --   local tmpname = pStr.."."..tostring(whichUserButton)
- --   pStr = tmpname
- -- end
-  -- print("Store name = "..pStr)
-  
-  slen = string.len(pStr)
-  midi.sendControlChange(DEVICE_PORT, 16, 56, 0) -- Start preset string
-  while (strIndex <= slen) 
-  do
-      if (strIndex+1 <= slen) then -- 2 characters available to send
-        ascii1 = string.sub(pStr, strIndex, strIndex)
-        ascii2 = string.sub(pStr, strIndex+1, strIndex+1)
-        midi.sendAfterTouchPoly(DEVICE_PORT, 16, string.byte(ascii1), string.byte(ascii2))
-        --print ("Echars ="..ascii1..ascii2)
-        strIndex = strIndex + 2
-      else -- Last two chars - Odd number characters - zero fill
-        ascii1 = string.sub(pStr, strIndex, strIndex)
-        --print ("Ochars ="..ascii1.."0")                          
-        midi.sendAfterTouchPoly(DEVICE_PORT, 16, string.byte(ascii1), 0) 
-        strIndex = strIndex + 1 
-      end
-      --strIndex = strIndex + 2 -- bump by 2 chars
-  end
-  -- Sequence needed to just store current preset back to its position
-     -- print("Storing to Preset position: "..presetPosSelect-1)
-     midi.sendControlChange(DEVICE_PORT, 16, 56, 127) -- End Preset string
-     midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- Send CC0/CC32
-     midi.sendControlChange(DEVICE_PORT, 16, 32, 0)  
-     midi.sendControlChange(DEVICE_PORT, 16, 112, presetPosSelect-1) -- Send Store Command
-     midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- Send CC0/C32
-     --midi.sendControlChange(DEVICE_PORT, 16, 32, 0)enablere
-     midi.sendProgramChange(DEVICE_PORT, 16, presetPosSelect-1)  -- Send Program change - current preset to user position    
-  -- Update current preset name
-  --   control=controls.get()
-  -- Reset so Store is no longer active
-     local ctrl = controls.get(32) -- Preset index
-     local controlValue = ctrl:getValue("value")
-     local ctrlMsg = controlValue:getMessage()
-     ctrlMsg:setValue(0) -- Reset Store control
+    if (presetPosSelect == 0) then -- no write if preset is not selected (initial pick list item)
+        if (storeInitialized == false) then -- handle stupid Electra One init process
+            storeInitialized = true
+            return
+        end
+        info.setText("Select Preset Pos")
+        return
+    else
+        clearInfo()
+    end
+    -- Don't initialize this function
+    whichUserButton = (presetPosSelect) % 16
+    if (whichUserButton == 0) then
+        whichUserButton = 16
+    end
+    local userControl = controls.get(whichUserButton) -- Don't ever change control numbers of user presets
+    userControl:setName(tStr)
+    getNames(valueObject, value) -- Reset the names to have correct preset displayed
+
+    if (tStr == "CURRENT PRESET") then -- No preset position was selected to store in - return
+        info.setText("Select User Preset")
+        return
+    end
+
+    -- print("Init Storestring = "..tStr) -- debugit
+
+    s1,s2 = string.find(tStr,"%.")
+    if (s1 ~= nil and s2 ~= nil) then
+        -- Remove any trailing .n (we won't use that)
+        pStr = tStr:sub(1,s1-1)
+        --print("Storestring= "..pStr)
+    else
+        pStr = tStr
+    end
+    -- For no - remove .dot sufix
+    -- if (pStr ~= "-") then
+    --   local tmpname = pStr.."."..tostring(whichUserButton)
+    --   pStr = tmpname
+    -- end
+    -- print("Store name = "..pStr)
+
+    slen = string.len(pStr)
+    midi.sendControlChange(DEVICE_PORT, 16, 56, 0) -- Start preset string
+    while (strIndex <= slen)
+    do
+        if (strIndex+1 <= slen) then -- 2 characters available to send
+            ascii1 = string.sub(pStr, strIndex, strIndex)
+            ascii2 = string.sub(pStr, strIndex+1, strIndex+1)
+            midi.sendAfterTouchPoly(DEVICE_PORT, 16, string.byte(ascii1), string.byte(ascii2))
+            --print ("Echars ="..ascii1..ascii2)
+            strIndex = strIndex + 2
+        else -- Last two chars - Odd number characters - zero fill
+            ascii1 = string.sub(pStr, strIndex, strIndex)
+            --print ("Ochars ="..ascii1.."0")                          
+            midi.sendAfterTouchPoly(DEVICE_PORT, 16, string.byte(ascii1), 0)
+            strIndex = strIndex + 1
+        end
+        --strIndex = strIndex + 2 -- bump by 2 chars
+    end
+    -- Sequence needed to just store current preset back to its position
+    -- print("Storing to Preset position: "..presetPosSelect-1)
+    midi.sendControlChange(DEVICE_PORT, 16, 56, 127) -- End Preset string
+    midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- Send CC0/CC32
+    midi.sendControlChange(DEVICE_PORT, 16, 32, 0)
+    midi.sendControlChange(DEVICE_PORT, 16, 112, presetPosSelect-1) -- Send Store Command
+    midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- Send CC0/C32
+    --midi.sendControlChange(DEVICE_PORT, 16, 32, 0)enablere
+    midi.sendProgramChange(DEVICE_PORT, 16, presetPosSelect-1)  -- Send Program change - current preset to user position    
+    -- Update current preset name
+    --   control=controls.get()
+    -- Reset so Store is no longer active
+    local ctrl = controls.get(32) -- Preset index
+    local controlValue = ctrl:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(0) -- Reset Store control
 end
 
 
 function preset.onLoad()
-  -- Disable things not yet supported
-  -- print("OnLoad Called")
-  userNameProcessing = false
-  --nameInProgress = false
-  macroInProgress = false
-  userNameIndex = 0
-  curName=""
-  lastName=""
-  curCategory = 1
- -- Make sure Transposition controls in right initial state
-  --control=controls.get(78)
-  --control:setName("Transpose Off")
-  --matrixPoke(44, 60) -- Set default MiddleC
+    -- Disable things not yet supported
+    -- print("OnLoad Called")
+    userNameProcessing = false
+    --nameInProgress = false
+    macroInProgress = false
+    userNameIndex = 0
+    curName=""
+    lastName=""
+    curCategory = 1
+    -- Make sure Transposition controls in right initial state
+    --control=controls.get(78)
+    --control:setName("Transpose Off")
+    --matrixPoke(44, 60) -- Set default MiddleC
 
- -- Reset Recirc On when loading program (maybe later try reading state)
+    -- Reset Recirc On when loading program (maybe later try reading state)
     --matrixPoke (15, 0) -- Enable Recirc = 0
     --control=controls.get(158)   
     --control:setName("Enabled")
-  -- sleep(2)
-  -- Get iniitial names
+    -- sleep(2)
+    -- Get iniitial names
 
 end
 
 -- Set User Preset names - they are controls 1-16
 function setUserPresetNames()
-  presetOffset = 0
-  for i = 1,16
-  do 
-    control = controls.get(i) 
-    control:setName(userNames[i])
-    --print(userNames[i]) -- debugit
-  end
-  -- Set the preset tags
+    presetOffset = 0
+    for i = 1,16
+    do
+        control = controls.get(i)
+        control:setName(userNames[i])
+        --print(userNames[i]) -- debugit
+    end
+    -- Set the preset tags
     group = groups.get(51)
     group:setLabel("User 1")
     group = groups.get(52)
@@ -1611,17 +1611,17 @@ function setUserPresetNames()
     group = groups.get(155)
     group:setLabel("User 15")
     group = groups.get(156)
-    group:setLabel("User 16")          
+    group:setLabel("User 16")
 end
 function setPresetsAt17()
-  presetOffset = 16  
-  for i = 17,32
-  do 
-    control = controls.get(i-presetOffset)
-    control:setName(userNames[i])
-  end
+    presetOffset = 16
+    for i = 17,32
+    do
+        control = controls.get(i-presetOffset)
+        control:setName(userNames[i])
+    end
 
-  -- Set the preset tags  
+    -- Set the preset tags  
     group = groups.get(51)
     group:setLabel("User 17")
     group = groups.get(52)
@@ -1653,17 +1653,17 @@ function setPresetsAt17()
     group = groups.get(155)
     group:setLabel("User 31")
     group = groups.get(156)
-    group:setLabel("User 32")    
+    group:setLabel("User 32")
 end
 function setPresetsAt33()
-  presetOffset = 32  
-  for i = 33,48
-  do 
-    control = controls.get(i-presetOffset)
-    control:setName(userNames[i])
-  end
+    presetOffset = 32
+    for i = 33,48
+    do
+        control = controls.get(i-presetOffset)
+        control:setName(userNames[i])
+    end
 
-  -- Set the preset tags
+    -- Set the preset tags
     group = groups.get(51)
     group:setLabel("User 33")
     group = groups.get(52)
@@ -1695,17 +1695,17 @@ function setPresetsAt33()
     group = groups.get(155)
     group:setLabel("User 47")
     group = groups.get(156)
-    group:setLabel("User 48")    
+    group:setLabel("User 48")
 end
 
 function setPresetsAt49()
-  presetOffset = 48 
-  for i = 49,64
-  do 
-    control = controls.get(i-presetOffset)
-    control:setName(userNames[i])
-  end
-  -- Set the preset tags
+    presetOffset = 48
+    for i = 49,64
+    do
+        control = controls.get(i-presetOffset)
+        control:setName(userNames[i])
+    end
+    -- Set the preset tags
     group = groups.get(51)
     group:setLabel("User 49")
     group = groups.get(52)
@@ -1737,17 +1737,17 @@ function setPresetsAt49()
     group = groups.get(155)
     group:setLabel("User 63")
     group = groups.get(156)
-    group:setLabel("User 64")  
+    group:setLabel("User 64")
 end
 
 function setPresetsAt65()
-  presetOffset = 64 
-  for i = 65,80
-  do 
-    control = controls.get(i-presetOffset)
-    control:setName(userNames[i])
-  end
-  -- Set the preset tags
+    presetOffset = 64
+    for i = 65,80
+    do
+        control = controls.get(i-presetOffset)
+        control:setName(userNames[i])
+    end
+    -- Set the preset tags
     group = groups.get(51)
     group:setLabel("User 65")
     group = groups.get(52)
@@ -1779,17 +1779,17 @@ function setPresetsAt65()
     group = groups.get(155)
     group:setLabel("User 79")
     group = groups.get(156)
-    group:setLabel("User 80")  
+    group:setLabel("User 80")
 end
 
 function setPresetsAt81()
-  presetOffset = 80
-  for i = 81,96
-  do 
-    control = controls.get(i-presetOffset)
-    control:setName(userNames[i])
-  end
-  -- Set the preset tags
+    presetOffset = 80
+    for i = 81,96
+    do
+        control = controls.get(i-presetOffset)
+        control:setName(userNames[i])
+    end
+    -- Set the preset tags
     group = groups.get(51)
     group:setLabel("User 81")
     group = groups.get(52)
@@ -1821,17 +1821,17 @@ function setPresetsAt81()
     group = groups.get(155)
     group:setLabel("User 95")
     group = groups.get(156)
-    group:setLabel("User 96")  
+    group:setLabel("User 96")
 end
 
 function setPresetsAt97()
-  presetOffset = 96  
-  for i = 97,112
-  do 
-    control = controls.get(i-presetOffset)
-    control:setName(userNames[i])
-  end
-  -- Set the preset tags
+    presetOffset = 96
+    for i = 97,112
+    do
+        control = controls.get(i-presetOffset)
+        control:setName(userNames[i])
+    end
+    -- Set the preset tags
     group = groups.get(51)
     group:setLabel("User 97")
     group = groups.get(52)
@@ -1863,16 +1863,16 @@ function setPresetsAt97()
     group = groups.get(155)
     group:setLabel("User 111")
     group = groups.get(156)
-    group:setLabel("User 112")      
+    group:setLabel("User 112")
 end
 function setPresetsAt113()
-  presetOffset = 112  
-  for i = 113,128
-  do 
-    control = controls.get(i-presetOffset)
-    control:setName(userNames[i])
-  end
-  -- Set the preset tags
+    presetOffset = 112
+    for i = 113,128
+    do
+        control = controls.get(i-presetOffset)
+        control:setName(userNames[i])
+    end
+    -- Set the preset tags
     group = groups.get(51)
     group:setLabel("User 113")
     group = groups.get(52)
@@ -1909,7 +1909,7 @@ end
 
 function xposeMiddleC(valueObject, value)
     if (math.floor(value) == 0) then -- Handle weird case wheret his is getting called by page changes 
-      return
+        return
     end
     local xAmt = 0
     local newMiddleC = valueObject:getMessage():getValue()
@@ -1921,18 +1921,18 @@ function xposeMiddleC(valueObject, value)
     -- Change the transpose indicator
     control=controls.get(78)
     if (newMiddleC == 0) then
-      return
+        return
     elseif (newMiddleC == 60) then
-      control:setName("Transpose Off")
-      control:setColor(WHITE)
+        control:setName("Transpose Off")
+        control:setColor(WHITE)
     elseif (newMiddleC > 60) then
-      xAmt = newMiddleC - 60
-      control:setName("Up "..xAmt.." st")
-      control:setColor(GREEN)
+        xAmt = newMiddleC - 60
+        control:setName("Up "..xAmt.." st")
+        control:setColor(GREEN)
     else
-      xAmt = 60 - newMiddleC
-      control:setName("Down "..xAmt.." st")
-      control:setColor(GREEN)    
+        xAmt = 60 - newMiddleC
+        control:setName("Down "..xAmt.." st")
+        control:setColor(GREEN)
     end
 end
 -- SOme transpose commands clash with sus, sos1 & sos2 - handle them separately
@@ -1941,29 +1941,29 @@ function xposeMiddleCx(valueObject, value)
     local newMiddleC = valueObject:getMessage():getValue()
     -- Handle cases whre param 78=69, 79=66 and 80=64
     if (newMiddleC == 78) then
-      newMiddleC = 69
+        newMiddleC = 69
     elseif (newMiddleC == 79) then
-      newMiddleC = 66
+        newMiddleC = 66
     elseif (newMiddleC == 80) then
-      newMiddleC = 64
-    end 
+        newMiddleC = 64
+    end
     matrixPoke (44,newMiddleC)
     --print("newMiddleC = "..newMiddleC) 
     -- Change the transpose indicator
     control=controls.get(78)
     if (newMiddleC == 0) then
-      return
+        return
     elseif (newMiddleC == 60) then
-      control:setName("Transpose Off")
-      control:setColor(WHITE)
+        control:setName("Transpose Off")
+        control:setColor(WHITE)
     elseif (newMiddleC > 60) then
-      xAmt = newMiddleC - 60
-      control:setName("Up "..xAmt.." st")
-      control:setColor(GREEN)
+        xAmt = newMiddleC - 60
+        control:setName("Up "..xAmt.." st")
+        control:setColor(GREEN)
     else
-      xAmt = 60 - newMiddleC
-      control:setName("Down "..xAmt.." st")
-      control:setColor(GREEN)    
+        xAmt = 60 - newMiddleC
+        control:setName("Down "..xAmt.." st")
+        control:setColor(GREEN)
     end
 end
 
@@ -1994,49 +1994,49 @@ function mainGraphPoke(pokeIndex, pokeValue)
 end
 function setRecirc(valueObject, value)
     local recircVal = valueObject:getMessage():getValue()
-    midi.sendControlChange(DEVICE_PORT, 16, 56, 20) 
-    midi.sendAfterTouchPoly(DEVICE_PORT, 16, 62 , recircVal) 
+    midi.sendControlChange(DEVICE_PORT, 16, 56, 20)
+    midi.sendAfterTouchPoly(DEVICE_PORT, 16, 62 , recircVal)
     -- midi.sendAfterTouchPoly(DEVICE_PORT, 16, recircVal , 62)
     -- midi.sendPitchBend(DEVICE_PORT, 16, (RECIRC_CODE*128+RecircVal)-8192)
     -- midi.sendControlChange(DEVICE_PORT, 16, 56, 20)
     -- midi.sendPitchBend(DEVICE_PORT, 16, (RecircVal*128+RECIRC_CODE)-8192)
 end
 function setRecircType (valueObject, value)
-local recircType = valueObject:getMessage():getValue()
-     if (recircType == 0) then 
-         matrixPoke (62, 0) -- Short Reverb
-     elseif(recircType == 1) then
-         matrixPoke (62, 1) -- Mod Delay
-     elseif(recircType == 2) then
-         matrixPoke (62, 2) -- Swept Echo
-     elseif(recircType == 3) then
-         matrixPoke (62, 3) -- Analog Echo
-     elseif(recircType == 4) then
-         matrixPoke (62, 4) -- Dig Delay with LPF
-     elseif(recircType == 5) then
-         matrixPoke (62, 5) -- Dig Delay with HPF
-     elseif(recircType == 6) then
-         matrixPoke (62, 6) -- Long Reverb
-     else 
-         print ("Unexpected Recirc Type")         
-     end                    
+    local recircType = valueObject:getMessage():getValue()
+    if (recircType == 0) then
+        matrixPoke (62, 0) -- Short Reverb
+    elseif(recircType == 1) then
+        matrixPoke (62, 1) -- Mod Delay
+    elseif(recircType == 2) then
+        matrixPoke (62, 2) -- Swept Echo
+    elseif(recircType == 3) then
+        matrixPoke (62, 3) -- Analog Echo
+    elseif(recircType == 4) then
+        matrixPoke (62, 4) -- Dig Delay with LPF
+    elseif(recircType == 5) then
+        matrixPoke (62, 5) -- Dig Delay with HPF
+    elseif(recircType == 6) then
+        matrixPoke (62, 6) -- Long Reverb
+    else
+        print ("Unexpected Recirc Type")
+    end
 end
 
 function enableRecirc (valueObject, value)
-local recircEnabled = valueObject:getMessage():getValue()
---print("RecircEnabled = "..recircEnabled)
-local control=controls.get(158)
-     if (recircEnabled == 1) then 
-         matrixPoke (15, 0) -- Enable Recirc = 0
-         control:setName("Enabled")
-         control:setColor(GREEN)
-     elseif(recircEnabled == 0) then
-         matrixPoke (15, 1) -- Disable Recirc = 1
-         control:setName("Disabled")
-         control:setColor(WHITE)         
-     else 
-         print ("Unexpected Recirc Enable/Disable Type")               
-     end
+    local recircEnabled = valueObject:getMessage():getValue()
+    --print("RecircEnabled = "..recircEnabled)
+    local control=controls.get(158)
+    if (recircEnabled == 1) then
+        matrixPoke (15, 0) -- Enable Recirc = 0
+        control:setName("Enabled")
+        control:setColor(GREEN)
+    elseif(recircEnabled == 0) then
+        matrixPoke (15, 1) -- Disable Recirc = 1
+        control:setName("Disabled")
+        control:setColor(WHITE)
+    else
+        print ("Unexpected Recirc Enable/Disable Type")
+    end
 end
 function setGlide(valueObject, value)
     local glideVal = valueObject:getMessage():getValue()
@@ -2056,7 +2056,7 @@ function set14w86(valueObject, value)
 
     midi.sendControlChange(DEVICE_PORT, DEVICE_CHANNEL, 86, valueMsb)
     midi.sendControlChange(DEVICE_PORT, DEVICE_CHANNEL, controlChangeLsb, valueLsb)
- 
+
 end
 function set14w97(valueObject, value)
     local valueMsb = value >> 7
@@ -2067,538 +2067,538 @@ function set14w97(valueObject, value)
     midi.sendControlChange(DEVICE_PORT, DEVICE_CHANNEL, controlChangeLsb, valueLsb)
 end
 function setConvolutionIR1(valueObject, value) -- Convolution Poke = 
-     local convolution1Type = valueObject:getMessage():getValue()
-     --print ("Convolution IR 1 Type "..convolution1Type)
-     if (convolution1Type == 0) then -- IR1 = 4
-       convolutionPoke(4, 0)
-     elseif (convolution1Type == 1) then
-      convolutionPoke(4, 1)
-     elseif (convolution1Type == 2) then
-      convolutionPoke(4, 2)
-     elseif (convolution1Type == 3) then
-       convolutionPoke(4, 3)
-     elseif (convolution1Type == 4) then
-      convolutionPoke(4, 4)
-     elseif (convolution1Type == 5) then
-      convolutionPoke(4, 5)
-     elseif (convolution1Type == 6) then
-      convolutionPoke(4, 6)
-     elseif (convolution1Type == 7) then
-      convolutionPoke(4, 7)
-     elseif (convolution1Type == 8) then
-      convolutionPoke(4, 8)
-     elseif (convolution1Type == 9) then
-      convolutionPoke(4, 9)
-     elseif (convolution1Type == 10) then
-      convolutionPoke(4, 10)
-     elseif (convolution1Type == 11) then
-      convolutionPoke(4, 11)
-     elseif (convolution1Type == 12) then
-      convolutionPoke(4, 12)
-     elseif (convolution1Type == 13) then
-      convolutionPoke(4, 13)
-     elseif (convolution1Type == 14) then
-      convolutionPoke(4, 14)
-     elseif (convolution1Type == 15) then
-      convolutionPoke(4, 15)
-     elseif (convolution1Type == 16) then
-      convolutionPoke(4, 16)
-     elseif (convolution1Type == 17) then
-      convolutionPoke(4, 17)
-     elseif (convolution1Type == 18) then
-      convolutionPoke(4, 18) 
-     else -- Others are not applicable
-         print ("Unexpected IR 1 Codes ")
-     end                                                                             
+    local convolution1Type = valueObject:getMessage():getValue()
+    --print ("Convolution IR 1 Type "..convolution1Type)
+    if (convolution1Type == 0) then -- IR1 = 4
+        convolutionPoke(4, 0)
+    elseif (convolution1Type == 1) then
+        convolutionPoke(4, 1)
+    elseif (convolution1Type == 2) then
+        convolutionPoke(4, 2)
+    elseif (convolution1Type == 3) then
+        convolutionPoke(4, 3)
+    elseif (convolution1Type == 4) then
+        convolutionPoke(4, 4)
+    elseif (convolution1Type == 5) then
+        convolutionPoke(4, 5)
+    elseif (convolution1Type == 6) then
+        convolutionPoke(4, 6)
+    elseif (convolution1Type == 7) then
+        convolutionPoke(4, 7)
+    elseif (convolution1Type == 8) then
+        convolutionPoke(4, 8)
+    elseif (convolution1Type == 9) then
+        convolutionPoke(4, 9)
+    elseif (convolution1Type == 10) then
+        convolutionPoke(4, 10)
+    elseif (convolution1Type == 11) then
+        convolutionPoke(4, 11)
+    elseif (convolution1Type == 12) then
+        convolutionPoke(4, 12)
+    elseif (convolution1Type == 13) then
+        convolutionPoke(4, 13)
+    elseif (convolution1Type == 14) then
+        convolutionPoke(4, 14)
+    elseif (convolution1Type == 15) then
+        convolutionPoke(4, 15)
+    elseif (convolution1Type == 16) then
+        convolutionPoke(4, 16)
+    elseif (convolution1Type == 17) then
+        convolutionPoke(4, 17)
+    elseif (convolution1Type == 18) then
+        convolutionPoke(4, 18)
+    else -- Others are not applicable
+        print ("Unexpected IR 1 Codes ")
+    end
 end
 
 function setConvolutionIR2(valueObject, value) -- Convolution Poke = 
-     local convolution2Type = valueObject:getMessage():getValue()
-     --print ("Convolution IR 2 Type "..convolution1Type)
-     if (convolution2Type == 0) then -- IR2 = 5
-       convolutionPoke(5, 0)
-     elseif (convolution2Type == 1) then
-      convolutionPoke(5, 1)
-     elseif (convolution2Type == 2) then
-      convolutionPoke(5, 2)
-     elseif (convolution2Type == 3) then
-      convolutionPoke(5, 3)
-     elseif (convolution2Type == 4) then
-      convolutionPoke(5, 4)
-     elseif (convolution2Type == 5) then
-      convolutionPoke(5, 5)
-     elseif (convolution2Type == 6) then
-      convolutionPoke(5, 6)
-     elseif (convolution2Type == 7) then
-      convolutionPoke(5, 7)
-     elseif (convolution2Type == 8) then
-      convolutionPoke(5, 8)
-     elseif (convolution2Type == 9) then
-      convolutionPoke(5, 9)
-     elseif (convolution2Type == 10) then
-      convolutionPoke(5, 10)
-     elseif (convolution2Type == 11) then
-      convolutionPoke(5, 11)
-     elseif (convolution2Type == 12) then
-      convolutionPoke(5, 12)
-     elseif (convolution2Type == 13) then
-      convolutionPoke(5, 13)
-     elseif (convolution2Type == 14) then
-      convolutionPoke(5, 14)
-     elseif (convolution2Type == 15) then
-      convolutionPoke(5, 15)
-     elseif (convolution2Type == 16) then
-      convolutionPoke(5, 16)
-     elseif (convolution2Type == 17) then
-      convolutionPoke(5, 17)
-     elseif (convolution2Type == 18) then
-      convolutionPoke(5, 18) 
-     else -- Others are not applicable
-         print ("Unexpected IR 2 Codes ")
-     end                                      
+    local convolution2Type = valueObject:getMessage():getValue()
+    --print ("Convolution IR 2 Type "..convolution1Type)
+    if (convolution2Type == 0) then -- IR2 = 5
+        convolutionPoke(5, 0)
+    elseif (convolution2Type == 1) then
+        convolutionPoke(5, 1)
+    elseif (convolution2Type == 2) then
+        convolutionPoke(5, 2)
+    elseif (convolution2Type == 3) then
+        convolutionPoke(5, 3)
+    elseif (convolution2Type == 4) then
+        convolutionPoke(5, 4)
+    elseif (convolution2Type == 5) then
+        convolutionPoke(5, 5)
+    elseif (convolution2Type == 6) then
+        convolutionPoke(5, 6)
+    elseif (convolution2Type == 7) then
+        convolutionPoke(5, 7)
+    elseif (convolution2Type == 8) then
+        convolutionPoke(5, 8)
+    elseif (convolution2Type == 9) then
+        convolutionPoke(5, 9)
+    elseif (convolution2Type == 10) then
+        convolutionPoke(5, 10)
+    elseif (convolution2Type == 11) then
+        convolutionPoke(5, 11)
+    elseif (convolution2Type == 12) then
+        convolutionPoke(5, 12)
+    elseif (convolution2Type == 13) then
+        convolutionPoke(5, 13)
+    elseif (convolution2Type == 14) then
+        convolutionPoke(5, 14)
+    elseif (convolution2Type == 15) then
+        convolutionPoke(5, 15)
+    elseif (convolution2Type == 16) then
+        convolutionPoke(5, 16)
+    elseif (convolution2Type == 17) then
+        convolutionPoke(5, 17)
+    elseif (convolution2Type == 18) then
+        convolutionPoke(5, 18)
+    else -- Others are not applicable
+        print ("Unexpected IR 2 Codes ")
+    end
 end
 function setConvolutionIR3(valueObject, value) -- Convolution Poke = 
-     local convolution3Type = valueObject:getMessage():getValue()
-     --print ("Convolution IR 3 Type "..convolution1Type)
-     if (convolution3Type == 0) then -- IR3 = 6
-       convolutionPoke(6, 0)
-     elseif (convolution3Type == 1) then
-      convolutionPoke(6, 1)
-     elseif (convolution3Type == 2) then
-      convolutionPoke(6, 2)
-     elseif (convolution3Type == 3) then
-      convolutionPoke(6, 3)
-     elseif (convolution3Type == 4) then
-      convolutionPoke(6, 4)
-     elseif (convolution3Type == 5) then
-      convolutionPoke(6, 5)
-     elseif (convolution3Type == 6) then
-      convolutionPoke(6, 6)
-     elseif (convolution3Type == 7) then
-      convolutionPoke(6, 7)
-     elseif (convolution3Type == 8) then
-      convolutionPoke(6, 8)
-     elseif (convolution3Type == 9) then
-      convolutionPoke(6, 9)
-     elseif (convolution3Type == 10) then
-      convolutionPoke(6, 10)
-     elseif (convolution3Type == 11) then
-      convolutionPoke(6, 11)
-     elseif (convolution3Type == 12) then
-      convolutionPoke(6, 12)
-     elseif (convolution3Type == 13) then
-      convolutionPoke(6, 13)
-     elseif (convolution3Type == 14) then
-      convolutionPoke(6, 14)
-     elseif (convolution3Type == 15) then
-      convolutionPoke(6, 15)
-     elseif (convolution3Type == 16) then
-      convolutionPoke(6, 16)
-     elseif (convolution3Type == 17) then
-      convolutionPoke(6, 17)
-     elseif (convolution3Type == 18) then
-      convolutionPoke(6, 18) 
-     else -- Others are not applicable
-         print ("Unexpected IR 3 Codes ")
-     end                                      
+    local convolution3Type = valueObject:getMessage():getValue()
+    --print ("Convolution IR 3 Type "..convolution1Type)
+    if (convolution3Type == 0) then -- IR3 = 6
+        convolutionPoke(6, 0)
+    elseif (convolution3Type == 1) then
+        convolutionPoke(6, 1)
+    elseif (convolution3Type == 2) then
+        convolutionPoke(6, 2)
+    elseif (convolution3Type == 3) then
+        convolutionPoke(6, 3)
+    elseif (convolution3Type == 4) then
+        convolutionPoke(6, 4)
+    elseif (convolution3Type == 5) then
+        convolutionPoke(6, 5)
+    elseif (convolution3Type == 6) then
+        convolutionPoke(6, 6)
+    elseif (convolution3Type == 7) then
+        convolutionPoke(6, 7)
+    elseif (convolution3Type == 8) then
+        convolutionPoke(6, 8)
+    elseif (convolution3Type == 9) then
+        convolutionPoke(6, 9)
+    elseif (convolution3Type == 10) then
+        convolutionPoke(6, 10)
+    elseif (convolution3Type == 11) then
+        convolutionPoke(6, 11)
+    elseif (convolution3Type == 12) then
+        convolutionPoke(6, 12)
+    elseif (convolution3Type == 13) then
+        convolutionPoke(6, 13)
+    elseif (convolution3Type == 14) then
+        convolutionPoke(6, 14)
+    elseif (convolution3Type == 15) then
+        convolutionPoke(6, 15)
+    elseif (convolution3Type == 16) then
+        convolutionPoke(6, 16)
+    elseif (convolution3Type == 17) then
+        convolutionPoke(6, 17)
+    elseif (convolution3Type == 18) then
+        convolutionPoke(6, 18)
+    else -- Others are not applicable
+        print ("Unexpected IR 3 Codes ")
+    end
 end
 function setConvolutionIR4(valueObject, value) -- Convolution Poke = 
-     local convolution4Type = valueObject:getMessage():getValue()
-     --print ("Convolution IR 4 Type "..convolution1Type)
-     if (convolution4Type == 0) then -- IR4 = 7
-       convolutionPoke(7, 0)
-     elseif (convolution4Type == 1) then
-      convolutionPoke(7, 1)
-     elseif (convolution4Type == 2) then
-      convolutionPoke(7, 2)
-     elseif (convolution4Type == 3) then
-      convolutionPoke(7, 3)
-     elseif (convolution4Type == 4) then
-      convolutionPoke(7, 4)
-     elseif (convolution4Type == 5) then
-      convolutionPoke(7, 5)
-     elseif (convolution4Type == 6) then
-      convolutionPoke(7, 6)
-     elseif (convolution4Type == 7) then
-      convolutionPoke(7, 7)
-     elseif (convolution4Type == 8) then
-      convolutionPoke(7, 8)
-     elseif (convolution4Type == 9) then
-      convolutionPoke(7, 9)
-     elseif (convolution4Type == 10) then
-      convolutionPoke(7, 10)
-     elseif (convolution4Type == 11) then
-      convolutionPoke(7, 11)
-     elseif (convolution4Type == 12) then
-      convolutionPoke(7, 12)
-     elseif (convolution4Type == 13) then
-      convolutionPoke(7, 13)
-     elseif (convolution4Type == 14) then
-      convolutionPoke(7, 14)
-     elseif (convolution4Type == 15) then
-      convolutionPoke(7, 15)
-     elseif (convolution4Type == 16) then
-      convolutionPoke(7, 16)
-     elseif (convolution4Type == 17) then
-      convolutionPoke(7, 17)
-     elseif (convolution4Type == 18) then
-      convolutionPoke(7, 18) 
-     else -- Others are not applicable
-         print ("Unexpected IR 4 Codes ")
-     end                                      
+    local convolution4Type = valueObject:getMessage():getValue()
+    --print ("Convolution IR 4 Type "..convolution1Type)
+    if (convolution4Type == 0) then -- IR4 = 7
+        convolutionPoke(7, 0)
+    elseif (convolution4Type == 1) then
+        convolutionPoke(7, 1)
+    elseif (convolution4Type == 2) then
+        convolutionPoke(7, 2)
+    elseif (convolution4Type == 3) then
+        convolutionPoke(7, 3)
+    elseif (convolution4Type == 4) then
+        convolutionPoke(7, 4)
+    elseif (convolution4Type == 5) then
+        convolutionPoke(7, 5)
+    elseif (convolution4Type == 6) then
+        convolutionPoke(7, 6)
+    elseif (convolution4Type == 7) then
+        convolutionPoke(7, 7)
+    elseif (convolution4Type == 8) then
+        convolutionPoke(7, 8)
+    elseif (convolution4Type == 9) then
+        convolutionPoke(7, 9)
+    elseif (convolution4Type == 10) then
+        convolutionPoke(7, 10)
+    elseif (convolution4Type == 11) then
+        convolutionPoke(7, 11)
+    elseif (convolution4Type == 12) then
+        convolutionPoke(7, 12)
+    elseif (convolution4Type == 13) then
+        convolutionPoke(7, 13)
+    elseif (convolution4Type == 14) then
+        convolutionPoke(7, 14)
+    elseif (convolution4Type == 15) then
+        convolutionPoke(7, 15)
+    elseif (convolution4Type == 16) then
+        convolutionPoke(7, 16)
+    elseif (convolution4Type == 17) then
+        convolutionPoke(7, 17)
+    elseif (convolution4Type == 18) then
+        convolutionPoke(7, 18)
+    else -- Others are not applicable
+        print ("Unexpected IR 4 Codes ")
+    end
 end
 function setConvEPCtrl(valueObject, value) -- Conv poke - using conrol parameter for Conv operation to be generic
     local epvalue = math.floor(value)
-    local ctrl = controls.get(127) 
+    local ctrl = controls.get(127)
     if (epvalue == 1) then
-      ctrl:setName("EP On")
-      ctrl:setColor(GREEN)
-      convolutionPoke(29,1)
+        ctrl:setName("EP On")
+        ctrl:setColor(GREEN)
+        convolutionPoke(29,1)
     elseif (epvalue == 0) then
-      ctrl:setName("EP Off")
-      ctrl:setColor(WHITE)      
-      convolutionPoke(29,0)          
-    else 
-      print("Unknown EP value: "..epvalue)
+        ctrl:setName("EP Off")
+        ctrl:setColor(WHITE)
+        convolutionPoke(29,0)
+    else
+        print("Unknown EP value: "..epvalue)
     end
 end
 
 function getMacros()
-  if (macrosLoaded == true) then
-    macroInProgress = true
-    --print ("getMacros - should not be called until pressed")
-    midi.sendControlChange(DEVICE_PORT, 16, 109, 22) -- Send get Current Preset Msg to get Macro labels and control values
-  else 
-    print ("MacrosLoaded - called by init")
-    macrosLoaded = true
-  end
+    if (macrosLoaded == true) then
+        macroInProgress = true
+        --print ("getMacros - should not be called until pressed")
+        midi.sendControlChange(DEVICE_PORT, 16, 109, 22) -- Send get Current Preset Msg to get Macro labels and control values
+    else
+        print ("MacrosLoaded - called by init")
+        macrosLoaded = true
+    end
 end
 
 function muteControl(valueObject, value)
-   local muteOn = valueObject:getMessage():getValue() -- Store the current preset position elected as user store 
-   control = controls.get(230)
+    local muteOn = valueObject:getMessage():getValue() -- Store the current preset position elected as user store 
+    control = controls.get(230)
 
-   if (muteOn == 0) then -- Mute off, restore pre-gain
-      control:setName("Mute Off")
-      control:setColor(WHITE)  
-      -- print("Muteval ="..muteVal)
-      midi.sendControlChange(DEVICE_PORT, 1, 26, muteVal) -- set pregain to last value
-   else 
-      control:setName("Mute On")
-      control:setColor(GREEN)   
-      midi.sendControlChange(DEVICE_PORT, 1, 26, 0)
-      control = controls.get(48) -- save current pregain value
-      local controlValue = control:getValue("value")
-      local ctrlMsg = controlValue:getMessage()
-      local val = ctrlMsg:getValue()      
-      muteVal = val
-  end
+    if (muteOn == 0) then -- Mute off, restore pre-gain
+        control:setName("Mute Off")
+        control:setColor(WHITE)
+        -- print("Muteval ="..muteVal)
+        midi.sendControlChange(DEVICE_PORT, 1, 26, muteVal) -- set pregain to last value
+    else
+        control:setName("Mute On")
+        control:setColor(GREEN)
+        midi.sendControlChange(DEVICE_PORT, 1, 26, 0)
+        control = controls.get(48) -- save current pregain value
+        local controlValue = control:getValue("value")
+        local ctrlMsg = controlValue:getMessage()
+        local val = ctrlMsg:getValue()
+        muteVal = val
+    end
 end
 
 function resetMute() -- On loading a preset reset Mute control to Off (pregain value will be read from preset)
-  control = controls.get(230)
-  control:setName("Mute Off")
-  control:setColor(GREEN)
-  local controlValue = control:getValue("value")
-  local ctrlMsg = controlValue:getMessage()
-  ctrlMsg:setValue(0)
+    control = controls.get(230)
+    control:setName("Mute Off")
+    control:setColor(GREEN)
+    local controlValue = control:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(0)
 end
 
 function setSplitMode(valueObject, value)
-      control = controls.get(188)
-      local controlValue = control:getValue("value")
-      local ctrlMsg = controlValue:getMessage()
-      local val = ctrlMsg:getValue()
-      matrixPoke(1, val) -- Set Split Mode
+    control = controls.get(188)
+    local controlValue = control:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    local val = ctrlMsg:getValue()
+    matrixPoke(1, val) -- Set Split Mode
 end
 
 function setSplitPoint(valueObject, value)
-      control = controls.get(236)
-      local controlValue = control:getValue("value")
-      local ctrlMsg = controlValue:getMessage()
-      local val = ctrlMsg:getValue()
-      matrixPoke(45, val) -- Set  SPlit point, C4 = 60
+    control = controls.get(236)
+    local controlValue = control:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    local val = ctrlMsg:getValue()
+    matrixPoke(45, val) -- Set  SPlit point, C4 = 60
 end
 
 function setMonoMode(valueObject, value)
-      control = controls.get(249)
-      local controlValue = control:getValue("value")
-      local ctrlMsg = controlValue:getMessage()
-      local val = ctrlMsg:getValue()
-      -- print("Mono Mode = "..val)      
-      matrixPoke(46, val)
+    control = controls.get(249)
+    local controlValue = control:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    local val = ctrlMsg:getValue()
+    -- print("Mono Mode = "..val)      
+    matrixPoke(46, val)
 end
 function setMonoInterval(valueObject, value)
-      if (math.floor(value) < 0) then   
-          return -- inits to -1 (check others)
-      end
-      control = controls.get(267)
-      local controlValue = control:getValue("value")
-      local ctrlMsg = controlValue:getMessage()
-      local val = ctrlMsg:getValue()
-      matrixPoke(48, val)
+    if (math.floor(value) < 0) then
+        return -- inits to -1 (check others)
+    end
+    control = controls.get(267)
+    local controlValue = control:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    local val = ctrlMsg:getValue()
+    matrixPoke(48, val)
 end
 function setMonoSwitch(valueObject, value)
-      control = controls.get(252)
-      if (value == 0) then
+    control = controls.get(252)
+    if (value == 0) then
         control:setName("Mono Off")
         control:setColor(WHITE)
-      else
+    else
         control:setName("Mono On")
-        control:setColor(GREEN)      
-      end
-      --print("Mono sw value = "..val..","..math.floor(value))
-      midi.sendControlChange(DEVICE_PORT, 1, 9, math.floor(value))
+        control:setColor(GREEN)
+    end
+    --print("Mono sw value = "..val..","..math.floor(value))
+    midi.sendControlChange(DEVICE_PORT, 1, 9, math.floor(value))
 
 end
 function setOctRange(valueObject, value)
-  control = controls.get(179)
-  local controlValue = control:getValue("value")
-  local ctrlMsg = controlValue:getMessage()
-  local val = ctrlMsg:getValue()
-  -- print("Octave Transpose = "..val)
-  matrixPoke(54, val)       
+    control = controls.get(179)
+    local controlValue = control:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    local val = ctrlMsg:getValue()
+    -- print("Octave Transpose = "..val)
+    matrixPoke(54, val)
 end
 
 function setOctSwMode(valueObject, value)
-  control = controls.get(173)
-  local controlValue = control:getValue("value")
-  local ctrlMsg = controlValue:getMessage()
-  local val = ctrlMsg:getValue()
-  matrixPoke(7, val)  
+    control = controls.get(173)
+    local controlValue = control:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    local val = ctrlMsg:getValue()
+    matrixPoke(7, val)
 end
 
 function setRoundInit(valueObject, value)
-  control = controls.get(209)
-  -- local controlValue = control:getValue("value")
-  -- local ctrlMsg = controlValue:getMessage()
-  local val = math.floor (value)
-  -- print("Round Initial = "..val)
+    control = controls.get(209)
+    -- local controlValue = control:getValue("value")
+    -- local ctrlMsg = controlValue:getMessage()
+    local val = math.floor (value)
+    -- print("Round Initial = "..val)
 
-  if (value == 0) then
-    control:setName("Initial Off")
-    control:setColor(WHITE)
-  elseif (val == 127 or val == 1) then
-    control:setName("Initial On")
-    control:setColor(GREEN)
-  else
-    print("Unexpected Round Initial Control: "..val)
-    return
-  end
-    midi.sendControlChange(DEVICE_PORT, 1, 28, value)     
+    if (value == 0) then
+        control:setName("Initial Off")
+        control:setColor(WHITE)
+    elseif (val == 127 or val == 1) then
+        control:setName("Initial On")
+        control:setColor(GREEN)
+    else
+        print("Unexpected Round Initial Control: "..val)
+        return
+    end
+    midi.sendControlChange(DEVICE_PORT, 1, 28, value)
 end
 -- Round Modes
 function setRoundMode(valueObject, value) -- Round Mode
-      control = controls.get(210)
-      local controlValue = control:getValue("value")
-      local ctrlMsg = controlValue:getMessage()
-      local val = ctrlMsg:getValue()
-      matrixPoke(10, val)
+    control = controls.get(210)
+    local controlValue = control:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    local val = ctrlMsg:getValue()
+    matrixPoke(10, val)
 end
 function setRoundEqual(valueObject, value) -- Round Equal
-      control = controls.get(228)
-      local controlValue = control:getValue("value")
-      local ctrlMsg = controlValue:getMessage()
-      local val = ctrlMsg:getValue()
-      midi.sendControlChange(DEVICE_PORT, 1, 65, val)
+    control = controls.get(228)
+    local controlValue = control:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    local val = ctrlMsg:getValue()
+    midi.sendControlChange(DEVICE_PORT, 1, 65, val)
 end
 function setDirection(valueObject, value) -- Normal or reverse fingerboard
-      control = controls.get(253)
-      local controlValue = control:getValue("value")
-      local ctrlMsg = controlValue:getMessage()
-      local val = ctrlMsg:getValue()
-      -- print("Direction ="..val)
-      if (val == 0) then
+    control = controls.get(253)
+    local controlValue = control:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    local val = ctrlMsg:getValue()
+    -- print("Direction ="..val)
+    if (val == 0) then
         control:setName("Normal")
         control:setColor(GREEN)
-      elseif (val==1) then
+    elseif (val==1) then
         control:setName("Reverse")
-        control:setColor(RED)      
-      else
-         print("Unexpected Direction")
-         return
-      end
-      matrixPoke(9, val)
+        control:setColor(RED)
+    else
+        print("Unexpected Direction")
+        return
+    end
+    matrixPoke(9, val)
 end
 function setTuning(valueObject, value)
-  control = controls.get(189)
-  local tuning = valueObject:getMessage():getValue()
-  if (tuning == 127) then -- can't set On&Off to zero for button so use sentinel
-    tuning = 0
-    control:setName("Equal Temp")
-    control:setColor(GREEN)
-  elseif (tuning == 0) then -- Ignore   
-  elseif (tuning >= 60 and tuning < 72) then -- Just
-     control:setName("JUST "..tuning-59)
-     control:setColor(RED)
-  elseif (tuning >=81 and tuning < 86) then -- Grid
-     control:setName("Grid "..tuning)
-     control:setColor(PURPLE)
-  else 
+    control = controls.get(189)
+    local tuning = valueObject:getMessage():getValue()
+    if (tuning == 127) then -- can't set On&Off to zero for button so use sentinel
+        tuning = 0
+        control:setName("Equal Temp")
+        control:setColor(GREEN)
+    elseif (tuning == 0) then -- Ignore   
+    elseif (tuning >= 60 and tuning < 72) then -- Just
+        control:setName("JUST "..tuning-59)
+        control:setColor(RED)
+    elseif (tuning >=81 and tuning < 86) then -- Grid
+        control:setName("Grid "..tuning)
+        control:setColor(PURPLE)
+    else
         print ("Unrecognized tuning: "..tuning)
         return
-  end
-  --print("Tuning = "..tuning)
-  midi.sendControlChange(DEVICE_PORT, 16, 51, tuning)       
+    end
+    --print("Tuning = "..tuning)
+    midi.sendControlChange(DEVICE_PORT, 16, 51, tuning)
 end
 function setNdiv(valueObject, value)
-  control = controls.get(225)
-  local controlValue = control:getValue("value")
-  local ctrlMsg = controlValue:getMessage()
-  local val = ctrlMsg:getValue()
-  local ctrl = controls.get(189)
-  --print("NDIV = "..val)
-  if (val == 0) then
-    ctrl:setName("Equal Temp")
-    ctrl:setColor(GREEN)
-  elseif (val > 0 and val < 72) then
-    ctrl:setName("NDIV "..val)
-    ctrl:setColor(BLUE) 
-  end
-  midi.sendControlChange(DEVICE_PORT, 16, 51, val)      
+    control = controls.get(225)
+    local controlValue = control:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    local val = ctrlMsg:getValue()
+    local ctrl = controls.get(189)
+    --print("NDIV = "..val)
+    if (val == 0) then
+        ctrl:setName("Equal Temp")
+        ctrl:setColor(GREEN)
+    elseif (val > 0 and val < 72) then
+        ctrl:setName("NDIV "..val)
+        ctrl:setColor(BLUE)
+    end
+    midi.sendControlChange(DEVICE_PORT, 16, 51, val)
 end
 function replaceSurface(valueObject, value) -- Round Mode
-      control = controls.get(167)
-      local controlValue = control:getValue("value")
-      local ctrlMsg = controlValue:getMessage()
-      local val = ctrlMsg:getValue()
-      --print("replace Surface ="..val)
-      if (val == 0) then
-         control:setName("Replace")
-         control:setColor(GREEN)
-      elseif (val==1) then
-         control:setName("Preserve")
-         control:setColor(RED)      
-      else
-         print("Unexpected Replace/Preserve Surface")
-         return
-      end
-      if (repSurfacePushed == false) then
+    control = controls.get(167)
+    local controlValue = control:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    local val = ctrlMsg:getValue()
+    --print("replace Surface ="..val)
+    if (val == 0) then
+        control:setName("Replace")
+        control:setColor(GREEN)
+    elseif (val==1) then
+        control:setName("Preserve")
+        control:setColor(RED)
+    else
+        print("Unexpected Replace/Preserve Surface")
+        return
+    end
+    if (repSurfacePushed == false) then
         -- print("Surface Replace Init")        
         repSurfacePushed = true
         return
-      end      
-      if (repSurfacePushed) then
+    end
+    if (repSurfacePushed) then
         -- print("Writing flash 1")
         -- matrixPoke(56, val)      
         -- midi.sendControlChange(DEVICE_PORT, 16, 109, 8) -- Store to flash      
-      end
-      repSurfacePushed = true 
+    end
+    repSurfacePushed = true
 end
 function replacePedals(valueObject, value) -- Round Mode
-      control = controls.get(168)
-      local controlValue = control:getValue("value")
-      local ctrlMsg = controlValue:getMessage()
-      local val = ctrlMsg:getValue()
-      --print("replace Pedals ="..val)
-      if (val == 0) then
-         control:setName("Replace")
-         control:setColor(GREEN)
-      elseif (val==1) then
-         control:setName("Preserve")
-         control:setColor(RED)      
-      else
-         print("Unexpected Replace/Preserve Pedals")
-         return
-      end
-      if (repPedalsPushed == false) then
+    control = controls.get(168)
+    local controlValue = control:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    local val = ctrlMsg:getValue()
+    --print("replace Pedals ="..val)
+    if (val == 0) then
+        control:setName("Replace")
+        control:setColor(GREEN)
+    elseif (val==1) then
+        control:setName("Preserve")
+        control:setColor(RED)
+    else
+        print("Unexpected Replace/Preserve Pedals")
+        return
+    end
+    if (repPedalsPushed == false) then
         -- print("Pedals Replace Init")        
         repPedalsPushed = true
         return
-      end            
- 
-      if (repPedalsPushed) then
+    end
+
+    if (repPedalsPushed) then
         -- print("Writing flash 2")
         -- matrixPoke(57, val)              
         -- midi.sendControlChange(DEVICE_PORT, 16, 109, 8) -- Store to flash     
-      end
-      repPedalsPushed = true
+    end
+    repPedalsPushed = true
 end
 function replaceMidi(valueObject, value) -- Round Mode
-      control = controls.get(169)
-      local controlValue = control:getValue("value")
-      local ctrlMsg = controlValue:getMessage()
-      local val = ctrlMsg:getValue()
-      --print("replace Midi ="..val)
-      if (val == 0) then
-         control:setName("Replace")
-         control:setColor(GREEN)
-      elseif (val==1) then
-         control:setName("Preserve")
-         control:setColor(RED)      
-      else
-         print("Unexpected Repalce/Preserve Midi")
-         return
-      end
-      if (repMidiPushed == false) then
+    control = controls.get(169)
+    local controlValue = control:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    local val = ctrlMsg:getValue()
+    --print("replace Midi ="..val)
+    if (val == 0) then
+        control:setName("Replace")
+        control:setColor(GREEN)
+    elseif (val==1) then
+        control:setName("Preserve")
+        control:setColor(RED)
+    else
+        print("Unexpected Repalce/Preserve Midi")
+        return
+    end
+    if (repMidiPushed == false) then
         --print("Midi Replace Init")        
         repMidiPushed = true
         return
-      end            
-      if (repMidiPushed) then
+    end
+    if (repMidiPushed) then
         --print("Writing flash 3")
         -- matrixPoke(58, val)        
         -- midi.sendControlChange(DEVICE_PORT, 16, 109, 8) -- Store to flash      
-      end     
+    end
 end
 function compOrTanh(valueObject, value)
-  local ctrl = controls.get(163)
-  local controlValue = ctrl:getValue("value")
-  local ctrlMsg = controlValue:getMessage()
-  local val = ctrlMsg:getValue()
-  if (val == 0) then
-    ctrl:setName("Compressor")
-    setCompOrTanh(0)
-  elseif (val == 1) then
-    ctrl:setName("TANH")
-    setCompOrTanh(1)
-  else
-    print("Unrecognized CompOrTanh")
-    return 
-  end
-  --print("CompOrTanh = "..val)
-  matrixPoke(16, val)     
+    local ctrl = controls.get(163)
+    local controlValue = ctrl:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    local val = ctrlMsg:getValue()
+    if (val == 0) then
+        ctrl:setName("Compressor")
+        setCompOrTanh(0)
+    elseif (val == 1) then
+        ctrl:setName("TANH")
+        setCompOrTanh(1)
+    else
+        print("Unrecognized CompOrTanh")
+        return
+    end
+    --print("CompOrTanh = "..val)
+    matrixPoke(16, val)
 end
 function setCompOrTanh(which) -- Turn on color controls for Comp or Tanh
- if (which == 0) then -- COlor for Compressor
-   local grp = groups.get(131)
-   grp:setVisible(true)
-   grp = groups.get(248)
-   grp:setVisible(false)
-   local ctrl = controls.get(133)
-   ctrl:setVisible(true)       
-   ctrl = controls.get(134)
-   ctrl:setVisible(true)   
-   ctrl = controls.get(135)
-   ctrl:setVisible(true)
-   ctrl = controls.get(136)
-   ctrl:setVisible(true)     
-   ctrl = controls.get(257)
-   ctrl:setVisible(false)
-   ctrl = controls.get(249)
-   ctrl:setVisible(false)
-   ctrl = controls.get(251)
-   ctrl:setVisible(false)
- else -- color for Tanh
-   local grp = groups.get(131)
-   grp:setVisible(false)
-   grp = groups.get(248)
-   grp:setVisible(true)
-   local ctrl = controls.get(133)
-   ctrl:setVisible(false)   
-   ctrl = controls.get(134)
-   ctrl:setVisible(false)
-   ctrl = controls.get(135)
-   ctrl:setVisible(false)
-   ctrl = controls.get(136)
-   ctrl:setVisible(false)    
-   ctrl = controls.get(257)
-   ctrl:setVisible(true)    
-   ctrl = controls.get(249)
-   ctrl:setVisible(true)   
-   ctrl = controls.get(251)
-   ctrl:setVisible(true) 
- end
+    if (which == 0) then -- COlor for Compressor
+        local grp = groups.get(131)
+        grp:setVisible(true)
+        grp = groups.get(248)
+        grp:setVisible(false)
+        local ctrl = controls.get(133)
+        ctrl:setVisible(true)
+        ctrl = controls.get(134)
+        ctrl:setVisible(true)
+        ctrl = controls.get(135)
+        ctrl:setVisible(true)
+        ctrl = controls.get(136)
+        ctrl:setVisible(true)
+        ctrl = controls.get(257)
+        ctrl:setVisible(false)
+        ctrl = controls.get(249)
+        ctrl:setVisible(false)
+        ctrl = controls.get(251)
+        ctrl:setVisible(false)
+    else -- color for Tanh
+        local grp = groups.get(131)
+        grp:setVisible(false)
+        grp = groups.get(248)
+        grp:setVisible(true)
+        local ctrl = controls.get(133)
+        ctrl:setVisible(false)
+        ctrl = controls.get(134)
+        ctrl:setVisible(false)
+        ctrl = controls.get(135)
+        ctrl:setVisible(false)
+        ctrl = controls.get(136)
+        ctrl:setVisible(false)
+        ctrl = controls.get(257)
+        ctrl:setVisible(true)
+        ctrl = controls.get(249)
+        ctrl:setVisible(true)
+        ctrl = controls.get(251)
+        ctrl:setVisible(true)
+    end
 end
 
 -- Store the current Preset category selected
@@ -2607,21 +2607,21 @@ function selectPresetCategory(valueObject, value)
         return
     end
     -- Reset Preset index to beginning
-   curSystemPreset = 0
-   local ctrl = controls.get(273) -- Preset index
-   local controlValue = ctrl:getValue("value")
-   local ctrlMsg = controlValue:getMessage()
-   ctrlMsg:setValue(0) -- New Category then reset preset Index control to default
-   ctrl = controls.get(46) -- Get Category control
-   controlValue = ctrl:getValue("value")
-   ctrlMsg = controlValue:getMessage()
-   local val = ctrlMsg:getValue() -- Get the category value (not index)
-   curCategory = val+1
-  if (curCategory == CAT_OTHER1) then
-     curCC32 = 1
-  else
-     curCC32 = 0
-  end
+    curSystemPreset = 0
+    local ctrl = controls.get(273) -- Preset index
+    local controlValue = ctrl:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(0) -- New Category then reset preset Index control to default
+    ctrl = controls.get(46) -- Get Category control
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    local val = ctrlMsg:getValue() -- Get the category value (not index)
+    curCategory = val+1
+    if (curCategory == CAT_OTHER1) then
+        curCC32 = 1
+    else
+        curCC32 = 0
+    end
 end
 
 -- Get the preset name and index based on Category set
@@ -2629,13 +2629,13 @@ function selectSystemPreset(valueObject, value)
     if not haveSystemPresetsBeenUpdated then
         return
     end
-   curSystemPreset = getMaxPresetIndex(math.floor(value))
-   local ctrl = controls.get(278)
-   if (curSystemPreset == 0) then
-     ctrl:setName("SELECT PRESET")   
-   elseif (curPresetName ~= "") then
-     ctrl:setName(curPresetName)
-   end
+    curSystemPreset = getMaxPresetIndex(math.floor(value))
+    local ctrl = controls.get(278)
+    if (curSystemPreset == 0) then
+        ctrl:setName("SELECT PRESET")
+    elseif (curPresetName ~= "") then
+        ctrl:setName(curPresetName)
+    end
 end
 
 -- To use one control for preset index select the index can't exceed the max
@@ -2646,9 +2646,9 @@ end
 -- Currently this should work for the Continuum and the EganMatrix module.
 -- Amended by SOR for getting system presets.
 function getMaxPresetIndex (pIndex) -- cap inex at max range for each category
-   local ctrl = controls.get(273)
-   local controlValue = ctrl:getValue("value")
-   local ctrlMsg = controlValue:getMessage()
+    local ctrl = controls.get(273)
+    local controlValue = ctrl:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
     local systemPresets = systemPresetCategories[curCategory]
     local systemPresetCount = #systemPresets
     if (pIndex > systemPresetCount) then
@@ -2657,124 +2657,128 @@ function getMaxPresetIndex (pIndex) -- cap inex at max range for each category
     end
     curPresetName = systemPresets[pIndex]
     return pIndex
-  --if (curCategory == CAT_STRINGS) then -- Strings
-  --   -- print ("pIndex: "..pIndex)
-  --   if (pIndex > 88) then
-  --     ctrlMsg:setValue(88)     
-  --     return pIndex - 1        
-  --   end
-  --   curPresetName = strings[pIndex]   
-  --elseif (curCategory == CAT_WINDS) then -- Winds
-  --   if (pIndex > 45) then
-  --     ctrlMsg:setValue(45)      
-  --     return pIndex - 1
-  --   end  
-  --   curPresetName = winds[pIndex]     
-  --elseif (curCategory == CAT_VOCAL) then -- Vocal
-  --   if (pIndex > 31) then
-  --     ctrlMsg:setValue(31)      
-  --     return pIndex - 1
-  --   end  
-  --   curPresetName = vocal[pIndex]      
-  --elseif (curCategory == CAT_KEYBOARD) then -- Keyboard
-  --   if (pIndex > 33) then
-  --     ctrlMsg:setValue(33)      
-  --     return pIndex - 1
-  --   end
-  --   curPresetName = keyboard[pIndex]       
-  --elseif (curCategory == CAT_CLASSIC) then -- Classic
-  --   if (pIndex > 72) then
-  --     ctrlMsg:setValue(72)      
-  --     return pIndex - 1
-  --   end
-  --   curPresetName = classic[pIndex]     
-  --elseif (curCategory == CAT_OTHER) then -- Other
-  --   curPresetName = other[pIndex]  -- Other contains > 128 - see other 2 for second half
-  --elseif (curCategory == CAT_PERCUSSION) then -- Percussion
-  --   if (pIndex > 12) then
-  --     ctrlMsg:setValue(12)      
-  --     return pIndex - 1
-  --   end
-  --   curPresetName = percussion[pIndex]         
-  --elseif (curCategory == CAT_TUNEDPERC) then -- Tuned Percussion
-  --   if (pIndex > 47) then
-  --     ctrlMsg:setValue(47)      
-  --     return pIndex - 1
-  --   end
-  --   curPresetName = tunedPerc[pIndex]         
-  --elseif (curCategory == CAT_PROCESSOR) then -- Processor
-  --   if (pIndex > 22) then
-  --     ctrlMsg:setValue(22)      
-  --     return pIndex - 1
-  --   end
-  --   curPresetName = processor[pIndex]    
-  --elseif (curCategory == CAT_DRONE) then -- Drone
-  --   if (pIndex > 19) then
-  --     ctrlMsg:setValue(19) 
-  --     return pIndex - 1
-  --   end 
-  --   curPresetName = drones[pIndex]        
-  --elseif (curCategory == CAT_MIDI) then -- Midi
-  --   if (pIndex >16) then
-  --     ctrlMsg:setValue(16)      
-  --     return pIndex - 1
-  --   end
-  --   curPresetName = midiVals[pIndex]    
-  --elseif (curCategory == CAT_CVC) then -- CVC
-  --   if (pIndex > 15) then
-  --     ctrlMsg:setValue(15)      
-  --     return pIndex - 1
-  --   end
-  --   curPresetName = cvc[pIndex]         
-  --elseif (curCategory == CAT_UTILITY) then -- Utility
-  --   if (pIndex > 43) then
-  --     ctrlMsg:setValue(43)      
-  --     return pIndex - 1
-  --   end  
-  --   curPresetName = utility[pIndex]       
-  --elseif (curCategory == CAT_OTHER1) then -- Other1 (150 presets in Other 150-128 = 22 cor CC32=1)
-  --   if (pIndex > 27) then
-  --     ctrlMsg:setValue(27)      
-  --     return pIndex - 1
-  --   end
-  --   curPresetName = other1[pIndex]                      
-  --end
-  --return pIndex 
+    --if (curCategory == CAT_STRINGS) then -- Strings
+    --   -- print ("pIndex: "..pIndex)
+    --   if (pIndex > 88) then
+    --     ctrlMsg:setValue(88)     
+    --     return pIndex - 1        
+    --   end
+    --   curPresetName = strings[pIndex]   
+    --elseif (curCategory == CAT_WINDS) then -- Winds
+    --   if (pIndex > 45) then
+    --     ctrlMsg:setValue(45)      
+    --     return pIndex - 1
+    --   end  
+    --   curPresetName = winds[pIndex]     
+    --elseif (curCategory == CAT_VOCAL) then -- Vocal
+    --   if (pIndex > 31) then
+    --     ctrlMsg:setValue(31)      
+    --     return pIndex - 1
+    --   end  
+    --   curPresetName = vocal[pIndex]      
+    --elseif (curCategory == CAT_KEYBOARD) then -- Keyboard
+    --   if (pIndex > 33) then
+    --     ctrlMsg:setValue(33)      
+    --     return pIndex - 1
+    --   end
+    --   curPresetName = keyboard[pIndex]       
+    --elseif (curCategory == CAT_CLASSIC) then -- Classic
+    --   if (pIndex > 72) then
+    --     ctrlMsg:setValue(72)      
+    --     return pIndex - 1
+    --   end
+    --   curPresetName = classic[pIndex]     
+    --elseif (curCategory == CAT_OTHER) then -- Other
+    --   curPresetName = other[pIndex]  -- Other contains > 128 - see other 2 for second half
+    --elseif (curCategory == CAT_PERCUSSION) then -- Percussion
+    --   if (pIndex > 12) then
+    --     ctrlMsg:setValue(12)      
+    --     return pIndex - 1
+    --   end
+    --   curPresetName = percussion[pIndex]         
+    --elseif (curCategory == CAT_TUNEDPERC) then -- Tuned Percussion
+    --   if (pIndex > 47) then
+    --     ctrlMsg:setValue(47)      
+    --     return pIndex - 1
+    --   end
+    --   curPresetName = tunedPerc[pIndex]         
+    --elseif (curCategory == CAT_PROCESSOR) then -- Processor
+    --   if (pIndex > 22) then
+    --     ctrlMsg:setValue(22)      
+    --     return pIndex - 1
+    --   end
+    --   curPresetName = processor[pIndex]    
+    --elseif (curCategory == CAT_DRONE) then -- Drone
+    --   if (pIndex > 19) then
+    --     ctrlMsg:setValue(19) 
+    --     return pIndex - 1
+    --   end 
+    --   curPresetName = drones[pIndex]        
+    --elseif (curCategory == CAT_MIDI) then -- Midi
+    --   if (pIndex >16) then
+    --     ctrlMsg:setValue(16)      
+    --     return pIndex - 1
+    --   end
+    --   curPresetName = midiVals[pIndex]    
+    --elseif (curCategory == CAT_CVC) then -- CVC
+    --   if (pIndex > 15) then
+    --     ctrlMsg:setValue(15)      
+    --     return pIndex - 1
+    --   end
+    --   curPresetName = cvc[pIndex]         
+    --elseif (curCategory == CAT_UTILITY) then -- Utility
+    --   if (pIndex > 43) then
+    --     ctrlMsg:setValue(43)      
+    --     return pIndex - 1
+    --   end  
+    --   curPresetName = utility[pIndex]       
+    --elseif (curCategory == CAT_OTHER1) then -- Other1 (150 presets in Other 150-128 = 22 cor CC32=1)
+    --   if (pIndex > 27) then
+    --     ctrlMsg:setValue(27)      
+    --     return pIndex - 1
+    --   end
+    --   curPresetName = other1[pIndex]                      
+    --end
+    --return pIndex 
 end
 
 -- Load the System Preset
 function loadSystemPreset(valueObject, value)
-  -- print("LoadSystemPreset Called")
-   local tmpCategory = curCategory
-   if (sendSysPresetInit == false) then
-     sendSysPresetInit = true
-     return
-   end
-   if (curSystemPreset == 0) then
-      info.setText("Select System Preset")
-      return
-   elseif (curCategory == 0) then
-      info.setText("Select Category")
-      return   
-   else
-       info.setText("")
-   end
-   if (curCategory == CAT_OTHER1) then
-     tmpCategory = CAT_OTHER -- Really only one Other category but presetned to the user as 2
-   end
-   midi.sendControlChange(DEVICE_PORT, 16, 0, tmpCategory) -- Send Category
-   if (curCC32 > 0) then
-      midi.sendControlChange(DEVICE_PORT, 16, 32, curCC32) -- Send CC32 if > 128 Presets in category  
-   end
-   midi.sendProgramChange(DEVICE_PORT, 16, curSystemPreset-1) -- Send Program Change
-   local ctrl = controls.get(50) 
-   ctrl:setName(curPresetName)
-   -- Fill in macros
-   macroInProgress = true
-   clearInfo()
-   clearMacros()
-   resetMute()
-   midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values 
+    -- print("LoadSystemPreset Called")
+    local tmpCategory = curCategory
+    if (sendSysPresetInit == false) then
+        sendSysPresetInit = true
+        return
+    end
+    if (curSystemPreset == 0) then
+        info.setText("Select System Preset")
+        return
+    elseif (curCategory == 0) then
+        info.setText("Select Category")
+        return
+    else
+        info.setText("")
+    end
+    if (curCategory == CAT_OTHER1) then
+        tmpCategory = CAT_OTHER -- Really only one Other category but presetned to the user as 2
+    end
+    macroInProgress = true
+    clearInfo()
+    clearMacros()
+    resetMute()
+    midi.sendControlChange(DEVICE_PORT, 16, 0, tmpCategory) -- Send Category
+    if (curCC32 > 0) then
+        midi.sendControlChange(DEVICE_PORT, 16, 32, curCC32) -- Send CC32 if > 128 Presets in category  
+    end
+    midi.sendProgramChange(DEVICE_PORT, 16, curSystemPreset-1) -- Send Program Change
+    local ctrl = controls.get(50)
+    ctrl:setName(curPresetName)
+    -- Fill in macros
+    -- macroInProgress = true
+    -- clearInfo()
+    -- clearMacros()
+    -- resetMute()
+    midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values 
 end
 
 -- Added by SOR for getting system presets.
@@ -2826,9 +2830,9 @@ function onSystemPresetReceived()
     if categoryNo == CAT_OTHER and categoryPresetCount == 128 then
         categoryNo = CAT_OTHER1
         categoryPresetCount = #systemPresetCategories[categoryNo]
-    end 
+    end
     local newPresetNo = categoryPresetCount + 1
-    systemPresetCategories[categoryNo][newPresetNo] = receivedSystemPresetName 
+    systemPresetCategories[categoryNo][newPresetNo] = receivedSystemPresetName
 end
 
 -- Added by SOR for getting system presets.
@@ -2892,307 +2896,307 @@ end
 
 -- Set Pedal 2 Assignment
 function assignPedal2 (valueObject, value)
-   if (pedal2Init == false) then
-      pedal2Init = true
-      return
-   end
-   local ctrl = controls.get(164)
-   local controlValue = ctrl:getValue("value")
-   local ctrlMsg = controlValue:getMessage()
-   local ped2Val = ctrlMsg:getValue()
-   matrixPoke(53, ped2Val) -- set assignment
-end
-function processConvolution()
---[[ Process Convolution stream and populate the convolution parameters
-    ch16 pPres=19 22  	(Pre-Convolution Index, Pre-Convolution Level)
-    ch16 pPres=34 15	(Post-Convolution Index, Post-Convolution Level)
-    ch16 pPres=6 7 	(C1 IR type, C2 IR type)
-    ch16 pPres=8 6 	(C3 IR type, C4 IR type)
-    ch16 pPres=127 127 	(C1 Length, C2 Length)
-    ch16 pPres=127 127 	(C3 Length, C4 Length)
-    ch16 pPres=64 64 	(C1 Shift/Tuning, C2 Shift/Tuning)
-    ch16 pPres=64 64 	(C3 Shift/Tuning, C4 Shift/Tuning)
-    ch16 pPres=0 64 	(C1 Width, C2 Width)
-    ch16 pPres=64 64 	(C3 Width, C4 Width)
-    ch16 pPres=127 127 	(C1 Stereo Atten Left, C2 Stereo Atten Left)
-    ch16 pPres=127 127 	(C3 Stereo Atten Left, C3 Stereo Atten Left)
-    ch16 pPres=127 127 	(C1 Stereo Atten Right, C2 Stereo Right)
-    ch16 pPres=127 127	(C3 Stereo Atten Right, C3 Stereo Right)
-    ch16 pPres=0 0 	(Enhanced Phase, 0 padding)
-    Final convString will be: 0|0|0|0|0|7|8|6|15|127|127|127|12|64|64|64|64|64|64|64|127|127|127|127|127|127|127|127|0|0|
---]]
---  local test = true
---  if (test == true) then
---    return
---  end
-  -- print ("Convolution Stream Processed:"..convString)
-  -- string.strsub (s, i, [j])
-  local tmpStr = convString
-  local ix = 1
-  local j = 1
-  local pi = 1
-  local convParams = {"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", 
-                    "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"}
-  convString = ""
-  local strLen = string.len(tmpStr)
-  while ix < strLen
-  do
-     if (tmpStr:sub(ix,ix) =="|") then -- parse the individual parametgers into an array
-       convParams[pi] = tmpStr:sub(j,ix-1)
-       --print("C="..convParams[pi]) -- debugit
-       pi = pi + 1
-       j = ix + 1 
-     end
-       ix = ix + 1 
-  end
- -- for i= 1,28 
- -- do
- --  print("Conv "..i.."="..convParams[i]) -- debugit
- -- end
-  -- Update the Convolution Controls with the stream data read
-
-  --[[ Programmed conv really handled by macros, etc.
-    local ctrl = controls.get(105) -- Pre Mix
+    if (pedal2Init == false) then
+        pedal2Init = true
+        return
+    end
+    local ctrl = controls.get(164)
     local controlValue = ctrl:getValue("value")
     local ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[1]) 
-         
-         ctrl = controls.get(106) -- Pre index
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[2])
-         
-         ctrl = controls.get(109) -- Post Mix
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[3])
-         
-         ctrl = controls.get(110) -- Post Index
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[4])
---]]       
+    local ped2Val = ctrlMsg:getValue()
+    matrixPoke(53, ped2Val) -- set assignment
+end
+function processConvolution()
+    --[[ Process Convolution stream and populate the convolution parameters
+        ch16 pPres=19 22  	(Pre-Convolution Index, Pre-Convolution Level)
+        ch16 pPres=34 15	(Post-Convolution Index, Post-Convolution Level)
+        ch16 pPres=6 7 	(C1 IR type, C2 IR type)
+        ch16 pPres=8 6 	(C3 IR type, C4 IR type)
+        ch16 pPres=127 127 	(C1 Length, C2 Length)
+        ch16 pPres=127 127 	(C3 Length, C4 Length)
+        ch16 pPres=64 64 	(C1 Shift/Tuning, C2 Shift/Tuning)
+        ch16 pPres=64 64 	(C3 Shift/Tuning, C4 Shift/Tuning)
+        ch16 pPres=0 64 	(C1 Width, C2 Width)
+        ch16 pPres=64 64 	(C3 Width, C4 Width)
+        ch16 pPres=127 127 	(C1 Stereo Atten Left, C2 Stereo Atten Left)
+        ch16 pPres=127 127 	(C3 Stereo Atten Left, C3 Stereo Atten Left)
+        ch16 pPres=127 127 	(C1 Stereo Atten Right, C2 Stereo Right)
+        ch16 pPres=127 127	(C3 Stereo Atten Right, C3 Stereo Right)
+        ch16 pPres=0 0 	(Enhanced Phase, 0 padding)
+        Final convString will be: 0|0|0|0|0|7|8|6|15|127|127|127|12|64|64|64|64|64|64|64|127|127|127|127|127|127|127|127|0|0|
+    --]]
+    --  local test = true
+    --  if (test == true) then
+    --    return
+    --  end
+    -- print ("Convolution Stream Processed:"..convString)
+    -- string.strsub (s, i, [j])
+    local tmpStr = convString
+    local ix = 1
+    local j = 1
+    local pi = 1
+    local convParams = {"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
+                        "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"}
+    convString = ""
+    local strLen = string.len(tmpStr)
+    while ix < strLen
+    do
+        if (tmpStr:sub(ix,ix) =="|") then -- parse the individual parametgers into an array
+            convParams[pi] = tmpStr:sub(j,ix-1)
+            --print("C="..convParams[pi]) -- debugit
+            pi = pi + 1
+            j = ix + 1
+        end
+        ix = ix + 1
+    end
+    -- for i= 1,28 
+    -- do
+    --  print("Conv "..i.."="..convParams[i]) -- debugit
+    -- end
+    -- Update the Convolution Controls with the stream data read
+
+    --[[ Programmed conv really handled by macros, etc.
+      local ctrl = controls.get(105) -- Pre Mix
+      local controlValue = ctrl:getValue("value")
+      local ctrlMsg = controlValue:getMessage()
+           ctrlMsg:setValue(convParams[1]) 
+           
+           ctrl = controls.get(106) -- Pre index
+           controlValue = ctrl:getValue("value")
+           ctrlMsg = controlValue:getMessage()
+           ctrlMsg:setValue(convParams[2])
+           
+           ctrl = controls.get(109) -- Post Mix
+           controlValue = ctrl:getValue("value")
+           ctrlMsg = controlValue:getMessage()
+           ctrlMsg:setValue(convParams[3])
+           
+           ctrl = controls.get(110) -- Post Index
+           controlValue = ctrl:getValue("value")
+           ctrlMsg = controlValue:getMessage()
+           ctrlMsg:setValue(convParams[4])
+  --]]
     -- IRs
-         local ctrl = controls.get(93) -- IR1 Type
-         local controlValue = ctrl:getValue("value")
-         local ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[5])
-         
-         ctrl = controls.get(94) -- IR2 Type
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[6])
-         
-         ctrl = controls.get(95) -- IR3 Type
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[7])
-         
-         ctrl = controls.get(96) -- IR4 Type
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[8])
- 
+    local ctrl = controls.get(93) -- IR1 Type
+    local controlValue = ctrl:getValue("value")
+    local ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[5])
+
+    ctrl = controls.get(94) -- IR2 Type
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[6])
+
+    ctrl = controls.get(95) -- IR3 Type
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[7])
+
+    ctrl = controls.get(96) -- IR4 Type
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[8])
+
     -- Length
-         ctrl = controls.get(97) -- Length C1
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[9])
-         ctrl = controls.get(98) -- Length C2
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[10])
-         ctrl = controls.get(99) -- Length C3
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[11])
-         ctrl = controls.get(100) -- Length C4
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[12]) 
-    
+    ctrl = controls.get(97) -- Length C1
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[9])
+    ctrl = controls.get(98) -- Length C2
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[10])
+    ctrl = controls.get(99) -- Length C3
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[11])
+    ctrl = controls.get(100) -- Length C4
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[12])
+
     -- Tuning
-         ctrl = controls.get(101) -- Tuning C1
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[13])
-         ctrl = controls.get(102) -- Tuning C2
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[14])
-         ctrl = controls.get(103) -- Tuning C3
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[15])
-         ctrl = controls.get(104) -- Tuning C4
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[16])
-    
+    ctrl = controls.get(101) -- Tuning C1
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[13])
+    ctrl = controls.get(102) -- Tuning C2
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[14])
+    ctrl = controls.get(103) -- Tuning C3
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[15])
+    ctrl = controls.get(104) -- Tuning C4
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[16])
+
     -- Width
-         ctrl = controls.get(111) -- Width C1
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[17])
-         ctrl = controls.get(112) -- Width C2
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[18])
-         ctrl = controls.get(113) -- Width C3
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[19])
-         ctrl = controls.get(114) -- Width C4
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[20])            
+    ctrl = controls.get(111) -- Width C1
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[17])
+    ctrl = controls.get(112) -- Width C2
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[18])
+    ctrl = controls.get(113) -- Width C3
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[19])
+    ctrl = controls.get(114) -- Width C4
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[20])
 
     -- Stereo Left Atten
-         ctrl = controls.get(115) -- Stereo L C1
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[21])
-         --print("L Atten: ".. convParams[21])
-         ctrl = controls.get(116) -- Stereo L C2
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[22])
-         --print("L Atten: ".. convParams[22])         
-         ctrl = controls.get(117) -- Stereo L C3
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[23])
-         --print("L Atten: ".. convParams[23])         
-         ctrl = controls.get(118) -- Stereo L C4
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[24])
-         --print("L Atten: ".. convParams[24])         
+    ctrl = controls.get(115) -- Stereo L C1
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[21])
+    --print("L Atten: ".. convParams[21])
+    ctrl = controls.get(116) -- Stereo L C2
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[22])
+    --print("L Atten: ".. convParams[22])         
+    ctrl = controls.get(117) -- Stereo L C3
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[23])
+    --print("L Atten: ".. convParams[23])         
+    ctrl = controls.get(118) -- Stereo L C4
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[24])
+    --print("L Atten: ".. convParams[24])         
 
     -- Stereo Right Atten
-         ctrl = controls.get(119) -- Stereo R C1
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[25])
-         ctrl = controls.get(120) -- Stereo R C2
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[26])
-         ctrl = controls.get(121) -- Stereo R C3
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
+    ctrl = controls.get(119) -- Stereo R C1
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[25])
+    ctrl = controls.get(120) -- Stereo R C2
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[26])
+    ctrl = controls.get(121) -- Stereo R C3
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
 
-         ctrlMsg:setValue(convParams[27])
-         ctrl = controls.get(122) -- Stereo R C4
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[28])
-  --local test = true
-  --if (test == true) then
-  --  return
-  --end         
+    ctrlMsg:setValue(convParams[27])
+    ctrl = controls.get(122) -- Stereo R C4
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[28])
+    --local test = true
+    --if (test == true) then
+    --  return
+    --end         
     -- Enhanced Phase
-         ctrl = controls.get(127) -- EP
-         controlValue = ctrl:getValue("value")
-         ctrlMsg = controlValue:getMessage()
-         ctrlMsg:setValue(convParams[29])
-         local epval = math.floor(convParams[29])
-        if (epval == 1) then
-           ctrl:setName("EP On")
-        elseif (epval == 0) then
-           ctrl:setName("EP Off")
-        else 
-           print("EP - Unknown value: "..epval)
-        end                 
+    ctrl = controls.get(127) -- EP
+    controlValue = ctrl:getValue("value")
+    ctrlMsg = controlValue:getMessage()
+    ctrlMsg:setValue(convParams[29])
+    local epval = math.floor(convParams[29])
+    if (epval == 1) then
+        ctrl:setName("EP On")
+    elseif (epval == 0) then
+        ctrl:setName("EP Off")
+    else
+        print("EP - Unknown value: "..epval)
+    end
 end
 
 function setConvLength1 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(8, val)
+    local val = math.floor(value)
+    convolutionPoke(8, val)
 end
 function setConvLength2 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(9, val)
+    local val = math.floor(value)
+    convolutionPoke(9, val)
 end
 function setConvLength3 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(10, val)
+    local val = math.floor(value)
+    convolutionPoke(10, val)
 end
 function setConvLength4 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(11, val)
+    local val = math.floor(value)
+    convolutionPoke(11, val)
 end
 function setConvTune1 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(12, val)
+    local val = math.floor(value)
+    convolutionPoke(12, val)
 end
 function setConvTune2 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(13, val)
+    local val = math.floor(value)
+    convolutionPoke(13, val)
 end
 function setConvTune3 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(14, val)
+    local val = math.floor(value)
+    convolutionPoke(14, val)
 end
 function setConvTune4 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(15, val)
+    local val = math.floor(value)
+    convolutionPoke(15, val)
 end
 function setConvWidth1 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(16, val)
+    local val = math.floor(value)
+    convolutionPoke(16, val)
 end
 function setConvWidth2 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(17, val)
+    local val = math.floor(value)
+    convolutionPoke(17, val)
 end
 function setConvWidth3 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(18, val)
+    local val = math.floor(value)
+    convolutionPoke(18, val)
 end
 function setConvWidth4 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(19, val)
+    local val = math.floor(value)
+    convolutionPoke(19, val)
 end
 function setConvLeft1 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(20, val)
+    local val = math.floor(value)
+    convolutionPoke(20, val)
 end
 function setConvLeft2 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(21, val)
+    local val = math.floor(value)
+    convolutionPoke(21, val)
 end
 function setConvLeft3 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(22, val)
+    local val = math.floor(value)
+    convolutionPoke(22, val)
 end
 function setConvLeft4 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(23, val)
+    local val = math.floor(value)
+    convolutionPoke(23, val)
 end
 function setConvRight1 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(24, val)
+    local val = math.floor(value)
+    convolutionPoke(24, val)
 end
 function setConvRight2 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(25, val)
+    local val = math.floor(value)
+    convolutionPoke(25, val)
 end
 function setConvRight3 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(26, val)
+    local val = math.floor(value)
+    convolutionPoke(26, val)
 end
 function setConvRight4 (valueObject, value)
-   local val = math.floor(value)
-   convolutionPoke(27, val)
+    local val = math.floor(value)
+    convolutionPoke(27, val)
 end
 
 function format0to1(valueObject, value)
-   -- print("Formatter called")
-   local val = value/128
-     val = val + 0.004 -- make it scale to 1.0 max
+    -- print("Formatter called")
+    local val = value/128
+    val = val + 0.004 -- make it scale to 1.0 max
     return(string.format("%.2f", val))
- end
+end
 
 function noop (valueObject, value)
 end
