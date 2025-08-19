@@ -96,31 +96,31 @@ local haveSystemPresetsBeenUpdated = false
 local isAccumulatingSystemPresetContext = false
 local isAccumulatingSystemPresetName = false
 local isGettingSystemPresets = false
+local isSystemPresetsUpdateRequired = false
 local receivedSystemPresetContext = ""
 local receivedSystemPresetName = ""
 local systemPresetContextBuffer = ""
 local systemPresetNameBuffer = ""
 local versionText = ""
 
+-- Added by SOR for getting system presets.
 local persistableData = {}
 -- Do initial recall
 print("Recalling persistableData")
 recall(persistableData)
-print("Recalled persistableData")
-if not persistableData.saved then
-    print("persistableData not saved, defaulting")
+-- Uncomment any of these to force system presets to be got from the instrument.
+--persistableData.isSaved = false
+--persistableData.firmwareVersion = "9.0"
+--persistableData.systemPresetCategories = {}
+if not persistableData.isSaved then
+    print("persistableData not available")
+    -- Not strictly necessary,
+    --  provided isSaved is always checked before accessing these items.
     persistableData.firmwareVersion = ""
     persistableData.systemPresetCategories = {}
-    print("persistableData defaulted")
 else
-    print("Saved persistableData recalled, showing persistableData.firmwareVersion")
     print("persistableData.firmwareVersion = "..persistableData.firmwareVersion)
-    print("Showed persistableData.firmwareVersion")
 end
--- Uncomment to test
---persistableData.saved = true
---persistableData.firmwareVersion = "9.0"
-print("Finished initialising persistableData")
 
 -- System presets grouped by category. SOR
 local systemPresetCategories = {}
@@ -741,7 +741,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         -- End of system preset list (endSysNames)    
         isGettingSystemPresets = false
         print("End of system preset list")
-        onEndOfSystemPresetList()
+        onSystemPresetsUpdated(false)
         return
     end
 
@@ -1563,7 +1563,7 @@ end
 
 
 function preset.onLoad()
-    print("preset.onLoad")
+    --print("preset.onLoad")
     -- Disable things not yet supported
     userNameProcessing = false
     --nameInProgress = false
@@ -2806,27 +2806,14 @@ end
 -- Added by SOR for getting system presets.
 function getSystemPresets()
     print("getSystemPresets")
-    -- Request system preset names (sysToMidi).
-    midi.sendControlChange(DEVICE_PORT, 16, 109, 39)
-end
-
--- Added by SOR for getting system presets.
-function onEndOfSystemPresetList()
-    haveSystemPresetsBeenUpdated = true
-    replaceLongSystemPresetNamesWithShortNames()
-    -- Replace the "Getting presets..." notification 
-    -- on the status bar with the version info.
-    info.setText(versionText)
-    savePersistableData()
-    local categoryCount = #systemPresetCategories
-    print("Counting system presets in "..categoryCount.." categories.")
-    for category = 1, categoryCount do
-        local presetNames = systemPresetCategories[category]
-        local presetCount = #presetNames
-        print("Category "..category.." has "..presetCount.." system presets.")
-    end
-    selectPresetCategory(nil, nil)
-    selectSystemPreset()
+    if isSystemPresetsUpdateRequired then
+        -- Request system preset names (sysToMidi).
+        midi.sendControlChange(DEVICE_PORT, 16, 109, 39)
+    else
+        print("    Getting system presets from persisted data.")
+        systemPresetCategories = persistableData.systemPresetCategories
+        onSystemPresetsUpdated(true)
+    end 
 end
 
 -- Added by SOR for getting system presets.
@@ -2843,12 +2830,19 @@ function onFirmwareVersionReceived()
     firmwareVersion = ((128 * highVersion)  + lowVersion) / 100
     versionText = "Ver: 1.1/"..firmwareVersion
     info.setText(versionText) -- Versions to Info Text
-    --if persistableData.saved then
-    --    print("    Previous firmware version = "..persistableData.firmwareVersion)
-    --    print("    Current firmware version = "..firmwareVersion)
-    --else
-    --    print("    The previous firmware version is not available.")
-    --end 
+    if persistableData.isSaved then
+        print("    Previous firmware version = "..persistableData.firmwareVersion)
+        print("    Current firmware version = "..firmwareVersion)
+        print("    "..#persistableData.systemPresetCategories..
+                " system preset categories have been recalled.")
+    else
+        print("    The previous firmware version is not available.")
+    end
+    isSystemPresetsUpdateRequired = 
+        not persistableData.isSaved 
+                or persistableData.firmwareVersion ~= firmwareVersion
+                or #persistableData.systemPresetCategories == 0
+    print("    isSystemPresetsUpdateRequired = "..tostring( isSystemPresetsUpdateRequired))
 end
 
 -- Added by SOR for getting system presets.
@@ -2881,6 +2875,27 @@ function onSystemPresetReceived()
 end
 
 -- Added by SOR for getting system presets.
+function onSystemPresetsUpdated(fromPersistedData)
+    haveSystemPresetsBeenUpdated = true
+    if not fromPersistedData then
+        replaceLongSystemPresetNamesWithShortNames()
+        savePersistableData()
+    end
+    -- Replace the "Getting presets..." notification 
+    -- on the status bar with the version info.
+    info.setText(versionText)
+    local categoryCount = #systemPresetCategories
+    print("Counting system presets in "..categoryCount.." categories.")
+    for category = 1, categoryCount do
+        local presetNames = systemPresetCategories[category]
+        local presetCount = #presetNames
+        print("Category "..category.." has "..presetCount.." system presets.")
+    end
+    selectPresetCategory(nil, nil)
+    selectSystemPreset()
+end
+
+-- Added by SOR for getting system presets.
 -- To avoid truncation when a system preset name is shown on the E1,
 -- replace any names that are too long with short names.
 function replaceLongSystemPresetNamesWithShortNames()
@@ -2908,12 +2923,11 @@ end
 
 -- Added by SOR for getting system presets.
 function savePersistableData()
-    print("savePersistableData")
-    print("    Saving")
-    persistableData.saved = true
+    print("Saving persistableData")
+    persistableData.isSaved = true
     persistableData.firmwareVersion = firmwareVersion
+    persistableData.systemPresetCategories = systemPresetCategories
     persist(persistableData)
-    print("    Saved")
 end
 
 -- Added by SOR for getting system presets.
