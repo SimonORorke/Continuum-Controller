@@ -1,3 +1,4 @@
+-- Added by SOR for getting system presets.
 -- Check if E1 model and firmware requirements are met.
 -- The firmware version is required for persist() and recall().
 -- Assert will terminate the script on a failed check.
