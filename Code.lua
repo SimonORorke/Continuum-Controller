@@ -1,3 +1,10 @@
+-- Check if E1 model and firmware requirements are met.
+-- The firmware version is required for persist() and recall().
+-- Assert will terminate the script on a failed check.
+assert(
+    controller.isRequired(MODEL_MK2, "4.0.0"),
+    "Electra One firmware version 4.0.0 or higher is required."
+)
 local CONTROL_CHANGE_MSB_INC = 86
 local CONTROL_CHANGE_MSB_DEC = 97
 local DEVICE_PORT = PORT_1
@@ -94,6 +101,26 @@ local receivedSystemPresetName = ""
 local systemPresetContextBuffer = ""
 local systemPresetNameBuffer = ""
 local versionText = ""
+
+local persistableData = {}
+-- Do initial recall
+print("Recalling persistableData")
+recall(persistableData)
+print("Recalled persistableData")
+if not persistableData.saved then
+    print("persistableData not saved, defaulting")
+    persistableData.firmwareVersion = ""
+    persistableData.systemPresetCategories = {}
+    print("persistableData defaulted")
+else
+    print("Saved persistableData recalled, showing persistableData.firmwareVersion")
+    print("persistableData.firmwareVersion = "..persistableData.firmwareVersion)
+    print("Showed persistableData.firmwareVersion")
+end
+-- Uncomment to test
+--persistableData.saved = true
+--persistableData.firmwareVersion = "9.0"
+print("Finished initialising persistableData")
 
 -- System presets grouped by category. SOR
 local systemPresetCategories = {}
@@ -401,19 +428,8 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         lowVersion = value
         -- Amended by SOR for getting system presets.
         if not hasFirmwareVersionAlreadyBeenReceived then
-            print("First time firmware version received")
-            -- There's no specific command to request the firmware version.
-            -- The instrument sends it more than once: on connecting to E1;
-            -- when sending user presets; when sending system presets, etc.
-            -- We don't want to show the firmware version every time it is received,
-            -- as there may be a progress message in the info text while
-            -- preset data is being received.  
-            -- So save the version info to a variable to be shown again
-            -- when all the preset data has been received.
             hasFirmwareVersionAlreadyBeenReceived = true
-            firmwareVersion = ((128 * highVersion)  + lowVersion) / 100
-            versionText = "Ver: 1.1/"..firmwareVersion
-            info.setText(versionText) -- Versions to Info Text
+            onFirmwareVersionReceived()
         end
         return
     end
@@ -1547,8 +1563,8 @@ end
 
 
 function preset.onLoad()
+    print("preset.onLoad")
     -- Disable things not yet supported
-    -- print("OnLoad Called")
     userNameProcessing = false
     --nameInProgress = false
     macroInProgress = false
@@ -2801,6 +2817,7 @@ function onEndOfSystemPresetList()
     -- Replace the "Getting presets..." notification 
     -- on the status bar with the version info.
     info.setText(versionText)
+    savePersistableData()
     local categoryCount = #systemPresetCategories
     print("Counting system presets in "..categoryCount.." categories.")
     for category = 1, categoryCount do
@@ -2810,6 +2827,28 @@ function onEndOfSystemPresetList()
     end
     selectPresetCategory(nil, nil)
     selectSystemPreset()
+end
+
+-- Added by SOR for getting system presets.
+function onFirmwareVersionReceived()
+    print("onFirmwareVersionReceived")
+    -- There's no specific command to request the firmware version.
+    -- The instrument sends it more than once: on connecting to E1;
+    -- when sending user presets; when sending system presets, etc.
+    -- We don't want to show the firmware version every time it is received,
+    -- as there may be a progress message in the info text while
+    -- preset data is being received.  
+    -- So save the version info to a variable to be shown again
+    -- when all the preset data has been received.
+    firmwareVersion = ((128 * highVersion)  + lowVersion) / 100
+    versionText = "Ver: 1.1/"..firmwareVersion
+    info.setText(versionText) -- Versions to Info Text
+    --if persistableData.saved then
+    --    print("    Previous firmware version = "..persistableData.firmwareVersion)
+    --    print("    Current firmware version = "..firmwareVersion)
+    --else
+    --    print("    The previous firmware version is not available.")
+    --end 
 end
 
 -- Added by SOR for getting system presets.
@@ -2865,6 +2904,16 @@ function replaceLongSystemPresetNamesWithShortNames()
             end
         end
     end
+end
+
+-- Added by SOR for getting system presets.
+function savePersistableData()
+    print("savePersistableData")
+    print("    Saving")
+    persistableData.saved = true
+    persistableData.firmwareVersion = firmwareVersion
+    persist(persistableData)
+    print("    Saved")
 end
 
 -- Added by SOR for getting system presets.
