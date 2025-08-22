@@ -1,4 +1,4 @@
--- Added by SOR for getting system presets.
+-- Added by SOR: Get system presets.
 -- Check if E1 model and firmware requirements are met.
 -- The firmware version is required for persist() and recall().
 -- Assert will terminate the script on a failed check.
@@ -104,7 +104,7 @@ local systemPresetContextBuffer = ""
 local systemPresetNameBuffer = ""
 local versionText = ""
 
--- Added by SOR for getting system presets.
+-- Added by SOR: Get system presets.
 local persistableData = {}
 -- Do initial recall
 print("Recalling persistableData")
@@ -427,7 +427,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     end
     if (chan == 16 and cc == 103) then -- Firmware Low Address
         lowVersion = value
-        -- Amended by SOR for getting system presets.
+        -- Amended by SOR: Get system presets.
         if not hasFirmwareVersionAlreadyBeenReceived then
             hasFirmwareVersionAlreadyBeenReceived = true
             onFirmwareVersionReceived()
@@ -729,7 +729,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     if (msg.channel ~= 16) then
         return
     end
-    -- Added by SOR for getting system presets.
+    -- Added by SOR: Get system presets.
     if ( msg.controllerNumber==109 and msg.value==49) then
         -- Start of system preset list (beginSysNames)    
         --print("Start of system preset list")
@@ -737,7 +737,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         print("Start of system preset list")
         return
     end
-    -- Added by SOR for getting system presets.
+    -- Added by SOR: Get system presets.
     if (msg.controllerNumber==109 and msg.value==40) then
         -- End of system preset list (endSysNames)    
         isGettingSystemPresets = false
@@ -761,7 +761,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         end
         userNameProcessing = false
         userNameIndex=0
-        -- Added by SOR for getting system presets.
+        -- Added by SOR: Get system presets.
         if not haveSystemPresetsBeenUpdated then
             getSystemPresets()
         else
@@ -771,7 +771,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         end
     end
 
-    -- Amended by SOR for getting system presets.
+    -- Amended by SOR: Get system presets.
     if (msg.controllerNumber==56 and msg.value==0) then
         -- Start of system or user preset name stream
         if isGettingSystemPresets then
@@ -799,7 +799,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         matrixStream=false -- Has no CC56=127 terminator - new stream terminates it       
     end
 
-    -- Amended by SOR for getting system presets.
+    -- Amended by SOR: Get system presets.
     if (msg.controllerNumber==56 and msg.value==1) then
         -- Start of macro or system preset context stream 
         if isGettingSystemPresets then
@@ -815,7 +815,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         matrixStream=false -- Has no CC56=127 terminator - new stream terminates it
     end
 
-    -- Added by SOR for getting system presets.
+    -- Added by SOR: Get system presets.
     if msg.controllerNumber==56 and msg.value==127 then -- End of stream
         if isAccumulatingSystemPresetName then
             isAccumulatingSystemPresetName = false
@@ -859,14 +859,14 @@ end
 
 
 function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
-    -- Added by SOR for getting system presets.
+    -- Added by SOR: Get system presets.
     if (isAccumulatingSystemPresetName) then
         -- Accumulate system preset name buffer
         systemPresetNameBuffer =
         systemPresetNameBuffer ..string.char(noteNumber)..string.char(pressure)
         return
     end
-    -- Added by SOR for getting system presets.
+    -- Added by SOR: Get system presets.
     if (isAccumulatingSystemPresetContext) then
         -- Accumulate system preset context buffer
         systemPresetContextBuffer =
@@ -2620,7 +2620,7 @@ end
 
 -- Store the current Preset category selected
 function selectPresetCategory(valueObject, value)
-    -- Added by SOR for getting system presets.
+    -- Added by SOR: Get system presets.
     if not haveSystemPresetsBeenUpdated then
         -- This function will be called again, from the Lua code,
         -- once all the system presets have been received.
@@ -2646,7 +2646,7 @@ end
 
 -- Get the preset name and index based on Category set
 function selectSystemPreset(valueObject, value)
-    -- Added by SOR for getting system presets.
+    -- Added by SOR: Get system presets.
     if not haveSystemPresetsBeenUpdated then
         -- This function will be called again, from the Lua code,
         -- once all the system presets have been received.
@@ -2667,7 +2667,7 @@ end
 -- Or see if this can be dynamically read for a later version
 -- DOES THE ABOVE COMMENT NEED TO BE MODIFIED OR REMOVED?  SOR
 -- Currently this should work for the Continuum and the EganMatrix module.
--- Amended by SOR for getting system presets.
+-- Amended by SOR: Get system presets.
 function getMaxPresetIndex (pIndex) -- cap inex at max range for each category
     local ctrl = controls.get(273)
     local controlValue = ctrl:getValue("value")
@@ -2804,7 +2804,7 @@ function loadSystemPreset(valueObject, value)
     midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values 
 end
 
--- Added by SOR for getting system presets.
+-- Added by SOR: Get system presets.
 function getSystemPresets()
     print("getSystemPresets")
     if isSystemPresetsUpdateRequired then
@@ -2817,7 +2817,7 @@ function getSystemPresets()
     end 
 end
 
--- Added by SOR for getting system presets.
+-- Added by SOR: Get system presets.
 function onFirmwareVersionReceived()
     print("onFirmwareVersionReceived")
     -- There's no specific command to request the firmware version.
@@ -2846,7 +2846,7 @@ function onFirmwareVersionReceived()
     print("    isSystemPresetsUpdateRequired = "..tostring( isSystemPresetsUpdateRequired))
 end
 
--- Added by SOR for getting system presets.
+-- Added by SOR: Get system presets.
 function onSystemPresetReceived()
     -- The system preset's two-letter category code has been received.
     -- It needs to be parsed from the context data that has been appended to curName.
@@ -2875,7 +2875,7 @@ function onSystemPresetReceived()
     systemPresetCategories[categoryNo][newPresetNo] = receivedSystemPresetName
 end
 
--- Added by SOR for getting system presets.
+-- Added by SOR: Get system presets.
 function onSystemPresetsUpdated(fromPersistedData)
     haveSystemPresetsBeenUpdated = true
     if not fromPersistedData then
@@ -2896,7 +2896,7 @@ function onSystemPresetsUpdated(fromPersistedData)
     selectSystemPreset()
 end
 
--- Added by SOR for getting system presets.
+-- Added by SOR: Get system presets.
 -- To avoid truncation when a system preset name is shown on the E1,
 -- replace any names that are too long with short names.
 function replaceLongSystemPresetNamesWithShortNames()
@@ -2922,7 +2922,7 @@ function replaceLongSystemPresetNamesWithShortNames()
     end
 end
 
--- Added by SOR for getting system presets.
+-- Added by SOR: Get system presets.
 function savePersistableData()
     print("Saving persistableData")
     persistableData.isSaved = true
@@ -2931,7 +2931,7 @@ function savePersistableData()
     persist(persistableData)
 end
 
--- Added by SOR for getting system presets.
+-- Added by SOR: Get system presets.
 -- The text streams provide characters in pairs,
 -- So if the string received has an odd number of characters,
 -- there will be an null character (ASCII 0) at the end to make it even.
