@@ -726,6 +726,7 @@ end -- CC event processing
 
 function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message Events
     local msg = midiMessage
+    -- Added by SOR: Get system presets.
     if (msg.channel ~= 16) then
         return
     end
