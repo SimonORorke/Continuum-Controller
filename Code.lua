@@ -25,6 +25,7 @@ local CAT_MIDI = 11
 local CAT_CVC = 12
 local CAT_UTILITY = 13
 local CAT_OTHER1 = 14
+local E1_PRESET_VERSION = "1.1" -- SOR
 -- Names longer than this will be truncated when shown on controls. SOR
 local MAX_NAME_LENGTH = 14
 
@@ -2830,7 +2831,7 @@ function onFirmwareVersionReceived()
     -- So save the version info to a variable to be shown again
     -- when all the preset data has been received.
     firmwareVersion = ((128 * highVersion)  + lowVersion) / 100
-    versionText = "Ver: 1.1/"..firmwareVersion
+    versionText = "Ver: "..E1_PRESET_VERSION.."/"..firmwareVersion
     info.setText(versionText) -- Versions to Info Text
     if persistableData.isSaved then
         print("    Previous firmware version = "..persistableData.firmwareVersion)
