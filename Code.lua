@@ -2826,6 +2826,23 @@ function setMacroNames()
         -- Preset has no macros
         return
     end
+    -- The macros line is expected to contain id=name pairs.
+    -- But in rare cases there is a space after an '=', which could
+    -- mess up the parsing if we don't allow for it.
+    -- Remove any spaces preceding the '='s.
+    -- There are no known examples, so this is just to be safe.
+    while string.find(macrosLine, " =") do
+        macrosLine = string.gsub(macrosLine, " =", "=");
+    end 
+    -- Remove any spaces following the '='s.
+    -- Example: Clarinet has macro line
+    -- "i=Body_One_Two ii=Darkness iii= Tongue iv=Flutter".
+    -- We would miss the Tongue macro if we don't remove the non-standard space.
+    while string.find(macrosLine, "= ") do
+        macrosLine = string.gsub(macrosLine, "= ", "=");
+    end
+    -- Now we are sure there are no spaces either side of the '='s.
+    -- So we can safely split the macros line into id=name pairs delimited by space.
     local macroStrings = splitString(macrosLine)
     local macroStringsCount = #macroStrings
     for i = 1, macroStringsCount do
