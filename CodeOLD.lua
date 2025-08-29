@@ -25,14 +25,6 @@ local CAT_MIDI = 11
 local CAT_CVC = 12
 local CAT_UTILITY = 13
 local CAT_OTHER1 = 14
-local E1_PRESET_VERSION = "1.1" -- SOR
--- Macro control numbers SOR
-local MACRO_I = 25
-local MACRO_II = 26
-local MACRO_III = 27
-local MACRO_IV = 28
-local MACRO_V = 29
-local MACRO_VI = 30
 -- Names longer than this will be truncated when shown on controls. SOR
 local MAX_NAME_LENGTH = 14
 
@@ -53,6 +45,7 @@ curCC32 = 0 -- If more than 128 presets in a category
 curPresetName = ""
 userNameProcessing = false
 nameInProgress = false
+macroInProgress = false
 thumbInProgress = false
 convInProgress = false
 macrosLoaded = false
@@ -61,6 +54,7 @@ curName=""
 lastName = "" -- Last CC56 name processed - should be current preset
 lastNameProcessed = false
 contextProcessed = false
+macroString = ""
 convString = ""
 currentPresetIndex = 0
 currentnName = true -- Flag for initial returned name = Current name, then rest
@@ -95,40 +89,20 @@ userNames = {"U1","U2","U3","U4","U5","U6","U7","U8","U9","U10","U11","U12","U13
              "U113", "U114", "U115", "U116", "U117", "U118", "U119", "120",
              "U121", "U122", "U123", "U124", "U125", "U126", "U127","U128"}
 
--- Added by SOR
+-- The remainder of the variables in this setup section wer added by SOR
+-- for getting system presets.
 local firmwareVersion
 local hasFirmwareVersionAlreadyBeenReceived = false
 local haveSystemPresetsBeenUpdated = false
-local isAccumulatingLoadContext = false
 local isAccumulatingSystemPresetContext = false
 local isAccumulatingSystemPresetName = false
 local isGettingSystemPresets = false
 local isSystemPresetsUpdateRequired = false
--- Macro names/category/filters/author data 
--- that we can get from a context stream after loading a preset.
-local loadContext = ""
 local receivedSystemPresetContext = ""
 local receivedSystemPresetName = ""
 local systemPresetContextBuffer = ""
 local systemPresetNameBuffer = ""
 local versionText = ""
-
--- Added by SOR: Set macro names.
-local macroControls = {}
-for controlNo = MACRO_I, MACRO_VI do
-    macroControls[controlNo] = controls.get(controlNo)
-end
-
--- Added by SOR: Set macro names.
--- A dictionary for looking up the macro control number 
--- corresponding to the macro id provided by the instrument.
-local macroControlNos = {}
-macroControlNos["i"] = MACRO_I
-macroControlNos["ii"] = MACRO_II
-macroControlNos["iii"] = MACRO_III
-macroControlNos["iv"] = MACRO_IV
-macroControlNos["v"] = MACRO_V
-macroControlNos["vi"] = MACRO_VI
 
 -- Added by SOR: Get system presets.
 local persistableData = {}
@@ -151,6 +125,7 @@ end
 
 -- System presets grouped by category. SOR
 local systemPresetCategories = {}
+systemPresetCategories = {}
 for category = CAT_STRINGS, CAT_OTHER1 do
     systemPresetCategories[category] = {}
 end
@@ -489,6 +464,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(val)
         macro_i_name = "" -- clear macro global storage   
+        --loadMacros() -- Load up macro names - setting C12 value is after names have been output on load   
         macro_i_val = val
     end
     if (chan == 1 and cc == 13) then -- Set ii
@@ -497,6 +473,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(val)
         macro_ii_name = ""
+        --loadMacros()
         macro_ii_val = val
     end
     if (chan == 1 and cc == 14) then -- Set iii
@@ -505,6 +482,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(val)
         macro_iii_name = ""
+        --loadMacros()
         macro_iii_val = val
     end
     if (chan == 1 and cc == 15) then -- Set iv
@@ -513,6 +491,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(val)
         macro_iv_name = ""
+        --loadMacros()
         macro_iv_val = val
     end
     if (chan == 1 and cc == 16) then -- Set v
@@ -521,6 +500,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(val)
         macro_v_name = ""
+        --loadMacros()
         macro_v_val = val
     end
     if (chan == 1 and cc == 17) then -- Set vi
@@ -529,8 +509,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(val)
         macro_vi_name = ""
-        -- Set all macro names here as this will always be the last macro output SOR
-        setMacroNames() 
+        loadMacros() -- Load all macros here as this will always be the last macro output 
         macro_vi_val = val
     end
     -- Gain & Attenuation Settings
@@ -831,8 +810,9 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
             systemPresetContextBuffer = ""
             return
         end
-        loadContext = ""
-        contextProcessed = true  
+        -- Macro context data
+        macroString = ""
+        contextProcessed = true
         matrixStream=false -- Has no CC56=127 terminator - new stream terminates it
     end
 
@@ -904,9 +884,8 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     if (lastNameInProgress) then
         lastName = lastName..string.char(noteNumber)..string.char(pressure)
     end
-    -- Note: contextProcessed may be redundant. SOR
-    if (contextProcessed and isAccumulatingLoadContext) then -- Accumulate Macro String
-        loadContext = loadContext..string.char(noteNumber)..string.char(pressure)
+    if (contextProcessed and macroInProgress) then -- Accumulate Macro String
+        macroString=macroString..string.char(noteNumber)..string.char(pressure)
     end
 
     -- Get Velocity Usage - Read Only
@@ -1248,8 +1227,198 @@ function getNames(valueObject, value)
     midi.sendControlChange(DEVICE_PORT, 16, 109, 32) -- Send Names Request
 end
 
+--function storeUserSelections()
+--    control = controls.get(32)  
+--end
+
+function getMacroName (str, len)
+    local tmpStr = str
+    local sLen = len
+    local finalStr=""
+    local ix = 1
+    local iy = 0
+    local iz = 0
+    while (ix <= sLen)
+    do
+        if (tmpStr:sub(ix,ix) == " " or tmpStr:sub(ix,ix) =="_" or tmpStr:sub(ix,ix) == "#") then
+            -- Handle strange case where # is not getting recognized for some reason - reported the bug
+            iy,iz = string.find(finalStr, "C=") -- "C#" may come after last macro
+            if (iy ~= nil and iz~=nil) then
+                tmpStr = finalStr:sub(1,iy-2)
+                return tmpStr
+            else
+                iy,iz = string.find(finalStr, "A=") -- "Author String should come after last macro
+                if (iy ~= nil and iz~=nil) then
+                    tmpStr = finalStr:sub(1,iy-2)
+                    return tmpStr
+                else
+                    return finalStr
+                end
+            end
+        end
+        finalStr = finalStr..tmpStr:sub(ix,ix) -- first character in macro name
+        ix = ix + 1
+    end
+    return finalStr
+end
+
+function loadMacros()
+    local mStr = macroString
+    local sLen = string.len(mStr)
+    local tLen = sLen
+    local tmpStr = ""
+    local tStr = ""
+    local finalStr = ""
+    local s1 = 0
+    local s2 = 0
+    local lastInd = 0
+    local ifound=false
+    local iifound=false
+    local iiifound=false
+    local vfound=false
+    local vifound=false
+
+    --initMacros() -- clear out macro data
+    --print("Macro String: "..mStr)--debugit
+    -- Blank out Macros Names.
+
+    control=controls.get(25)
+    control:setName("")
+    control=controls.get(26)
+    control:setName("")
+    control=controls.get(27)
+    control:setName("")
+    control=controls.get(28)
+    control:setName("")
+    control=controls.get(29)
+    control:setName("")
+    control=controls.get(30)
+    control:setName("")
+
+
+    for i=1,3
+    do
+        if (mStr:sub(i,i) == "=") then -- get initial i, ii or v
+            if (i == 2 and mStr:sub(i-1, i-1) =="i") then -- Initial i
+                tmpStr=mStr:sub(i+1,sLen)
+                tLen = string.len(tmpStr)
+                finalStr = getMacroName(tmpStr, tLen)
+                --print ("Macro i= "..finalStr)
+                control=controls.get(25)
+                control:setName(finalStr)
+                macro_i_name = finalStr -- store macro name for restore on page change
+            elseif (i == 2 and mStr:sub(i-1, i-1) =="v") then -- Initial v
+                tmpStr=mStr:sub(i+1,sLen)
+                tLen = string.len(tmpStr)
+                finalStr = getMacroName(tmpStr, tLen)
+                --print ("Macro v= "..finalStr)
+                control=controls.get(29)
+                control:setName(finalStr)
+                macro_v_name = finalStr
+            elseif (i==3 and mStr:sub(i-1, i-1)=="i" and mStr:sub(i-2, i-2)=="i") then -- Initial ii
+                tmpStr=mStr:sub(i+1,sLen)
+                tLen = string.len(tmpStr)
+                finalStr = getMacroName(tmpStr, tLen)
+                --print ("Macro ii= "..finalStr)
+                control=controls.get(26)
+                control:setName(finalStr)
+                macro_ii_name = finalStr
+            end -- Eerything else should now have a space before it and can be parse with find     
+            i = i+1
+        end
+
+    end -- for
+
+    -- Handle All regular cases
+    s1,s2 = string.find(mStr, " i=")
+    if (s1 ~= nil and s2 ~= nil) then
+        tmpStr=mStr:sub(s2+1,sLen)
+        tLen = string.len(tmpStr)
+        finalStr = getMacroName(tmpStr, tLen)
+        --print ("Macro i= "..finalStr)
+        control=controls.get(25)
+        control:setName(finalStr)
+        macro_i_name = finalStr
+    end
+    s1,s2 = string.find(mStr, " ii=")
+    if (s1 ~= nil and s2 ~= nil) then
+        tmpStr=mStr:sub(s2+1,sLen)
+        tLen = string.len(tmpStr)
+        finalStr = getMacroName(tmpStr, tLen)
+        --print ("Macro ii= "..finalStr)
+        control=controls.get(26)
+        control:setName(finalStr)
+        macro_ii_name = finalStr
+    end
+    s1,s2 = string.find(mStr, " v=")
+    if (s1 ~= nil and s2 ~= nil) then
+        tmpStr=mStr:sub(s2+1,sLen)
+        tLen = string.len(tmpStr)
+        finalStr = getMacroName(tmpStr, tLen)
+        --print ("Macro v= "..finalStr)
+        control=controls.get(29)
+        control:setName(finalStr)
+        macro_v_name = finalStr
+    end
+    s1,s2 = string.find(mStr, "iv=")
+    if (s1 ~= nil and s2 ~= nil) then
+        tmpStr=mStr:sub(s2+1,sLen)
+        tLen = string.len(tmpStr)
+        finalStr = getMacroName(tmpStr, tLen)
+        --print ("Macro iv= "..finalStr)
+        control=controls.get(28)
+        control:setName(finalStr)
+        macro_iv_name = finalStr
+    end
+    s1,s2 = string.find(mStr, "iii=")
+    if (s1 ~= nil and s2 ~= nil) then
+        tmpStr=mStr:sub(s2+1,sLen)
+        tLen = string.len(tmpStr)
+        finalStr = getMacroName(tmpStr, tLen)
+        --print ("Macro vi= "..finalStr)
+        control=controls.get(27)
+        control:setName(finalStr)
+        macro_iii_name = finalStr
+    end
+    -- Process g1/v
+    s1,s2 = string.find(mStr, "g1=")
+    if (s1 ~= nil and s2 ~= nil) then
+        tmpStr=mStr:sub(s2+1,sLen)
+        tLen = string.len(tmpStr)
+        finalStr = getMacroName(tmpStr, tLen)
+        --print ("Macro v= "..finalStr)
+        control=controls.get(29)
+        control:setName(finalStr)
+        macro_v_name = finalStr
+    end
+    -- Process vi
+    -- Process g2/vi
+    s1,s2 = string.find(mStr, "vi=")
+    if (s1 ~= nil and s2 ~= nil) then
+        tmpStr=mStr:sub(s2+1,sLen)
+        tLen = string.len(tmpStr)
+        finalStr = getMacroName(tmpStr, tLen)
+        --print ("Macro vi= "..finalStr)
+        control=controls.get(30)
+        control:setName(finalStr)
+        macro_vi_name = finalStr
+    end
+    -- Process g2/vi
+    s1,s2 = string.find(mStr, "g2=")
+    if (s1 ~= nil and s2 ~= nil) then
+        tmpStr=mStr:sub(s2+1,sLen)
+        tLen = string.len(tmpStr)
+        finalStr = getMacroName(tmpStr, tLen)
+        --print ("Macro vi= "..finalStr)
+        control=controls.get(30)
+        control:setName(finalStr)
+        macro_vi_name = finalStr
+    end
+    macroInProgress = false
+end
+
 function loadPreset(valueObject, value) -- Load up a preset on pressing button 1-16 offset for bank
-    isAccumulatingLoadContext = true
+    macroInProgress = true
     --nameInProgress = false -- debugit
     -- Initialize controls for new preset
     clearInfo()
@@ -1400,7 +1569,7 @@ function preset.onLoad()
     -- Disable things not yet supported
     userNameProcessing = false
     --nameInProgress = false
-    isAccumulatingLoadContext = false
+    macroInProgress = false
     userNameIndex = 0
     curName=""
     lastName=""
@@ -2114,7 +2283,7 @@ end
 
 function getMacros()
     if (macrosLoaded == true) then
-        isAccumulatingLoadContext = true
+        macroInProgress = true
         --print ("getMacros - should not be called until pressed")
         midi.sendControlChange(DEVICE_PORT, 16, 109, 22) -- Send get Current Preset Msg to get Macro labels and control values
     else
@@ -2617,7 +2786,7 @@ function loadSystemPreset(valueObject, value)
     if (curCategory == CAT_OTHER1) then
         tmpCategory = CAT_OTHER -- Really only one Other category but presetned to the user as 2
     end
-    isAccumulatingLoadContext = true
+    macroInProgress = true
     clearInfo()
     clearMacros()
     resetMute()
@@ -2628,6 +2797,11 @@ function loadSystemPreset(valueObject, value)
     midi.sendProgramChange(DEVICE_PORT, 16, curSystemPreset-1) -- Send Program Change
     local ctrl = controls.get(50)
     ctrl:setName(curPresetName)
+    -- Fill in macros
+    -- macroInProgress = true
+    -- clearInfo()
+    -- clearMacros()
+    -- resetMute()
     midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values 
 end
 
@@ -2656,7 +2830,7 @@ function onFirmwareVersionReceived()
     -- So save the version info to a variable to be shown again
     -- when all the preset data has been received.
     firmwareVersion = ((128 * highVersion)  + lowVersion) / 100
-    versionText = "Ver: "..E1_PRESET_VERSION.."/"..firmwareVersion
+    versionText = "Ver: 1.1/"..firmwareVersion
     info.setText(versionText) -- Versions to Info Text
     if persistableData.isSaved then
         print("    Previous firmware version = "..persistableData.firmwareVersion)
@@ -2756,105 +2930,6 @@ function savePersistableData()
     persistableData.firmwareVersion = firmwareVersion
     persistableData.systemPresetCategories = systemPresetCategories
     persist(persistableData)
-end
-
--- Added by SOR: Set macro names.
--- Parses the specified macro string for a macro id and name,
--- setting the name shown on the corresponding macro control.
--- The expected format of the string is 'id=name', e.g. 'ii=ChordVol',
--- or 'id=name_range1..._rangeN', e.g. 'iv=Width_Less_More'
--- Spaces in names are not supported, as whitespace delimits the macro strings.
-function setMacroName(macroString)
-    print("setMacroName: macroString = '"..macroString.."'")
-    -- E.g. "iv=Width_Less_More" will give us {"iv", "Width_Less_More"}.
-    local lhsRhs = splitString(macroString, "=")
-    local lhsRhsCount = #lhsRhs
-    if lhsRhsCount ~= 2 then
-        -- The specified string does not contain '=', 
-        -- so it's not a properly formed macro string.
-        -- Example:
-        -- Preset 'Tap Sitar', among many others, has 'E.Eagan',
-        -- a misplaced author name, in the macro line
-        -- (as well as correctly in the author line).
-        return
-    end
-    local macroId = lhsRhs[1] -- E.g. "i".
-    if macroId == "g1" then
-        macroId = "v"
-    elseif macroId == "g2" then
-        macroId = "vi"
-    end
-    -- E.g. "Width_Less_More" will give us {"Width", "Less", "More"}.
-    local specs = splitString(lhsRhs[2], "_")
-    local macroName = specs[1] -- E.g. "Width".
-    local controlNo = macroControlNos[macroId]
-    if not controlNo then
-        -- Invalid macro id.
-        -- Example:
-        -- Preset 'Tap Sitar', among many others, has 'fade=5000' in the macro line.
-        return
-    end
-    macroControls[controlNo]:setName(macroName)
-end
-
--- Added by SOR: Set macro names.
-function setMacroNames()
-    print("setMacroNames")
-    isAccumulatingLoadContext = false
-    -- Blank out macro names.
-    for controlNo = MACRO_I, MACRO_VI do
-        macroControls[controlNo]:setName("")
-    end
-    -- The load context string consists of two or three lines in this order:
-    -- a line containing macro names, which might be blank or omitted;
-    -- a line containing the category and any other filters;
-    -- and a line containing the author's name.
-    -- Put the context lines, each trimmed, into a table.
-    local lineThrow = string.char(10);
-    local loadContextLines = splitString(loadContext, lineThrow)
-    local loadContextLinesCount = #loadContextLines
-    if loadContextLinesCount == 0 then
-        print "Error: No load context lines."
-        return
-    end
-    local macrosLine = loadContextLines[1]
-    -- If the first line is blank, in which case its trimmed length will be zero,
-    -- or is the category and filters line,
-    -- this preset has no macros.
-    if string.len(macrosLine) == 0
-            or string.sub(macrosLine, 1, 2) == "C=" then
-        -- Preset has no macros
-        return
-    end
-    local macroStrings = splitString(macrosLine)
-    local macroStringsCount = #macroStrings
-    for i = 1, macroStringsCount do
-        setMacroName(macroStrings[i])
-    end
-end
-
--- Added by SOR: Set macro names.
--- Splits the delimited components of the specified string into a table.
--- If not specified, the delimiter will be any whitespace.
--- According to https://stackoverflow.com/questions/1426954/split-string-in-lua,
--- empty components will be omitted from the table. That should be fine.
--- Any leading or trailing whitespace will be trimmed from the component strings.
-function splitString(inputString, delimiter)
-    if delimiter == nil then
-        delimiter = "%s" -- Any whitespace
-    end
-    local result = {}
-    for component in string.gmatch(inputString, "([^"..delimiter.."]+)") do
-        table.insert(result, trimString(component))
-    end
-    return result
-end
-
--- Added by SOR: Set macro names.
--- Removes leading and trailing whitespace from the specified string.
--- See http://lua-users.org/wiki/StringTrim.
-function trimString(inputString)
-    return (inputString:gsub("^%s*(.-)%s*$", "%1"))
 end
 
 -- Added by SOR: Get system presets.
