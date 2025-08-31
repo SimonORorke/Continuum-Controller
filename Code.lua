@@ -33,54 +33,50 @@ local MACRO_VI = 30
 local MAX_NAME_LENGTH = 14
 
 -- Global Initialization flags
-storeInitialized = false -- Don't call certain things on Electra One startup procedure
-repSurfPushed = false
-repPedalsPushed = false
-repMidiPushed = false
-sendSysPresetInit = false
-selectSystemFlag = false
-pedal1Init = false
-pedal2Init = false
+local storeInitialized = false -- Don't call certain things on Electra One startup procedure
+local repPedalsPushed = false
+local repMidiPushed = false
+local sendSysPresetInit = false
+local pedal1Init = false
+local pedal2Init = false
 
 -- Other Globals
-curSystemPreset = 0
-curCategory = 1
-curCC32 = 0 -- If more than 128 presets in a category
-curPresetName = ""
-userNameProcessing = false
-nameInProgress = false
-thumbInProgress = false
-convInProgress = false
-macrosLoaded = false
-userNameIndex = 0
-curName=""
-lastName = "" -- Last CC56 name processed - should be current preset
-lastNameProcessed = false
-contextProcessed = false
-convString = ""
-currentPresetIndex = 0
-currentnName = true -- Flag for initial returned name = Current name, then rest
-presetOffset = 0 -- Offset to change user preset on COntinuum as only 16 are shown, need to track bank 
-presetPosSelect = 0
-muteVal = 60 -- Default pre-gain (but will be set from reading presets)
-matrixStream = false
-lowVersion = 8.0 -- Default to 10.35
-highVersion = 12.0 -- Default to 10.35
+local curSystemPreset = 0
+local curCategory = 1
+local curCC32 = 0 -- If more than 128 presets in a category
+local curPresetName = ""
+local userNameProcessing = false
+local nameInProgress = false
+local thumbInProgress = false
+local convInProgress = false
+local macrosLoaded = false
+local userNameIndex = 0
+local curName=""
+local lastName = "" -- Last CC56 name processed - should be current preset
+local contextProcessed = false
+local convString = ""
+local currentPresetIndex = 0
+local presetOffset = 0 -- Offset to change user preset on COntinuum as only 16 are shown, need to track bank 
+local presetPosSelect = 0
+local muteVal = 60 -- Default pre-gain (but will be set from reading presets)
+local matrixStream = false
+local lowVersion = 8.0 -- Default to 10.35
+local highVersion = 12.0 -- Default to 10.35
 -- variables to maintain macro display on page change
-macro_i_name = ""
-macro_i_val = 0
-macro_ii_name = ""
-macro_ii_val = 0
-macro_iii_name = ""
-macro_iii_val = 0
-macro_iv_name = ""
-macro_iv_val = 0
-macro_v_name = ""
-macro_v_val = 0
-macro_vi_name = ""
-macro_vi_val = 0
+local macro_i_name = ""
+local macro_i_val = 0
+local macro_ii_name = ""
+local macro_ii_val = 0
+local macro_iii_name = ""
+local macro_iii_val = 0
+local macro_iv_name = ""
+local macro_iv_val = 0
+local macro_v_name = ""
+local macro_v_val = 0
+local macro_vi_name = ""
+local macro_vi_val = 0
 -- Dummies to reserve some memory up front
-userNames = {"U1","U2","U3","U4","U5","U6","U7","U8","U9","U10","U11","U12","U13","U14","U15","U16",
+local userNames = {"U1","U2","U3","U4","U5","U6","U7","U8","U9","U10","U11","U12","U13","U14","U15","U16",
              "U17", "U18", "U19", "U20", "U21", "U22", "U23", "U24", "U25", "U26", "U27", "U28", "U29", "U30", "U31","U32",
              "U33", "U34", "U35", "U36", "U37", "U38", "U39", "U40", "U41", "U42", "U43", "U44", "U45", "U46", "U47","U48",
              "U49", "U50", "U51", "U52", "U53", "U54", "U55", "U56", "U57", "U58", "U59", "U60", "U61", "U62", "U63","U64",
@@ -2722,7 +2718,7 @@ function setMacroNames()
     -- a line containing the category and any other filters;
     -- and a line containing the author's name.
     -- Put the context lines, each trimmed, into a table.
-    local lineThrow = string.char(10);
+    local lineThrow = string.char(10)
     local loadContextLines = splitString(loadContext, lineThrow)
     local loadContextLinesCount = #loadContextLines
     if loadContextLinesCount == 0 then
@@ -2744,14 +2740,14 @@ function setMacroNames()
     -- Remove any spaces preceding the '='s.
     -- There are no known examples, so this is just to be safe.
     while string.find(macrosLine, " =") do
-        macrosLine = string.gsub(macrosLine, " =", "=");
+        macrosLine = string.gsub(macrosLine, " =", "=")
     end 
     -- Remove any spaces following the '='s.
     -- Example: Clarinet has macro line
     -- "i=Body_One_Two ii=Darkness iii= Tongue iv=Flutter".
     -- We would miss the Tongue macro if we don't remove the non-standard space.
     while string.find(macrosLine, "= ") do
-        macrosLine = string.gsub(macrosLine, "= ", "=");
+        macrosLine = string.gsub(macrosLine, "= ", "=")
     end
     -- Now we are sure there are no spaces either side of the '='s.
     -- So we can safely split the macros line into id=name pairs delimited by space.
