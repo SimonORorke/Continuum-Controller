@@ -6,11 +6,7 @@ assert(
     controller.isRequired(MODEL_MK2, "4.0.0"),
     "Electra One firmware version 4.0.0 or higher is required."
 )
-local CONTROL_CHANGE_MSB_INC = 86
-local CONTROL_CHANGE_MSB_DEC = 97
 local DEVICE_PORT = PORT_1
-local RECIRC_CODE = 62
-local prevValueMsb = 0
 local CAT_STRINGS = 1
 local CAT_WINDS = 2
 local CAT_VOCAL = 3
@@ -442,7 +438,6 @@ end
 
 -- Test getting just CCs
 function midi.onControlChange(midiInput, channel, controllerNumber, value)
-    local midi = midiInput
     local chan = math.floor (channel)
     local cc = math.floor (controllerNumber)
     local val = math.floor (value)
@@ -2512,89 +2507,6 @@ function getMaxPresetIndex (pIndex) -- cap inex at max range for each category
     end
     curPresetName = systemPresets[pIndex]
     return pIndex
-    --if (curCategory == CAT_STRINGS) then -- Strings
-    --   -- print ("pIndex: "..pIndex)
-    --   if (pIndex > 88) then
-    --     ctrlMsg:setValue(88)     
-    --     return pIndex - 1        
-    --   end
-    --   curPresetName = strings[pIndex]   
-    --elseif (curCategory == CAT_WINDS) then -- Winds
-    --   if (pIndex > 45) then
-    --     ctrlMsg:setValue(45)      
-    --     return pIndex - 1
-    --   end  
-    --   curPresetName = winds[pIndex]     
-    --elseif (curCategory == CAT_VOCAL) then -- Vocal
-    --   if (pIndex > 31) then
-    --     ctrlMsg:setValue(31)      
-    --     return pIndex - 1
-    --   end  
-    --   curPresetName = vocal[pIndex]      
-    --elseif (curCategory == CAT_KEYBOARD) then -- Keyboard
-    --   if (pIndex > 33) then
-    --     ctrlMsg:setValue(33)      
-    --     return pIndex - 1
-    --   end
-    --   curPresetName = keyboard[pIndex]       
-    --elseif (curCategory == CAT_CLASSIC) then -- Classic
-    --   if (pIndex > 72) then
-    --     ctrlMsg:setValue(72)      
-    --     return pIndex - 1
-    --   end
-    --   curPresetName = classic[pIndex]     
-    --elseif (curCategory == CAT_OTHER) then -- Other
-    --   curPresetName = other[pIndex]  -- Other contains > 128 - see other 2 for second half
-    --elseif (curCategory == CAT_PERCUSSION) then -- Percussion
-    --   if (pIndex > 12) then
-    --     ctrlMsg:setValue(12)      
-    --     return pIndex - 1
-    --   end
-    --   curPresetName = percussion[pIndex]         
-    --elseif (curCategory == CAT_TUNEDPERC) then -- Tuned Percussion
-    --   if (pIndex > 47) then
-    --     ctrlMsg:setValue(47)      
-    --     return pIndex - 1
-    --   end
-    --   curPresetName = tunedPerc[pIndex]         
-    --elseif (curCategory == CAT_PROCESSOR) then -- Processor
-    --   if (pIndex > 22) then
-    --     ctrlMsg:setValue(22)      
-    --     return pIndex - 1
-    --   end
-    --   curPresetName = processor[pIndex]    
-    --elseif (curCategory == CAT_DRONE) then -- Drone
-    --   if (pIndex > 19) then
-    --     ctrlMsg:setValue(19) 
-    --     return pIndex - 1
-    --   end 
-    --   curPresetName = drones[pIndex]        
-    --elseif (curCategory == CAT_MIDI) then -- Midi
-    --   if (pIndex >16) then
-    --     ctrlMsg:setValue(16)      
-    --     return pIndex - 1
-    --   end
-    --   curPresetName = midiVals[pIndex]    
-    --elseif (curCategory == CAT_CVC) then -- CVC
-    --   if (pIndex > 15) then
-    --     ctrlMsg:setValue(15)      
-    --     return pIndex - 1
-    --   end
-    --   curPresetName = cvc[pIndex]         
-    --elseif (curCategory == CAT_UTILITY) then -- Utility
-    --   if (pIndex > 43) then
-    --     ctrlMsg:setValue(43)      
-    --     return pIndex - 1
-    --   end  
-    --   curPresetName = utility[pIndex]       
-    --elseif (curCategory == CAT_OTHER1) then -- Other1 (150 presets in Other 150-128 = 22 cor CC32=1)
-    --   if (pIndex > 27) then
-    --     ctrlMsg:setValue(27)      
-    --     return pIndex - 1
-    --   end
-    --   curPresetName = other1[pIndex]                      
-    --end
-    --return pIndex 
 end
 
 -- Load the System Preset
