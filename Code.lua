@@ -1037,28 +1037,6 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(roundMode)
     end
-    -- Recirc On/Off
-    --[[
-        if (matrixStream == true and channel==16 and noteNumber == 15) then -- Recirculator On/Off
-        local recircCtrl = math.floor (pressure)
-        local ctrl = controls.get(158)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        print("Setting Recirc ON/OFF to: "..recircCtrl)
-             --ctrlMsg:setValue(recircCtrl) - External set don't do here
-             if (recircCtrl == 0) then
-                ctrl:setName("Recirc On")
-                ctrl:setColor(GREEN)
-                info.setText("Recirc=0 ON") -- debugit
-             elseif (recircCtrl == 1) then
-                ctrl:setName("Recirc Off")
-                ctrl:setColor(WHITE)
-                info.setText("Recirc=1 OFF") -- debugit                
-             else
-                print("Unexpected Recirculator Control value")
-             end 
-        end
-    --]]
     -- Get Pedal 1 Assignments
     if (matrixStream == true and channel==16 and noteNumber == 52) then -- Pedal1 Assign
         local pedal1Assign = math.floor (pressure)
@@ -1241,12 +1219,9 @@ end
 
 function loadPreset(valueObject, value) -- Load up a preset on pressing button 1-16 offset for bank
     isAccumulatingLoadContext = true
-    --nameInProgress = false -- debugit
     -- Initialize controls for new preset
     clearInfo()
-    --clearMacros()
     resetMute()
-    --initMacros()
     local presetPos = valueObject:getMessage():getValue()
 
     if (presetPos == 0) then -- adjust for initialization
@@ -1272,10 +1247,6 @@ function loadPreset(valueObject, value) -- Load up a preset on pressing button 1
     midi.sendControlChange(DEVICE_PORT, 1, 64, 0) -- Sustain off
     midi.sendControlChange(DEVICE_PORT, 1, 66, 0) -- Sos1 Off
     midi.sendControlChange(DEVICE_PORT, 1, 69, 0) -- Sos2 Off
-
-
-    -- Set Active Controls to set 1 qhere you can change macro 
-    -- pages.setActiveControlSet(1)  
 end
 
 function setUserPresetPos (valueObject, value)
@@ -1295,13 +1266,11 @@ function setUserPresetPos (valueObject, value)
 end
 
 function storeUserPreset (valueObject, value)
-    local stringProcessing = true
     local strIndex = 1
     local slen = 0
     local ascii1 = ""
     local ascii2 = ""
     --local presetPos
-    local tStr = ""
     local s1 = 0
     local s2 = 0
     local whichUserButton = 0
@@ -1332,8 +1301,6 @@ function storeUserPreset (valueObject, value)
         return
     end
 
-    -- print("Init Storestring = "..tStr) -- debugit
-
     s1,s2 = string.find(tStr,"%.")
     if (s1 ~= nil and s2 ~= nil) then
         -- Remove any trailing .n (we won't use that)
@@ -1342,13 +1309,6 @@ function storeUserPreset (valueObject, value)
     else
         pStr = tStr
     end
-    -- For no - remove .dot sufix
-    -- if (pStr ~= "-") then
-    --   local tmpname = pStr.."."..tostring(whichUserButton)
-    --   pStr = tmpname
-    -- end
-    -- print("Store name = "..pStr)
-
     slen = string.len(pStr)
     midi.sendControlChange(DEVICE_PORT, 16, 56, 0) -- Start preset string
     while (strIndex <= slen)
@@ -1365,7 +1325,6 @@ function storeUserPreset (valueObject, value)
             midi.sendAfterTouchPoly(DEVICE_PORT, 16, string.byte(ascii1), 0)
             strIndex = strIndex + 1
         end
-        --strIndex = strIndex + 2 -- bump by 2 chars
     end
     -- Sequence needed to just store current preset back to its position
     -- print("Storing to Preset position: "..presetPosSelect-1)
@@ -1376,8 +1335,6 @@ function storeUserPreset (valueObject, value)
     midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- Send CC0/C32
     --midi.sendControlChange(DEVICE_PORT, 16, 32, 0)enablere
     midi.sendProgramChange(DEVICE_PORT, 16, presetPosSelect-1)  -- Send Program change - current preset to user position    
-    -- Update current preset name
-    --   control=controls.get()
     -- Reset so Store is no longer active
     local ctrl = controls.get(32) -- Preset index
     local controlValue = ctrl:getValue("value")
@@ -1387,27 +1344,13 @@ end
 
 
 function preset.onLoad()
-    --print("preset.onLoad")
     -- Disable things not yet supported
     userNameProcessing = false
-    --nameInProgress = false
     isAccumulatingLoadContext = false
     userNameIndex = 0
     curName=""
     lastName=""
     curCategory = 1
-    -- Make sure Transposition controls in right initial state
-    --control=controls.get(78)
-    --control:setName("Transpose Off")
-    --matrixPoke(44, 60) -- Set default MiddleC
-
-    -- Reset Recirc On when loading program (maybe later try reading state)
-    --matrixPoke (15, 0) -- Enable Recirc = 0
-    --control=controls.get(158)   
-    --control:setName("Enabled")
-    -- sleep(2)
-    -- Get iniitial names
-
 end
 
 -- Set User Preset names - they are controls 1-16
@@ -1753,8 +1696,6 @@ function xposeMiddleC(valueObject, value)
     end
     local xAmt = 0
     local newMiddleC = valueObject:getMessage():getValue()
-    --midi.sendControlChange(DEVICE_PORT, 16, 56, 20) -- Matrix Poke command 
-    --midi.sendAfterTouchPoly(DEVICE_PORT, 16, 44, newMiddleC) -- Perform the Poke 
     -- print("Setting Middle C: "..newMiddleC)
     matrixPoke (44,newMiddleC)
     --print("newMiddleC = "..newMiddleC) 
@@ -1836,10 +1777,6 @@ function setRecirc(valueObject, value)
     local recircVal = valueObject:getMessage():getValue()
     midi.sendControlChange(DEVICE_PORT, 16, 56, 20)
     midi.sendAfterTouchPoly(DEVICE_PORT, 16, 62 , recircVal)
-    -- midi.sendAfterTouchPoly(DEVICE_PORT, 16, recircVal , 62)
-    -- midi.sendPitchBend(DEVICE_PORT, 16, (RECIRC_CODE*128+RecircVal)-8192)
-    -- midi.sendControlChange(DEVICE_PORT, 16, 56, 20)
-    -- midi.sendPitchBend(DEVICE_PORT, 16, (RecircVal*128+RECIRC_CODE)-8192)
 end
 function setRecircType (valueObject, value)
     local recircType = valueObject:getMessage():getValue()
@@ -2210,8 +2147,6 @@ end
 
 function setRoundInit(valueObject, value)
     control = controls.get(209)
-    -- local controlValue = control:getValue("value")
-    -- local ctrlMsg = controlValue:getMessage()
     local val = math.floor (value)
     -- print("Round Initial = "..val)
 
@@ -2828,30 +2763,6 @@ function assignPedal2 (valueObject, value)
     matrixPoke(53, ped2Val) -- set assignment
 end
 function processConvolution()
-    --[[ Process Convolution stream and populate the convolution parameters
-        ch16 pPres=19 22  	(Pre-Convolution Index, Pre-Convolution Level)
-        ch16 pPres=34 15	(Post-Convolution Index, Post-Convolution Level)
-        ch16 pPres=6 7 	(C1 IR type, C2 IR type)
-        ch16 pPres=8 6 	(C3 IR type, C4 IR type)
-        ch16 pPres=127 127 	(C1 Length, C2 Length)
-        ch16 pPres=127 127 	(C3 Length, C4 Length)
-        ch16 pPres=64 64 	(C1 Shift/Tuning, C2 Shift/Tuning)
-        ch16 pPres=64 64 	(C3 Shift/Tuning, C4 Shift/Tuning)
-        ch16 pPres=0 64 	(C1 Width, C2 Width)
-        ch16 pPres=64 64 	(C3 Width, C4 Width)
-        ch16 pPres=127 127 	(C1 Stereo Atten Left, C2 Stereo Atten Left)
-        ch16 pPres=127 127 	(C3 Stereo Atten Left, C3 Stereo Atten Left)
-        ch16 pPres=127 127 	(C1 Stereo Atten Right, C2 Stereo Right)
-        ch16 pPres=127 127	(C3 Stereo Atten Right, C3 Stereo Right)
-        ch16 pPres=0 0 	(Enhanced Phase, 0 padding)
-        Final convString will be: 0|0|0|0|0|7|8|6|15|127|127|127|12|64|64|64|64|64|64|64|127|127|127|127|127|127|127|127|0|0|
-    --]]
-    --  local test = true
-    --  if (test == true) then
-    --    return
-    --  end
-    -- print ("Convolution Stream Processed:"..convString)
-    -- string.strsub (s, i, [j])
     local tmpStr = convString
     local ix = 1
     local j = 1
@@ -2870,33 +2781,6 @@ function processConvolution()
         end
         ix = ix + 1
     end
-    -- for i= 1,28 
-    -- do
-    --  print("Conv "..i.."="..convParams[i]) -- debugit
-    -- end
-    -- Update the Convolution Controls with the stream data read
-
-    --[[ Programmed conv really handled by macros, etc.
-      local ctrl = controls.get(105) -- Pre Mix
-      local controlValue = ctrl:getValue("value")
-      local ctrlMsg = controlValue:getMessage()
-           ctrlMsg:setValue(convParams[1]) 
-           
-           ctrl = controls.get(106) -- Pre index
-           controlValue = ctrl:getValue("value")
-           ctrlMsg = controlValue:getMessage()
-           ctrlMsg:setValue(convParams[2])
-           
-           ctrl = controls.get(109) -- Post Mix
-           controlValue = ctrl:getValue("value")
-           ctrlMsg = controlValue:getMessage()
-           ctrlMsg:setValue(convParams[3])
-           
-           ctrl = controls.get(110) -- Post Index
-           controlValue = ctrl:getValue("value")
-           ctrlMsg = controlValue:getMessage()
-           ctrlMsg:setValue(convParams[4])
-  --]]
     -- IRs
     local ctrl = controls.get(93) -- IR1 Type
     local controlValue = ctrl:getValue("value")
@@ -3012,10 +2896,6 @@ function processConvolution()
     controlValue = ctrl:getValue("value")
     ctrlMsg = controlValue:getMessage()
     ctrlMsg:setValue(convParams[28])
-    --local test = true
-    --if (test == true) then
-    --  return
-    --end         
     -- Enhanced Phase
     ctrl = controls.get(127) -- EP
     controlValue = ctrl:getValue("value")
@@ -3121,107 +3001,3 @@ end
 
 function noop (valueObject, value)
 end
--- Functions to preserve macro names
---[[
-function preserve_i (valueObject, value) 
-  if (math.floor(value) == 0) then
-    local ctrl = controls.get(25)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrl:setName(macro_i_name)
-    if (macro_i_name ~= "") then
-       ctrlMsg:setValue(macro_i_val)
-    else
-       ctrlMsg:setValue(0)    
-    end   
-  end
-end
-
-function preserve_ii (valueObject, value)
-  if (math.floor(value) == 0) then
-    local ctrl = controls.get(26)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrl:setName(macro_ii_name)
-    if (macro_ii_name ~= "") then
-       ctrlMsg:setValue(macro_i_val)
-    else
-       ctrlMsg:setValue(0)    
-    end   
-  end
-end
-function preserve_iii (valueObject, value)
-  if (math.floor(value) == 0) then
-    local ctrl = controls.get(27)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrl:setName(macro_iii_name)
-    if (macro_iii_name ~= "") then
-       ctrlMsg:setValue(macro_i_val)
-    else
-       ctrlMsg:setValue(0)    
-    end    
-  end
-end
-function preserve_iv (valueObject, value)
-  if (math.floor(value) == 0) then
-    local ctrl = controls.get(28)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrl:setName(macro_iv_name)
-    if (macro_iv_name ~= "") then
-       ctrlMsg:setValue(macro_i_val)
-    else
-       ctrlMsg:setValue(0)    
-    end   
-  end
-end
-function preserve_v (valueObject, value)
-  if (math.floor(value) == 0) then
-    local ctrl = controls.get(29)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrl:setName(macro_v_name)
-    if (macro_v_name ~= "") then
-       ctrlMsg:setValue(macro_i_val)
-     else
-       ctrlMsg:setValue(0)    
-    end     
-  end
-end
-function preserve_vi (valueObject, value)
-  if (math.floor(value) == 0) then
-    local ctrl = controls.get(30)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrl:setName(macro_vi_name)    
-    if (macro_vi_name ~= "") then
-       ctrlMsg:setValue(macro_i_val)
-    else
-       ctrlMsg:setValue(0)    
-    end
-  end
-end
-function initMacros()
-  macro_i_name = ""
-  macro_i_val = 0
-  macro_ii_name = ""
-  macro_ii_val = 0
-  macro_iii_name = ""
-  macro_iii_val = 0
-  macro_iv_name = ""
-  macro_iv_val = 0
-  macro_v_name = ""
-  macro_v_val = 0        
-  macro_vi_name = ""
-  macro_vi_val = 0
-end
---]]
---[[
-function testEQ (valueObject, value)
- local v = math.floor(value)
- print("Value="..value)
- --midi.sendControlChange(DEVICE_PORT, 1, 83, tmpCategory) 
- --midi.sendControlChange(DEVICE_PORT, 1, 84, tmpCategory) 
-end
-]]
