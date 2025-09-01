@@ -1084,22 +1084,6 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         ctrlMsg:setValue(cOrT)
         setCompOrTanh(cOrT)
     end
-    -- Get Pedal1 Assignment
-    if (matrixStream == true and channel==16 and noteNumber == 52) then
-        local ped1 = math.floor (pressure)
-        local ctrl = controls.get(143)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(ped1)
-    end
-    -- Get Pedal2 Assignment
-    if (matrixStream == true and channel==16 and noteNumber == 53) then
-        local ped2 = math.floor (pressure)
-        local ctrl = controls.get(164)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(ped2)
-    end
     -- Direction
     if (matrixStream == true and channel==16 and noteNumber == 9) then -- Ocatve SW mode
         local direction = math.floor (pressure)
