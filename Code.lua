@@ -1049,7 +1049,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     -- Get Pedal 2 Assignments
     if (matrixStream == true and channel==16 and noteNumber == 53) then -- Pedal2 Assign
         local pedal2Assign = math.floor (pressure)
-        --print("Ped 2 Assign = "..pedal2Assign)
+        print("onAfterTouchPoly: Pedal 2 Assign = "..pedal2Assign)
         local ctrl = controls.get(164)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
@@ -1733,7 +1733,7 @@ function xposeMiddleCx(valueObject, value)
 end
 
 function matrixPoke(pokeID, pokeVal)
-    -- print ("POke: " .. pokeID .. " " .. pokeVal)
+    print ("matrixPoke: " .. pokeID .. " " .. pokeVal)
     midi.sendControlChange(DEVICE_PORT, 16, 56, 20) -- Matrix Poke command 
     midi.sendAfterTouchPoly(DEVICE_PORT, 16, pokeID , pokeVal) -- Perform the Poke  
 end
@@ -2744,8 +2744,10 @@ function assignPedal2 (valueObject, value)
     local controlValue = ctrl:getValue("value")
     local ctrlMsg = controlValue:getMessage()
     local ped2Val = ctrlMsg:getValue()
+    print ("assignPedal2: Changing Pedal 2 value to "..ped2Val)
     matrixPoke(53, ped2Val) -- set assignment
 end
+
 function processConvolution()
     local tmpStr = convString
     local ix = 1
