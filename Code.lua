@@ -1202,7 +1202,7 @@ function getNames(valueObject, value)
     midi.sendControlChange(DEVICE_PORT, 16, 109, 32) -- Send Names Request
 end
 
-function loadPreset(valueObject, value) -- Load up a preset on pressing button 1-16 offset for bank
+function loadUserPreset(valueObject, value) -- Load up a user preset on pressing button 1-16 offset for bank
     isAccumulatingLoadContext = true
     -- Initialize controls for new preset
     clearInfo()
@@ -2086,23 +2086,20 @@ end
 function setMonoMode(valueObject, value)
     print ("setMonoMode: Setting Mono Mode to "..value)
     matrixPoke(46, value)
-    --control = controls.get(249)
-    --local controlValue = control:getValue("value")
-    --local ctrlMsg = controlValue:getMessage()
-    --local val = ctrlMsg:getValue()
-    --print ("setMonoMode: Setting Mono Mode to "..val)
-    --matrixPoke(46, val)
 end
+
 function setMonoInterval(valueObject, value)
     if (math.floor(value) < 0) then
         return -- inits to -1 (check others)
     end
-    control = controls.get(267)
-    local controlValue = control:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    local val = ctrlMsg:getValue()
-    print ("setMonoInterval: Setting Mono Interval to "..val)
-    matrixPoke(48, val)
+    print ("setMonoInterval: Setting Mono Interval to "..value)
+    matrixPoke(48, value)
+    --control = controls.get(267)
+    --local controlValue = control:getValue("value")
+    --local ctrlMsg = controlValue:getMessage()
+    --local val = ctrlMsg:getValue()
+    --print ("setMonoInterval: Setting Mono Interval to "..val)
+    --matrixPoke(48, val)
 end
 function setMonoSwitch(valueObject, value)
     control = controls.get(252)
@@ -2742,17 +2739,12 @@ end
 -- Set Pedal 2 Assignment
 function assignPedal2 (valueObject, value)
     if (pedal2Init == false) then
+        print ("assignPedal2: Setting pedal2Init to true")
         pedal2Init = true
         return
     end
     print ("assignPedal2: Setting Pedal 2 assignment to "..value)
     matrixPoke(53, value) -- set assignment
-    --local ctrl = controls.get(164)
-    --local controlValue = ctrl:getValue("value")
-    --local ctrlMsg = controlValue:getMessage()
-    --local ped2Val = ctrlMsg:getValue()
-    --print ("assignPedal2: Setting Pedal 2 assignment to "..ped2Val)
-    --matrixPoke(53, ped2Val) -- set assignment
 end
 
 function processConvolution()
