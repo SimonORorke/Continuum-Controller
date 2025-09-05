@@ -999,6 +999,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     -- Get Mono Mode
     if (matrixStream == true and channel==16 and noteNumber == 46) then -- Mono Mode
         local monoMode = math.floor (pressure)
+        print("onAfterTouchPoly: Mono Mode = "..monoMode)
         local ctrl = controls.get(140)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
@@ -1007,7 +1008,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     -- Get Mono Interval
     if (matrixStream == true and channel==16 and noteNumber == 48) then -- Mono Interval
         local monoInterval = math.floor (pressure)
-        -- print("Mono Interval = "..monoInterval)
+        print("onAfterTouchPoly: Mono Interval = "..monoInterval)
         local ctrl = controls.get(267)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
@@ -1221,6 +1222,7 @@ function loadPreset(valueObject, value) -- Load up a preset on pressing button 1
         -- Display Current Preset Name  
         lastName = userNames[presetPos+presetOffset] -- Override last name
         control = controls.get(50)
+        -- TODO: Print preset name
         control:setName(userNames[presetPos+presetOffset])
         midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values            
     else
@@ -2082,12 +2084,14 @@ function setSplitPoint(valueObject, value)
 end
 
 function setMonoMode(valueObject, value)
-    control = controls.get(249)
-    local controlValue = control:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    local val = ctrlMsg:getValue()
-    -- print("Mono Mode = "..val)      
-    matrixPoke(46, val)
+    print ("setMonoMode: Setting Mono Mode to "..value)
+    matrixPoke(46, value)
+    --control = controls.get(249)
+    --local controlValue = control:getValue("value")
+    --local ctrlMsg = controlValue:getMessage()
+    --local val = ctrlMsg:getValue()
+    --print ("setMonoMode: Setting Mono Mode to "..val)
+    --matrixPoke(46, val)
 end
 function setMonoInterval(valueObject, value)
     if (math.floor(value) < 0) then
@@ -2097,6 +2101,7 @@ function setMonoInterval(valueObject, value)
     local controlValue = control:getValue("value")
     local ctrlMsg = controlValue:getMessage()
     local val = ctrlMsg:getValue()
+    print ("setMonoInterval: Setting Mono Interval to "..val)
     matrixPoke(48, val)
 end
 function setMonoSwitch(valueObject, value)
@@ -2740,12 +2745,14 @@ function assignPedal2 (valueObject, value)
         pedal2Init = true
         return
     end
-    local ctrl = controls.get(164)
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    local ped2Val = ctrlMsg:getValue()
-    print ("assignPedal2: Changing Pedal 2 value to "..ped2Val)
-    matrixPoke(53, ped2Val) -- set assignment
+    print ("assignPedal2: Setting Pedal 2 assignment to "..value)
+    matrixPoke(53, value) -- set assignment
+    --local ctrl = controls.get(164)
+    --local controlValue = ctrl:getValue("value")
+    --local ctrlMsg = controlValue:getMessage()
+    --local ped2Val = ctrlMsg:getValue()
+    --print ("assignPedal2: Setting Pedal 2 assignment to "..ped2Val)
+    --matrixPoke(53, ped2Val) -- set assignment
 end
 
 function processConvolution()
