@@ -1085,19 +1085,19 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
 
 end -- of pPress settings
 
-function clearMacros() -- Set all Macros to 0 and set names to blank
-    local ctrl
-    local controlValue
-    local ctrlMsg
-    for i = MACRO_I, MACRO_VI
-    do
-        ctrl = controls.get(i)
-        ctrl:setName("")
-        controlValue = ctrl:getValue("value")
-        ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(0)
-    end
-end
+--function clearMacros() -- Set all Macros to 0 and set names to blank
+--    local ctrl
+--    local controlValue
+--    local ctrlMsg
+--    for i = MACRO_I, MACRO_VI
+--    do
+--        ctrl = controls.get(i)
+--        ctrl:setName("")
+--        controlValue = ctrl:getValue("value")
+--        ctrlMsg = controlValue:getMessage()
+--        ctrlMsg:setValue(0)
+--    end
+--end
 
 function getNames(valueObject, value)
     resetMute() -- reset in case on from previous preset
@@ -1105,10 +1105,10 @@ function getNames(valueObject, value)
 end
 
 function loadUserPreset(valueObject, value) -- Load up a user preset on pressing button 1-16 offset for bank
-    isAccumulatingLoadContext = true
-    -- Initialize controls for new preset
-    clearInfo()
-    resetMute()
+    --isAccumulatingLoadContext = true
+    ---- Initialize controls for new preset
+    --clearInfo()
+    --resetMute()
     local presetPos = valueObject:getMessage():getValue()
 
     if (presetPos == 0) then -- adjust for initialization
@@ -1117,16 +1117,21 @@ function loadUserPreset(valueObject, value) -- Load up a user preset on pressing
     end
 
     if (presetPos+presetOffset >=0 and presetPos+presetOffset-1 < 128) then
-        midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- CC0 = 0 (Category 0 = USer Presets)
-        midi.sendControlChange(DEVICE_PORT, 16, 32, 0)  -- CC 32 = 0 (< 129 presets)
-        midi.sendProgramChange(DEVICE_PORT, 16, presetPos+presetOffset-1) -- User Preset Program change 0..127
-        currentPresetIndex = presetPos+presetOffset-1
+        local bankMsb = 0 -- 0 = User Presets
+        local bankLsb = 0 -- Because there are a maximum of 128 user presets
+        currentPresetIndex = presetPos+presetOffset-1 -- User Preset Program change 0..127
+        local presetName = userNames[presetPos+presetOffset] 
+        loadPreset(bankMsb, bankLsb, currentPresetIndex, presetName)
+        --midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- CC0 = 0 (Category 0 = USer Presets)
+        --midi.sendControlChange(DEVICE_PORT, 16, 32, 0)  -- CC 32 = 0 (< 129 presets)
+        --midi.sendProgramChange(DEVICE_PORT, 16, presetPos+presetOffset-1) -- User Preset Program change 0..127
+        --currentPresetIndex = presetPos+presetOffset-1
         -- Display Current Preset Name  
-        lastName = userNames[presetPos+presetOffset] -- Override last name
-        control = controls.get(50)
-        -- TODO: Print preset name
-        control:setName(userNames[presetPos+presetOffset])
-        midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values            
+        lastName = presetName -- Override last name
+        --lastName = userNames[presetPos+presetOffset] -- Override last name
+        --control = controls.get(50)
+        --control:setName(userNames[presetPos+presetOffset])
+        --midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values            
     else
         print("Unexpected Preset Index: "..presetPos+presetOffset-1)
     end
@@ -2348,18 +2353,19 @@ function loadSystemPreset(valueObject, value)
     if (curCategory == CAT_OTHER1) then
         tmpCategory = CAT_OTHER -- Really only one Other category but presented to the user as 2
     end
-    isAccumulatingLoadContext = true
-    clearInfo()
-    clearMacros()
-    resetMute()
-    midi.sendControlChange(DEVICE_PORT, 16, 0, tmpCategory) -- Send Category
-    if (curCC32 > 0) then
-        midi.sendControlChange(DEVICE_PORT, 16, 32, curCC32) -- Send CC32 if > 128 Presets in category  
-    end
-    midi.sendProgramChange(DEVICE_PORT, 16, curSystemPreset-1) -- Send Program Change
-    local ctrl = controls.get(50)
-    ctrl:setName(curPresetName)
-    midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values 
+    --isAccumulatingLoadContext = true
+    --clearInfo()
+    --clearMacros()
+    --resetMute()
+    loadPreset(tmpCategory, curCC32, curSystemPreset - 1, curPresetName)
+    --midi.sendControlChange(DEVICE_PORT, 16, 0, tmpCategory) -- Send Category
+    --if (curCC32 > 0) then
+    --    midi.sendControlChange(DEVICE_PORT, 16, 32, curCC32) -- Send CC32 if > 128 Presets in category  
+    --end
+    --midi.sendProgramChange(DEVICE_PORT, 16, curSystemPreset-1) -- Send Program Change
+    --local ctrl = controls.get(50)
+    --ctrl:setName(curPresetName)
+    --midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values 
 end
 
 -- Set Pedal 1 Assignment
@@ -2640,6 +2646,32 @@ function getSystemPresets()
     end
 end
 
+-- Added by SOR: Control value updates.
+-- Loads a system or user preset.
+-- bankMsb: category for system preset, 0 for user preset.
+-- bankLsb: 0 for user presets and most categories.
+--     Can be > 0 for categories with more than 128 presets.
+-- programNo: zero-based program number.
+-- presetName:  preset name for display on the Current Preset control.
+function loadPreset(bankMsb, bankLsb, programNo, presetName)
+    isAccumulatingLoadContext = true
+    -- Initialize controls for new preset
+    clearInfo()
+    resetMute()
+    -- We don't need to clear macros because all 6 macros are always received for each preset.
+    midi.sendControlChange(DEVICE_PORT, 16, 0, bankMsb)
+    -- Send bank LSB if > 128 Presets in category and this preset is not in bank 0. 
+    if bankLsb > 0 then
+        midi.sendControlChange(DEVICE_PORT, 16, 32, bankLsb)
+    end
+    midi.sendProgramChange(DEVICE_PORT, 16, programNo)
+    -- Show the preset name on the Current Preset control.
+    control = controls.get(50)
+    control:setName(presetName)
+    -- ???
+    midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values            
+end
+
 -- Added by SOR: Get system presets.
 function onFirmwareVersionReceived()
     print("onFirmwareVersionReceived")
@@ -2754,7 +2786,7 @@ function savePersistableData()
     persist(persistableData)
 end
 
--- Added by SOR: Control value updates
+-- Added by SOR: Control value updates.
 function setControlValue(controlNo, value)
     local control = controls.get(controlNo)
     local controlValue = control:getValue("value")
