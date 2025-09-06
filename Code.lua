@@ -437,244 +437,170 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         return
     end
     if (chan == 16 and cc == 71) then -- Polyphony
-        local ctrl = controls.get(183)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
         if (val < 16) then
-            ctrlMsg:setValue(val)
+            setControlValue(183, val) -- SOR
         else
             print("Polyphony > 15: "..val)
         end
+        return -- SOR
     end
     if (chan == 16 and cc == 72) then -- DSP Polyphony
-        local ctrl = controls.get(234)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(234, val) -- SOR
+        return -- SOR
     end
     if (chan == 16 and cc == 73) then -- CVC Polyphony
-        local ctrl = controls.get(172)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(172, val) -- SOR
+        return -- SOR
     end
 
     -- End Read Only Controls
     if (chan == 1 and cc == 12) then -- Set i
-        local ctrl = controls.get(MACRO_I) -- SOR
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(MACRO_I, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 13) then -- Set ii
-        local ctrl = controls.get(MACRO_II) -- SOR
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(MACRO_II, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 14) then -- Set iii
-        local ctrl = controls.get(MACRO_III) -- SOR
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(MACRO_III, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 15) then -- Set iv
-        local ctrl = controls.get(MACRO_IV) -- SOR
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(MACRO_IV, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 16) then -- Set v
-        local ctrl = controls.get(MACRO_V) -- SOR
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(MACRO_V, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 17) then -- Set vi
-        local ctrl = controls.get(MACRO_VI) -- SOR
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(MACRO_VI, val) -- SOR
         -- Set all macro names here as this will always be the last macro output SOR
-        setMacroNames() 
+        setMacroNames()
+        return -- SOR
     end
     -- Gain & Attenuation Settings
     if (chan == 1 and cc == 26) then -- Pre-Gain
-        local ctrl = controls.get(48)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(48, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 18) then -- Post-Gain
-        local ctrl = controls.get(45)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(45, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 27) then -- Attenuation
-        local ctrl = controls.get(244)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(244, val) -- SOR
+        return -- SOR
     end
     -- Recirculator settings
     if (chan == 1 and cc == 24) then -- Mix
-        local ctrl = controls.get(86)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(86, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 23) then -- R4
-        local ctrl = controls.get(87)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(87, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 22) then -- R3
-        local ctrl = controls.get(88)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(88, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 21) then -- R2
-        local ctrl = controls.get(89)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(89, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 20) then -- R1
-        local ctrl = controls.get(90)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(90, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 95) then -- R5
-        local ctrl = controls.get(91)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(91, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 96) then -- R6
-        local ctrl = controls.get(92)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(92, val) -- SOR
+        return -- SOR
     end
     -- EQ
     if (chan == 1 and cc == 85) then -- Mix
-        local ctrl = controls.get(137)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(137, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 84) then -- Frequency
-        local ctrl = controls.get(138)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(138, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 83) then -- Tilt
-        local ctrl = controls.get(139)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(139, val) -- SOR
+        return -- SOR
     end
     -- Compressor
     if (chan == 1 and cc == 93) then -- Tilt
-        local ctrl = controls.get(133)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(133, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 92) then -- Ratio
-        local ctrl = controls.get(134)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(134, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 91) then -- Attack
-        local ctrl = controls.get(135)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(135, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 90) then -- Threshold
-        local ctrl = controls.get(136)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(136, val) -- SOR
+        return -- SOR
     end
     -- Set Sus, Sos1, Sos2
     if (chan == 1 and cc == 64) then --Sus
-        local ctrl = controls.get(260)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(260, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 66) then -- Sos1
-        local ctrl = controls.get(261)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(261, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 69) then -- Sos2
-        local ctrl = controls.get(262)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(262, val) -- SOR
+        return -- SOR
     end
     -- Audio Input
     if (chan == 1 and cc == 19) then -- Audio Input Level
-        local ctrl = controls.get(237)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(237, val) -- SOR
+        return -- SOR
     end
     -- Ped1
     if (chan == 1 and cc == 76) then -- Ped 1 Min Range
-        local ctrl = controls.get(175)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(175, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 77) then -- Ped 1 Max Range
-        local ctrl = controls.get(176)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(176, val) -- SOR
+        return -- SOR
     end
     -- Ped2
     if (chan == 1 and cc == 78) then -- Ped 2 Min Range
-        local ctrl = controls.get(177)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(177, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 79) then -- Ped 2 Max Range
-        local ctrl = controls.get(178)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(178, val) -- SOR
+        return -- SOR
     end
     -- Fine Tune
     if (chan == 1 and cc == 10) then -- Fine Tune +/- 60 cents
-        local ctrl = controls.get(227)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(227, val) -- SOR
+        return -- SOR
     end
     -- Rounding
     if (chan == 1 and cc == 25) then -- Round Rate
-        local ctrl = controls.get(213)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(213, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 65) then -- Round Equal
-        local ctrl = controls.get(228)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(val)
+        setControlValue(228, val) -- SOR
+        return -- SOR
     end
     if (chan == 1 and cc == 28) then -- Round Initial
         local ctrl = controls.get(209)
@@ -2436,268 +2362,6 @@ function loadSystemPreset(valueObject, value)
     midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values 
 end
 
--- Added by SOR: Get system presets.
-function getSystemPresets()
-    print("getSystemPresets")
-    if isSystemPresetsUpdateRequired then
-        -- Request system preset names (sysToMidi).
-        midi.sendControlChange(DEVICE_PORT, 16, 109, 39)
-    else
-        print("    Getting system presets from persisted data.")
-        systemPresetCategories = persistableData.systemPresetCategories
-        onSystemPresetsUpdated(true)
-    end 
-end
-
--- Added by SOR: Get system presets.
-function onFirmwareVersionReceived()
-    print("onFirmwareVersionReceived")
-    -- There's no specific command to request the firmware version.
-    -- The instrument sends it more than once: on connecting to E1;
-    -- when sending user presets; when sending system presets, etc.
-    -- We don't want to show the firmware version every time it is received,
-    -- as there may be a progress message in the info text while
-    -- preset data is being received.  
-    -- So save the version info to a variable to be shown again
-    -- when all the preset data has been received.
-    firmwareVersion = ((128 * highVersion)  + lowVersion) / 100
-    versionText = "Ver: "..E1_PRESET_VERSION.."/"..firmwareVersion
-    info.setText(versionText) -- Versions to Info Text
-    if persistableData.isSaved then
-        print("    Previous firmware version = "..persistableData.firmwareVersion)
-        print("    Current firmware version = "..firmwareVersion)
-        print("    "..#persistableData.systemPresetCategories..
-                " system preset categories have been recalled.")
-    else
-        print("    The previous firmware version is not available.")
-    end
-    isSystemPresetsUpdateRequired = 
-        not persistableData.isSaved 
-                or persistableData.firmwareVersion ~= firmwareVersion
-                or #persistableData.systemPresetCategories == 0
-    print("    isSystemPresetsUpdateRequired = "..tostring( isSystemPresetsUpdateRequired))
-end
-
--- Added by SOR: Get system presets.
-function onSystemPresetReceived()
-    -- The system preset's two-letter category code has been received.
-    -- It needs to be parsed from the context data that has been appended to curName.
-    -- The context data looks like "C=CC", usually followed by filter codes,
-    -- where CC is the category code.  We currently don't use the filter codes.
-    local categoryCode = string.sub(receivedSystemPresetContext, 3, 4)
-    if not categoryCode then
-        print("onSystemPresetContextReceived: Cannot find category for "
-                ..receivedSystemPresetName.." in ".. receivedSystemPresetContext)
-        return
-    end
-    local categoryNo = categoryNos[categoryCode]
-    if not categoryNo then
-        print("onSystemPresetContextReceived: Cannot find "..categoryCode..
-                " category number for "..receivedSystemPresetName)
-        return
-    end
-    -- Now that we know the new system preset's name and category number,
-    -- we can add the name to the category's system preset table.
-    local categoryPresetCount = #systemPresetCategories[categoryNo]
-    if categoryNo == CAT_OTHER and categoryPresetCount == 128 then
-        categoryNo = CAT_OTHER1
-        categoryPresetCount = #systemPresetCategories[categoryNo]
-    end
-    local newPresetNo = categoryPresetCount + 1
-    systemPresetCategories[categoryNo][newPresetNo] = receivedSystemPresetName
-end
-
--- Added by SOR: Get system presets.
-function onSystemPresetsUpdated(fromPersistedData)
-    haveSystemPresetsBeenUpdated = true
-    if not fromPersistedData then
-        replaceLongSystemPresetNamesWithShortNames()
-        savePersistableData()
-    end
-    -- Replace the "Getting presets..." notification 
-    -- on the status bar with the version info.
-    info.setText(versionText)
-    local categoryCount = #systemPresetCategories
-    print("Counting system presets in "..categoryCount.." categories.")
-    for category = 1, categoryCount do
-        local presetNames = systemPresetCategories[category]
-        local presetCount = #presetNames
-        print("Category "..category.." has "..presetCount.." system presets.")
-    end
-    selectPresetCategory(nil, nil)
-    selectSystemPreset()
-end
-
--- Added by SOR: Get system presets.
--- To avoid truncation when a system preset name is shown on the E1,
--- replace any names that are too long with short names.
-function replaceLongSystemPresetNamesWithShortNames()
-    local categoryCount = #systemPresetCategories
-    for category = 1, categoryCount do
-        local presets = systemPresetCategories[category]
-        local presetCount = #presets
-        for presetNo = 1, presetCount do
-            local presetName = presets[presetNo]
-            local nameLength = #presetName
-            if (nameLength > MAX_NAME_LENGTH) then
-                local shortName = shortPresetNames[presetName]
-                if shortName then
-                    systemPresetCategories[category][presetNo] = shortName
-                else
-                    -- Keep this print. We will need it for identifying new
-                    -- long names introduced in future firmware versions. SOR
-                    print("A short name has not been specified for system preset "
-                            ..presetName)
-                end
-            end
-        end
-    end
-end
-
--- Added by SOR: Get system presets.
-function savePersistableData()
-    print("Saving persistableData")
-    persistableData.isSaved = true
-    persistableData.firmwareVersion = firmwareVersion
-    persistableData.systemPresetCategories = systemPresetCategories
-    persist(persistableData)
-end
-
--- Added by SOR: Set macro names.
--- Parses the specified macro string for a macro id and name,
--- setting the name shown on the corresponding macro control.
--- The expected format of the string is 'id=name', e.g. 'ii=ChordVol',
--- or 'id=name_range1..._rangeN', e.g. 'iv=Width_Less_More'
--- Spaces in names are not supported, as whitespace delimits the macro strings.
-function setMacroName(macroString)
-    print("setMacroName: macroString = '"..macroString.."'")
-    -- E.g. "iv=Width_Less_More" will give us {"iv", "Width_Less_More"}.
-    local lhsRhs = splitString(macroString, "=")
-    local lhsRhsCount = #lhsRhs
-    if lhsRhsCount ~= 2 then
-        -- The specified string does not contain '=', 
-        -- so it's not a properly formed macro string.
-        -- Example:
-        -- Preset 'Tap Sitar', among many others, has 'E.Eagan',
-        -- a misplaced author name, in the macro line
-        -- (as well as correctly in the author line).
-        return
-    end
-    local macroId = lhsRhs[1] -- E.g. "i".
-    if macroId == "g1" then
-        macroId = "v"
-    elseif macroId == "g2" then
-        macroId = "vi"
-    end
-    -- E.g. "Width_Less_More" will give us {"Width", "Less", "More"}.
-    local specs = splitString(lhsRhs[2], "_")
-    local macroName = specs[1] -- E.g. "Width".
-    local controlNo = macroControlNos[macroId]
-    if not controlNo then
-        -- Invalid macro id.
-        -- Example:
-        -- Preset 'Tap Sitar', among many others, has 'fade=5000' in the macro line.
-        return
-    end
-    macroControls[controlNo]:setName(macroName)
-end
-
--- Added by SOR: Set macro names.
-function setMacroNames()
-    print("setMacroNames")
-    isAccumulatingLoadContext = false
-    -- Blank out macro names.
-    for controlNo = MACRO_I, MACRO_VI do
-        macroControls[controlNo]:setName("")
-    end
-    -- The load context string consists of two or three lines in this order:
-    -- a line containing macro names, which might be blank or omitted;
-    -- a line containing the category and any other filters;
-    -- and a line containing the author's name.
-    -- Put the context lines, each trimmed, into a table.
-    local lineThrow = string.char(10)
-    local loadContextLines = splitString(loadContext, lineThrow)
-    local loadContextLinesCount = #loadContextLines
-    if loadContextLinesCount == 0 then
-        print "Error: No load context lines."
-        return
-    end
-    local macrosLine = loadContextLines[1]
-    -- If the first line is blank, in which case its trimmed length will be zero,
-    -- or is the category and filters line,
-    -- this preset has no macros.
-    if string.len(macrosLine) == 0
-            or string.sub(macrosLine, 1, 2) == "C=" then
-        -- Preset has no macros
-        return
-    end
-    -- The macros line is expected to contain id=name pairs.
-    -- But in rare cases there is a space after an '=', which could
-    -- mess up the parsing if we don't allow for it.
-    -- Remove any spaces preceding the '='s.
-    -- There are no known examples, so this is just to be safe.
-    while string.find(macrosLine, " =") do
-        macrosLine = string.gsub(macrosLine, " =", "=")
-    end 
-    -- Remove any spaces following the '='s.
-    -- Example: Clarinet has macro line
-    -- "i=Body_One_Two ii=Darkness iii= Tongue iv=Flutter".
-    -- We would miss the Tongue macro if we don't remove the non-standard space.
-    while string.find(macrosLine, "= ") do
-        macrosLine = string.gsub(macrosLine, "= ", "=")
-    end
-    -- Now we are sure there are no spaces either side of the '='s.
-    -- So we can safely split the macros line into id=name pairs delimited by space.
-    local macroStrings = splitString(macrosLine)
-    local macroStringsCount = #macroStrings
-    for i = 1, macroStringsCount do
-        setMacroName(macroStrings[i])
-    end
-end
-
--- Added by SOR: Set macro names.
--- Splits the delimited components of the specified string into a table.
--- If not specified, the delimiter will be any whitespace.
--- According to https://stackoverflow.com/questions/1426954/split-string-in-lua,
--- empty components will be omitted from the table. That should be fine.
--- Any leading or trailing whitespace will be trimmed from the component strings.
-function splitString(inputString, delimiter)
-    if delimiter == nil then
-        delimiter = "%s" -- Any whitespace
-    end
-    local result = {}
-    for component in string.gmatch(inputString, "([^"..delimiter.."]+)") do
-        table.insert(result, trimString(component))
-    end
-    return result
-end
-
--- Added by SOR: Set macro names.
--- Removes leading and trailing whitespace from the specified string.
--- See http://lua-users.org/wiki/StringTrim.
-function trimString(inputString)
-    return (inputString:gsub("^%s*(.-)%s*$", "%1"))
-end
-
--- Added by SOR: Get system presets.
--- The text streams provide characters in pairs,
--- So if the string received has an odd number of characters,
--- there will be an null character (ASCII 0) at the end to make it even.
--- For system preset names,
--- the null character really messes things up if we don't remove it.
--- And it is removed for system preset contexts too, just for tidiness.
--- If there's already code to remove the null character for user preset names,
--- I've not spotted it. Maybe it does not matter in that case.
-function trimTrailingNullChar(text)
-    local textLength = string.len(text)
-    local lastCharNo = string.byte(text, textLength)
-    if lastCharNo == 0 then
-        local result = string.sub(text,1, textLength - 1)
-        return result
-    end
-    return text
-end
-
 -- Set Pedal 1 Assignment
 function assignPedal1 (valueObject, value)
     if (pedal1Init == false) then
@@ -2961,4 +2625,274 @@ function format0to1(valueObject, value)
 end
 
 function noop (valueObject, value)
+end
+
+-- Added by SOR: Get system presets.
+function getSystemPresets()
+    print("getSystemPresets")
+    if isSystemPresetsUpdateRequired then
+        -- Request system preset names (sysToMidi).
+        midi.sendControlChange(DEVICE_PORT, 16, 109, 39)
+    else
+        print("    Getting system presets from persisted data.")
+        systemPresetCategories = persistableData.systemPresetCategories
+        onSystemPresetsUpdated(true)
+    end
+end
+
+-- Added by SOR: Get system presets.
+function onFirmwareVersionReceived()
+    print("onFirmwareVersionReceived")
+    -- There's no specific command to request the firmware version.
+    -- The instrument sends it more than once: on connecting to E1;
+    -- when sending user presets; when sending system presets, etc.
+    -- We don't want to show the firmware version every time it is received,
+    -- as there may be a progress message in the info text while
+    -- preset data is being received.  
+    -- So save the version info to a variable to be shown again
+    -- when all the preset data has been received.
+    firmwareVersion = ((128 * highVersion)  + lowVersion) / 100
+    versionText = "Ver: "..E1_PRESET_VERSION.."/"..firmwareVersion
+    info.setText(versionText) -- Versions to Info Text
+    if persistableData.isSaved then
+        print("    Previous firmware version = "..persistableData.firmwareVersion)
+        print("    Current firmware version = "..firmwareVersion)
+        print("    "..#persistableData.systemPresetCategories..
+                " system preset categories have been recalled.")
+    else
+        print("    The previous firmware version is not available.")
+    end
+    isSystemPresetsUpdateRequired =
+    not persistableData.isSaved
+            or persistableData.firmwareVersion ~= firmwareVersion
+            or #persistableData.systemPresetCategories == 0
+    print("    isSystemPresetsUpdateRequired = "..tostring( isSystemPresetsUpdateRequired))
+end
+
+-- Added by SOR: Get system presets.
+function onSystemPresetReceived()
+    -- The system preset's two-letter category code has been received.
+    -- It needs to be parsed from the context data that has been appended to curName.
+    -- The context data looks like "C=CC", usually followed by filter codes,
+    -- where CC is the category code.  We currently don't use the filter codes.
+    local categoryCode = string.sub(receivedSystemPresetContext, 3, 4)
+    if not categoryCode then
+        print("onSystemPresetContextReceived: Cannot find category for "
+                ..receivedSystemPresetName.." in ".. receivedSystemPresetContext)
+        return
+    end
+    local categoryNo = categoryNos[categoryCode]
+    if not categoryNo then
+        print("onSystemPresetContextReceived: Cannot find "..categoryCode..
+                " category number for "..receivedSystemPresetName)
+        return
+    end
+    -- Now that we know the new system preset's name and category number,
+    -- we can add the name to the category's system preset table.
+    local categoryPresetCount = #systemPresetCategories[categoryNo]
+    if categoryNo == CAT_OTHER and categoryPresetCount == 128 then
+        categoryNo = CAT_OTHER1
+        categoryPresetCount = #systemPresetCategories[categoryNo]
+    end
+    local newPresetNo = categoryPresetCount + 1
+    systemPresetCategories[categoryNo][newPresetNo] = receivedSystemPresetName
+end
+
+-- Added by SOR: Get system presets.
+function onSystemPresetsUpdated(fromPersistedData)
+    haveSystemPresetsBeenUpdated = true
+    if not fromPersistedData then
+        replaceLongSystemPresetNamesWithShortNames()
+        savePersistableData()
+    end
+    -- Replace the "Getting presets..." notification 
+    -- on the status bar with the version info.
+    info.setText(versionText)
+    local categoryCount = #systemPresetCategories
+    print("Counting system presets in "..categoryCount.." categories.")
+    for category = 1, categoryCount do
+        local presetNames = systemPresetCategories[category]
+        local presetCount = #presetNames
+        print("Category "..category.." has "..presetCount.." system presets.")
+    end
+    selectPresetCategory(nil, nil)
+    selectSystemPreset()
+end
+
+-- Added by SOR: Get system presets.
+-- To avoid truncation when a system preset name is shown on the E1,
+-- replace any names that are too long with short names.
+function replaceLongSystemPresetNamesWithShortNames()
+    local categoryCount = #systemPresetCategories
+    for category = 1, categoryCount do
+        local presets = systemPresetCategories[category]
+        local presetCount = #presets
+        for presetNo = 1, presetCount do
+            local presetName = presets[presetNo]
+            local nameLength = #presetName
+            if (nameLength > MAX_NAME_LENGTH) then
+                local shortName = shortPresetNames[presetName]
+                if shortName then
+                    systemPresetCategories[category][presetNo] = shortName
+                else
+                    -- Keep this print. We will need it for identifying new
+                    -- long names introduced in future firmware versions. SOR
+                    print("A short name has not been specified for system preset "
+                            ..presetName)
+                end
+            end
+        end
+    end
+end
+
+-- Added by SOR: Get system presets.
+function savePersistableData()
+    print("Saving persistableData")
+    persistableData.isSaved = true
+    persistableData.firmwareVersion = firmwareVersion
+    persistableData.systemPresetCategories = systemPresetCategories
+    persist(persistableData)
+end
+
+-- Added by SOR: Control value updates
+function setControlValue(controlNo, value)
+    local control = controls.get(controlNo)
+    local controlValue = control:getValue("value")
+    local message = controlValue:getMessage()
+    message:setValue(value)
+end
+
+-- Added by SOR: Set macro names.
+-- Parses the specified macro string for a macro id and name,
+-- setting the name shown on the corresponding macro control.
+-- The expected format of the string is 'id=name', e.g. 'ii=ChordVol',
+-- or 'id=name_range1..._rangeN', e.g. 'iv=Width_Less_More'
+-- Spaces in names are not supported, as whitespace delimits the macro strings.
+function setMacroName(macroString)
+    print("setMacroName: macroString = '"..macroString.."'")
+    -- E.g. "iv=Width_Less_More" will give us {"iv", "Width_Less_More"}.
+    local lhsRhs = splitString(macroString, "=")
+    local lhsRhsCount = #lhsRhs
+    if lhsRhsCount ~= 2 then
+        -- The specified string does not contain '=', 
+        -- so it's not a properly formed macro string.
+        -- Example:
+        -- Preset 'Tap Sitar', among many others, has 'E.Eagan',
+        -- a misplaced author name, in the macro line
+        -- (as well as correctly in the author line).
+        return
+    end
+    local macroId = lhsRhs[1] -- E.g. "i".
+    if macroId == "g1" then
+        macroId = "v"
+    elseif macroId == "g2" then
+        macroId = "vi"
+    end
+    -- E.g. "Width_Less_More" will give us {"Width", "Less", "More"}.
+    local specs = splitString(lhsRhs[2], "_")
+    local macroName = specs[1] -- E.g. "Width".
+    local controlNo = macroControlNos[macroId]
+    if not controlNo then
+        -- Invalid macro id.
+        -- Example:
+        -- Preset 'Tap Sitar', among many others, has 'fade=5000' in the macro line.
+        return
+    end
+    macroControls[controlNo]:setName(macroName)
+end
+
+-- Added by SOR: Set macro names.
+function setMacroNames()
+    print("setMacroNames")
+    isAccumulatingLoadContext = false
+    -- Blank out macro names.
+    for controlNo = MACRO_I, MACRO_VI do
+        macroControls[controlNo]:setName("")
+    end
+    -- The load context string consists of two or three lines in this order:
+    -- a line containing macro names, which might be blank or omitted;
+    -- a line containing the category and any other filters;
+    -- and a line containing the author's name.
+    -- Put the context lines, each trimmed, into a table.
+    local lineThrow = string.char(10)
+    local loadContextLines = splitString(loadContext, lineThrow)
+    local loadContextLinesCount = #loadContextLines
+    if loadContextLinesCount == 0 then
+        print "Error: No load context lines."
+        return
+    end
+    local macrosLine = loadContextLines[1]
+    -- If the first line is blank, in which case its trimmed length will be zero,
+    -- or is the category and filters line,
+    -- this preset has no macros.
+    if string.len(macrosLine) == 0
+            or string.sub(macrosLine, 1, 2) == "C=" then
+        -- Preset has no macros
+        return
+    end
+    -- The macros line is expected to contain id=name pairs.
+    -- But in rare cases there is a space after an '=', which could
+    -- mess up the parsing if we don't allow for it.
+    -- Remove any spaces preceding the '='s.
+    -- There are no known examples, so this is just to be safe.
+    while string.find(macrosLine, " =") do
+        macrosLine = string.gsub(macrosLine, " =", "=")
+    end
+    -- Remove any spaces following the '='s.
+    -- Example: Clarinet has macro line
+    -- "i=Body_One_Two ii=Darkness iii= Tongue iv=Flutter".
+    -- We would miss the Tongue macro if we don't remove the non-standard space.
+    while string.find(macrosLine, "= ") do
+        macrosLine = string.gsub(macrosLine, "= ", "=")
+    end
+    -- Now we are sure there are no spaces either side of the '='s.
+    -- So we can safely split the macros line into id=name pairs delimited by space.
+    local macroStrings = splitString(macrosLine)
+    local macroStringsCount = #macroStrings
+    for i = 1, macroStringsCount do
+        setMacroName(macroStrings[i])
+    end
+end
+
+-- Added by SOR: Set macro names.
+-- Splits the delimited components of the specified string into a table.
+-- If not specified, the delimiter will be any whitespace.
+-- According to https://stackoverflow.com/questions/1426954/split-string-in-lua,
+-- empty components will be omitted from the table. That should be fine.
+-- Any leading or trailing whitespace will be trimmed from the component strings.
+function splitString(inputString, delimiter)
+    if delimiter == nil then
+        delimiter = "%s" -- Any whitespace
+    end
+    local result = {}
+    for component in string.gmatch(inputString, "([^"..delimiter.."]+)") do
+        table.insert(result, trimString(component))
+    end
+    return result
+end
+
+-- Added by SOR: Set macro names.
+-- Removes leading and trailing whitespace from the specified string.
+-- See http://lua-users.org/wiki/StringTrim.
+function trimString(inputString)
+    return (inputString:gsub("^%s*(.-)%s*$", "%1"))
+end
+
+-- Added by SOR: Get system presets.
+-- The text streams provide characters in pairs,
+-- So if the string received has an odd number of characters,
+-- there will be an null character (ASCII 0) at the end to make it even.
+-- For system preset names,
+-- the null character really messes things up if we don't remove it.
+-- And it is removed for system preset contexts too, just for tidiness.
+-- If there's already code to remove the null character for user preset names,
+-- I've not spotted it. Maybe it does not matter in that case.
+function trimTrailingNullChar(text)
+    local textLength = string.len(text)
+    local lastCharNo = string.byte(text, textLength)
+    if lastCharNo == 0 then
+        local result = string.sub(text,1, textLength - 1)
+        return result
+    end
+    return text
 end
