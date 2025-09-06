@@ -54,7 +54,6 @@ local userNameIndex = 0
 local curName=""
 local lastName = "" -- Last CC56 name processed - should be current preset
 local convString = ""
-local currentPresetIndex = 0
 local presetOffset = 0 -- Offset to change user preset on COntinuum as only 16 are shown, need to track bank 
 local presetPosSelect = 0
 local muteVal = 60 -- Default pre-gain (but will be set from reading presets)
@@ -80,10 +79,13 @@ local haveSystemPresetsBeenUpdated = false
 local isAccumulatingLoadContext = false
 local isAccumulatingSystemPresetContext = false
 local isAccumulatingSystemPresetName = false
+local isGettingLoadedPresetData = false
 local isGettingSystemPresets = false
+local isLoadingPreset = false
 local isSystemPresetsUpdateRequired = false
 -- Macro names/category/filters/author data 
--- that we can get from a context stream after loading a preset.
+-- that we can get from a context stream 
+-- when data for the loaded preset has been requested. 
 local loadContext = ""
 local receivedSystemPresetContext = ""
 local receivedSystemPresetName = ""
@@ -639,7 +641,15 @@ end -- CC event processing
 function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message Events
     local msg = midiMessage
     -- Added by SOR: Get system presets.
-    if (msg.channel ~= 16) then
+    if msg.channel ~= 16 then
+        return
+    end
+    -- Added by SOR: Control value updates.
+    if msg.controllerNumber==109 and msg.value==26 then -- doneTxDsp
+        if isLoadingPreset then
+            isLoadingPreset = false
+            getLoadedPresetData()
+        end
         return
     end
     -- Added by SOR: Get system presets.
@@ -665,6 +675,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         userNameProcessing = true
         firstName = true
         userNameIndex=0
+        return -- SOR
     end
     if (msg.controllerNumber==109 and msg.value==55) then -- End User Names Found
         --print("Finished getting names")
@@ -682,6 +693,20 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
             -- on the status bar with the version info.
             info.setText(versionText)
         end
+        return -- SOR
+    end
+
+    -- Amended by SOR: Control value updates.
+    if msg.controllerNumber==56 then
+        if msg.value == 20 then -- Matrix Stream
+            matrixStream = true
+            print("Start of matrix stream")
+            return
+        end
+        if matrixStream then
+            print("End of matrix stream")
+        end
+        matrixStream = false -- Has no CC56=127 terminator - new stream terminates it
     end
 
     -- Amended by SOR: Get system presets.
@@ -690,26 +715,22 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         if isGettingSystemPresets then
             isAccumulatingSystemPresetName = true
             systemPresetNameBuffer = ""
-            return
+        else
+            -- Processing user presets  
+            userNameIndex = userNameIndex + 1 -- Index Lua arrays from 1
+            nameInProgress = true
         end
-        -- Processing user presets  
-        userNameIndex = userNameIndex + 1 -- Index Lua arrays from 1
-        nameInProgress = true
-        matrixStream=false -- Has no CC56=127 terminator - new stream terminates it       
-    end
-
-    if (msg.controllerNumber==56 and msg.value==20) then -- Matrix Stream
-        matrixStream = true
+        return
     end
 
     if (msg.controllerNumber==56 and msg.value==14) then -- Convolution Stream
         convInProgress = true
-        matrixStream=false -- Has no CC56=127 terminator - new stream terminates it 
+        return -- SOR
     end
 
     if (msg.controllerNumber==56 and msg.value==15) then -- Convolution Stream
         thumbInProgress = true
-        matrixStream=false -- Has no CC56=127 terminator - new stream terminates it       
+        return -- SOR
     end
 
     -- Amended by SOR: Get system presets.
@@ -722,12 +743,19 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
             systemPresetContextBuffer = ""
             return
         end
+        -- Start of load context stream that included macro names.
         loadContext = ""
-        matrixStream=false -- Has no CC56=127 terminator - new stream terminates it
+        return -- SOR
     end
 
     -- Added by SOR: Get system presets.
     if msg.controllerNumber==56 and msg.value==127 then -- End of stream
+        if isGettingLoadedPresetData then
+            -- This is the end of the preset name stream that is the
+            -- last item in current preset data we requested after loading the preset.
+            isGettingLoadedPresetData = false
+            print("End of preset data.")
+        end
         if isAccumulatingSystemPresetName then
             isAccumulatingSystemPresetName = false
             receivedSystemPresetName = trimTrailingNullChar(systemPresetNameBuffer)
@@ -1110,22 +1138,22 @@ function loadUserPreset(valueObject, value) -- Load up a user preset on pressing
     --clearInfo()
     --resetMute()
     local presetPos = valueObject:getMessage():getValue()
-
     if (presetPos == 0) then -- adjust for initialization
         --  -- Changing pages triggers Control #1 with 0 value (not sure why) return
         return
     end
-
-    if (presetPos+presetOffset >=0 and presetPos+presetOffset-1 < 128) then
+    local presetNo = presetPos + presetOffset -- 1-based for userNames table index.
+    if (presetNo >= 1 and presetNo <= 128) then
+    --if (presetPos+presetOffset >=0 and presetPos+presetOffset-1 < 128) then
         local bankMsb = 0 -- 0 = User Presets
         local bankLsb = 0 -- Because there are a maximum of 128 user presets
-        currentPresetIndex = presetPos+presetOffset-1 -- User Preset Program change 0..127
-        local presetName = userNames[presetPos+presetOffset] 
-        loadPreset(bankMsb, bankLsb, currentPresetIndex, presetName)
+        local programNo = presetNo - 1 -- 0-based for Program change 0..127
+        local presetName = userNames[presetNo] 
+        loadPreset(bankMsb, bankLsb, programNo, presetName)
         --midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- CC0 = 0 (Category 0 = USer Presets)
         --midi.sendControlChange(DEVICE_PORT, 16, 32, 0)  -- CC 32 = 0 (< 129 presets)
         --midi.sendProgramChange(DEVICE_PORT, 16, presetPos+presetOffset-1) -- User Preset Program change 0..127
-        --currentPresetIndex = presetPos+presetOffset-1
+        --programNo = presetPos+presetOffset-1
         -- Display Current Preset Name  
         lastName = presetName -- Override last name
         --lastName = userNames[presetPos+presetOffset] -- Override last name
@@ -1135,8 +1163,8 @@ function loadUserPreset(valueObject, value) -- Load up a user preset on pressing
     else
         print("Unexpected Preset Index: "..presetPos+presetOffset-1)
     end
-
-    -- Set Sustain, Sos1 and Sos2 off just in case conflict with Tranposition parameters
+    -- This is not done when loading a system preset. So is it necessary? SOR
+    -- Set Sustain, Sos1 and Sos2 off just in case conflict with Transposition parameters
     midi.sendControlChange(DEVICE_PORT, 1, 64, 0) -- Sustain off
     midi.sendControlChange(DEVICE_PORT, 1, 66, 0) -- Sos1 Off
     midi.sendControlChange(DEVICE_PORT, 1, 69, 0) -- Sos2 Off
@@ -1642,27 +1670,43 @@ function xposeMiddleCx(valueObject, value)
 end
 
 function matrixPoke(pokeID, pokeVal)
-    print ("matrixPoke: " .. pokeID .. " " .. pokeVal)
+    print("matrixPoke: "..pokeID.." "..pokeVal)
+    if isGettingLoadedPresetData then
+        print("    Getting preset data, so not poking!")
+        return
+    end
     midi.sendControlChange(DEVICE_PORT, 16, 56, 20) -- Matrix Poke command 
     midi.sendAfterTouchPoly(DEVICE_PORT, 16, pokeID , pokeVal) -- Perform the Poke  
 end
 
 function formulaPoke(formulaID, pokeID, pokeVal)
-    -- print ("POke: " .. pokeID .. " " .. pokeVal)
+    print("formulaPoke: "..formulaID..pokeID.." "..pokeVal)
+    if isGettingLoadedPresetData then
+        print("    Getting preset data, so not poking!")
+        return
+    end
     midi.sendControlChange(DEVICE_PORT, 16, 34, formulaID) -- Set Formula
     midi.sendControlChange(DEVICE_PORT, 16, 56, 19) -- Formula Poke command     
     midi.sendAfterTouchPoly(DEVICE_PORT, 16, pokeID , pokeVal) -- Perform the Poke  
 end
 
 function convolutionPoke(pokeID, pokeVal)
-    -- print ("POke: " .. pokeID .. " " .. pokeVal)
+    print("convolutionPoke: "..pokeID.." "..pokeVal)
+    if isGettingLoadedPresetData then
+        print("    Getting preset data, so not poking!")
+        return
+    end
     midi.sendControlChange(DEVICE_PORT, 16, 56, 26) -- Convolution command 
     midi.sendAfterTouchPoly(DEVICE_PORT, 16, pokeID , pokeVal) -- Perform the Poke  
 end
 
 
 function mainGraphPoke(pokeIndex, pokeValue)
-    -- print ("POke: " .. pokeID .. " " .. pokeVal)
+    print("mainGraphPoke: "..pokeID.." "..pokeValue)
+    if isGettingLoadedPresetData then
+        print("    Getting preset data, so not poking!")
+        return
+    end
     midi.sendControlChange(DEVICE_PORT, 16, 56, 21) -- Matrix Poke command 
     midi.sendAfterTouchPoly(DEVICE_PORT, 16, pokeIndex , pokeValue) -- Change Main Graph value at zero offset index 0..47  
 end
@@ -2633,6 +2677,15 @@ end
 function noop (valueObject, value)
 end
 
+-- Added by SOR: Control value updates.
+function getLoadedPresetData()
+    print("getLoadedPresetData: Loaded preset. Getting preset data.")
+    isAccumulatingLoadContext = true
+    isGettingLoadedPresetData = true
+    -- Send get Current Preset Msg to get Macro labels and control values
+    midi.sendControlChange(DEVICE_PORT, 16, 109, 16)
+end
+
 -- Added by SOR: Get system presets.
 function getSystemPresets()
     print("getSystemPresets")
@@ -2654,11 +2707,12 @@ end
 -- programNo: zero-based program number.
 -- presetName:  preset name for display on the Current Preset control.
 function loadPreset(bankMsb, bankLsb, programNo, presetName)
-    isAccumulatingLoadContext = true
+    isLoadingPreset = true
     -- Initialize controls for new preset
     clearInfo()
     resetMute()
-    -- We don't need to clear macros because all 6 macros are always received for each preset.
+    -- We don't need to clear initialise macros because all 6 macro values are always 
+    -- received for each preset, and the macro names are initialized in setMacroNames.
     midi.sendControlChange(DEVICE_PORT, 16, 0, bankMsb)
     -- Send bank LSB if > 128 Presets in category and this preset is not in bank 0. 
     if bankLsb > 0 then
@@ -2668,8 +2722,9 @@ function loadPreset(bankMsb, bankLsb, programNo, presetName)
     -- Show the preset name on the Current Preset control.
     control = controls.get(50)
     control:setName(presetName)
-    -- ???
-    midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values            
+    print("loadPreset: Loading preset '"..presetName.."'")
+    -- Data for the loaded is now requested 
+    -- on receiving confirmation that the preset has loaded.
 end
 
 -- Added by SOR: Get system presets.
