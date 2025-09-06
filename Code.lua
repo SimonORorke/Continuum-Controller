@@ -680,9 +680,6 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     if (msg.controllerNumber==109 and msg.value==55) then -- End User Names Found
         --print("Finished getting names")
         setUserPresetNames()
-        if (userNameProcessing == true) then
-            userNameProcessing = false
-        end
         userNameProcessing = false
         userNameIndex=0
         -- Added by SOR: Get system presets.
@@ -1678,8 +1675,8 @@ end
 
 function matrixPoke(pokeID, pokeVal)
     print("matrixPoke: "..pokeID.." "..pokeVal)
-    if isGettingLoadedPresetData then
-        print("    Getting preset data, so not poking!")
+    if isGettingData() then
+        print("    Getting data, so not poking!")
         return
     end
     midi.sendControlChange(DEVICE_PORT, 16, 56, 20) -- Matrix Poke command 
@@ -1688,8 +1685,8 @@ end
 
 function formulaPoke(formulaID, pokeID, pokeVal)
     print("formulaPoke: "..formulaID..pokeID.." "..pokeVal)
-    if isGettingLoadedPresetData then
-        print("    Getting preset data, so not poking!")
+    if isGettingData() then
+        print("    Getting data, so not poking!")
         return
     end
     midi.sendControlChange(DEVICE_PORT, 16, 34, formulaID) -- Set Formula
@@ -1699,8 +1696,8 @@ end
 
 function convolutionPoke(pokeID, pokeVal)
     print("convolutionPoke: "..pokeID.." "..pokeVal)
-    if isGettingLoadedPresetData then
-        print("    Getting preset data, so not poking!")
+    if isGettingData() then
+        print("    Getting data, so not poking!")
         return
     end
     midi.sendControlChange(DEVICE_PORT, 16, 56, 26) -- Convolution command 
@@ -1710,14 +1707,19 @@ end
 
 function mainGraphPoke(pokeIndex, pokeValue)
     print("mainGraphPoke: "..pokeID.." "..pokeValue)
-    if isGettingLoadedPresetData then
-        print("    Getting preset data, so not poking!")
+    if isGettingData() then
+        print("    Getting data, so not poking!")
         return
     end
     midi.sendControlChange(DEVICE_PORT, 16, 56, 21) -- Matrix Poke command 
     midi.sendAfterTouchPoly(DEVICE_PORT, 16, pokeIndex , pokeValue) -- Change Main Graph value at zero offset index 0..47  
 end
 function setRecirc(valueObject, value)
+    print("setRecirc")
+    if isGettingData() then
+        print("    Getting data, so not sending data!")
+        return
+    end
     local recircVal = valueObject:getMessage():getValue()
     midi.sendControlChange(DEVICE_PORT, 16, 56, 20)
     midi.sendAfterTouchPoly(DEVICE_PORT, 16, 62 , recircVal)
@@ -2704,6 +2706,11 @@ function getSystemPresets()
         systemPresetCategories = persistableData.systemPresetCategories
         onSystemPresetsUpdated(true)
     end
+end
+
+-- Added by SOR: Control value updates.
+function isGettingData()
+    return isGettingLoadedPresetData or isGettingSystemPresets or userNameProcessing
 end
 
 -- Added by SOR: Control value updates.
