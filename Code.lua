@@ -53,7 +53,6 @@ local macrosLoaded = false
 local userNameIndex = 0
 local curName=""
 local lastName = "" -- Last CC56 name processed - should be current preset
-local contextProcessed = false
 local convString = ""
 local currentPresetIndex = 0
 local presetOffset = 0 -- Offset to change user preset on COntinuum as only 16 are shown, need to track bank 
@@ -62,19 +61,6 @@ local muteVal = 60 -- Default pre-gain (but will be set from reading presets)
 local matrixStream = false
 local lowVersion = 8.0 -- Default to 10.35
 local highVersion = 12.0 -- Default to 10.35
--- variables to maintain macro display on page change
-local macro_i_name = ""
-local macro_i_val = 0
-local macro_ii_name = ""
-local macro_ii_val = 0
-local macro_iii_name = ""
-local macro_iii_val = 0
-local macro_iv_name = ""
-local macro_iv_val = 0
-local macro_v_name = ""
-local macro_v_val = 0
-local macro_vi_name = ""
-local macro_vi_val = 0
 -- Dummies to reserve some memory up front
 local userNames = {"U1","U2","U3","U4","U5","U6","U7","U8","U9","U10","U11","U12","U13","U14","U15","U16",
              "U17", "U18", "U19", "U20", "U21", "U22", "U23", "U24", "U25", "U26", "U27", "U28", "U29", "U30", "U31","U32",
@@ -475,54 +461,42 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
 
     -- End Read Only Controls
     if (chan == 1 and cc == 12) then -- Set i
-        local ctrl = controls.get(25)
+        local ctrl = controls.get(MACRO_I) -- SOR
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(val)
-        macro_i_name = "" -- clear macro global storage   
-        macro_i_val = val
     end
     if (chan == 1 and cc == 13) then -- Set ii
-        local ctrl = controls.get(26)
+        local ctrl = controls.get(MACRO_II) -- SOR
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(val)
-        macro_ii_name = ""
-        macro_ii_val = val
     end
     if (chan == 1 and cc == 14) then -- Set iii
-        local ctrl = controls.get(27)
+        local ctrl = controls.get(MACRO_III) -- SOR
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(val)
-        macro_iii_name = ""
-        macro_iii_val = val
     end
     if (chan == 1 and cc == 15) then -- Set iv
-        local ctrl = controls.get(28)
+        local ctrl = controls.get(MACRO_IV) -- SOR
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(val)
-        macro_iv_name = ""
-        macro_iv_val = val
     end
     if (chan == 1 and cc == 16) then -- Set v
-        local ctrl = controls.get(29)
+        local ctrl = controls.get(MACRO_V) -- SOR
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(val)
-        macro_v_name = ""
-        macro_v_val = val
     end
     if (chan == 1 and cc == 17) then -- Set vi
-        local ctrl = controls.get(30)
+        local ctrl = controls.get(MACRO_VI) -- SOR
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(val)
-        macro_vi_name = ""
         -- Set all macro names here as this will always be the last macro output SOR
         setMacroNames() 
-        macro_vi_val = val
     end
     -- Gain & Attenuation Settings
     if (chan == 1 and cc == 26) then -- Pre-Gain
@@ -823,7 +797,6 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
             return
         end
         loadContext = ""
-        contextProcessed = true  
         matrixStream=false -- Has no CC56=127 terminator - new stream terminates it
     end
 
@@ -888,16 +861,19 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     if (convInProgress) then
         convString = convString..math.floor(noteNumber).."|"..math.floor(pressure).."|"
         --print("CS=|"..convString.."|")--debugit       
+        return
     end
     if (nameInProgress) then -- Accumulate name global name buffer
         curName = curName..string.char(noteNumber)..string.char(pressure)
     end
     if (lastNameInProgress) then
         lastName = lastName..string.char(noteNumber)..string.char(pressure)
+        return
     end
-    -- Note: contextProcessed may be redundant. SOR
-    if (contextProcessed and isAccumulatingLoadContext) then -- Accumulate Macro String
+    -- Amended by SOR: Set macro names.
+    if (isAccumulatingLoadContext) then -- Accumulate Macro String
         loadContext = loadContext..string.char(noteNumber)..string.char(pressure)
+        return
     end
 
     -- Get Velocity Usage - Read Only
@@ -1184,10 +1160,10 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
 end -- of pPress settings
 
 function clearMacros() -- Set all Macros to 0 and set names to blank
-    local ctrl --= controls.get(25)
-    local controlValue --= ctrl:getValue("value")
-    local ctrlMsg --= controlValue:getMessage()
-    for i=25,30
+    local ctrl
+    local controlValue
+    local ctrlMsg
+    for i = MACRO_I, MACRO_VI
     do
         ctrl = controls.get(i)
         ctrl:setName("")
@@ -2441,10 +2417,10 @@ function loadSystemPreset(valueObject, value)
         info.setText("Select Category")
         return
     else
-        info.setText("")
+        info.setText("") -- redundant, since clearInfo is called below.
     end
     if (curCategory == CAT_OTHER1) then
-        tmpCategory = CAT_OTHER -- Really only one Other category but presetned to the user as 2
+        tmpCategory = CAT_OTHER -- Really only one Other category but presented to the user as 2
     end
     isAccumulatingLoadContext = true
     clearInfo()
