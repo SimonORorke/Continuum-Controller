@@ -753,8 +753,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         if isGettingLoadedPresetData then
             -- This is the end of the preset name stream that is the
             -- last item in current preset data we requested after loading the preset.
-            isGettingLoadedPresetData = false
-            print("End of preset data.")
+            onLoadedPresetDataReceived()
         end
         if isAccumulatingSystemPresetName then
             isAccumulatingSystemPresetName = false
@@ -1132,7 +1131,9 @@ function getNames(valueObject, value)
     midi.sendControlChange(DEVICE_PORT, 16, 109, 32) -- Send Names Request
 end
 
-function loadUserPreset(valueObject, value) -- Load up a user preset on pressing button 1-16 offset for bank
+-- Load up a user preset on pressing button 1-16 offset for bank
+-- Renamed and now calls loadPreset. SOR 
+function loadUserPreset(valueObject, value)
     --isAccumulatingLoadContext = true
     ---- Initialize controls for new preset
     --clearInfo()
@@ -1163,11 +1164,11 @@ function loadUserPreset(valueObject, value) -- Load up a user preset on pressing
     else
         print("Unexpected Preset Index: "..presetPos+presetOffset-1)
     end
-    -- This is not done when loading a system preset. So is it necessary? SOR
-    -- Set Sustain, Sos1 and Sos2 off just in case conflict with Transposition parameters
-    midi.sendControlChange(DEVICE_PORT, 1, 64, 0) -- Sustain off
-    midi.sendControlChange(DEVICE_PORT, 1, 66, 0) -- Sos1 Off
-    midi.sendControlChange(DEVICE_PORT, 1, 69, 0) -- Sos2 Off
+    -- Moved to onLoadedPresetDataReceived SOR
+    ---- Set Sustain, Sos1 and Sos2 off just in case conflict with Transposition parameters
+    --midi.sendControlChange(DEVICE_PORT, 1, 64, 0) -- Sustain off
+    --midi.sendControlChange(DEVICE_PORT, 1, 66, 0) -- Sos1 Off
+    --midi.sendControlChange(DEVICE_PORT, 1, 69, 0) -- Sos2 Off
 end
 
 function setUserPresetPos (valueObject, value)
@@ -2754,6 +2755,15 @@ function onFirmwareVersionReceived()
             or persistableData.firmwareVersion ~= firmwareVersion
             or #persistableData.systemPresetCategories == 0
     print("    isSystemPresetsUpdateRequired = "..tostring( isSystemPresetsUpdateRequired))
+end
+
+function onLoadedPresetDataReceived()
+    isGettingLoadedPresetData = false
+    -- Set Sustain, Sos1 and Sos2 off just in case conflict with Transposition parameters
+    midi.sendControlChange(DEVICE_PORT, 1, 64, 0) -- Sustain off
+    midi.sendControlChange(DEVICE_PORT, 1, 66, 0) -- Sos1 Off
+    midi.sendControlChange(DEVICE_PORT, 1, 69, 0) -- Sos2 Off
+    print("onLoadedPresetDataReceived: End of preset data.")
 end
 
 -- Added by SOR: Get system presets.
