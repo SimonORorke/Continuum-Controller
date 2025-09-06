@@ -1126,9 +1126,14 @@ end -- of pPress settings
 --    end
 --end
 
+-- Requests the list of user presets.
+-- Once the whole list has been received, 
+-- system presets will be either restored from persisted data 
+-- or requested from the instrument.
 function getNames(valueObject, value)
+    print("getNames: Getting user presets")
     resetMute() -- reset in case on from previous preset
-    midi.sendControlChange(DEVICE_PORT, 16, 109, 32) -- Send Names Request
+    midi.sendControlChange(DEVICE_PORT, 16, 109, 32) -- Send user presets Names Request
 end
 
 -- Load up a user preset on pressing button 1-16 offset for bank
@@ -1277,6 +1282,7 @@ end
 
 -- Set User Preset names - they are controls 1-16
 function setUserPresetNames()
+    print("setUserPresetNames")
     presetOffset = 0
     for i = 1,16
     do
