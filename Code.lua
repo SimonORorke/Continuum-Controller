@@ -925,21 +925,23 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     end
     -- Get Mono Mode
     if (matrixStream == true and channel==16 and noteNumber == 46) then -- Mono Mode
-        local monoMode = math.floor (pressure)
-        --print("onAfterTouchPoly: Mono Mode = "..monoMode)
-        local ctrl = controls.get(140)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(monoMode)
+        setControlValue(140, pressure) -- SOR
+        --local monoMode = math.floor (pressure)
+        ----print("onAfterTouchPoly: Mono Mode = "..monoMode)
+        --local ctrl = controls.get(140)
+        --local controlValue = ctrl:getValue("value")
+        --local ctrlMsg = controlValue:getMessage()
+        --ctrlMsg:setValue(monoMode)
     end
     -- Get Mono Interval
     if (matrixStream == true and channel==16 and noteNumber == 48) then -- Mono Interval
-        local monoInterval = math.floor (pressure)
+        setControlValue(267, pressure) -- SOR
+        --local monoInterval = math.floor (pressure)
         --print("onAfterTouchPoly: Mono Interval = "..monoInterval)
-        local ctrl = controls.get(267)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(monoInterval)
+        --local ctrl = controls.get(267)
+        --local controlValue = ctrl:getValue("value")
+        --local ctrlMsg = controlValue:getMessage()
+        --ctrlMsg:setValue(monoInterval)
     end
     --  SplitMode
     if (matrixStream == true and channel==16 and noteNumber == 1) then -- Split Mode
@@ -976,12 +978,13 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     end
     -- Get Pedal 2 Assignments
     if (matrixStream == true and channel==16 and noteNumber == 53) then -- Pedal2 Assign
-        local pedal2Assign = math.floor (pressure)
-        --print("onAfterTouchPoly: Pedal 2 Assign = "..pedal2Assign)
-        local ctrl = controls.get(164)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(pedal2Assign)
+        setControlValue(164, pressure)
+        --local pedal2Assign = math.floor (pressure)
+        ----print("onAfterTouchPoly: Pedal 2 Assign = "..pedal2Assign)
+        --local ctrl = controls.get(164)
+        --local controlValue = ctrl:getValue("value")
+        --local ctrlMsg = controlValue:getMessage()
+        --ctrlMsg:setValue(pedal2Assign)
     end
 
     -- Get Octave Swith mode
@@ -1661,9 +1664,9 @@ function xposeMiddleCx(valueObject, value)
 end
 
 function matrixPoke(pokeID, pokeVal)
-    print("matrixPoke: "..pokeID.." "..pokeVal)
+    --print("matrixPoke: "..pokeID.." "..pokeVal)
     if isGettingData() then
-        print("    Getting data, so not poking!")
+        --print("    Getting data, so not poking!")
         return
     end
     midi.sendControlChange(DEVICE_PORT, 16, 56, 20) -- Matrix Poke command 
@@ -1671,16 +1674,16 @@ function matrixPoke(pokeID, pokeVal)
 end
 
 function formulaPoke(formulaID, pokeID, pokeVal)
-    print("formulaPoke: "..formulaID..pokeID.." "..pokeVal)
+    --print("formulaPoke: "..formulaID..pokeID.." "..pokeVal)
     midi.sendControlChange(DEVICE_PORT, 16, 34, formulaID) -- Set Formula
     midi.sendControlChange(DEVICE_PORT, 16, 56, 19) -- Formula Poke command     
     midi.sendAfterTouchPoly(DEVICE_PORT, 16, pokeID , pokeVal) -- Perform the Poke  
 end
 
 function convolutionPoke(pokeID, pokeVal)
-    print("convolutionPoke: "..pokeID.." "..pokeVal)
+    --print("convolutionPoke: "..pokeID.." "..pokeVal)
     if isGettingData() then
-        print("    Getting data, so not poking!")
+        --print("    Getting data, so not poking!")
         return
     end
     midi.sendControlChange(DEVICE_PORT, 16, 56, 26) -- Convolution command 
@@ -1689,7 +1692,7 @@ end
 
 
 function mainGraphPoke(pokeIndex, pokeValue)
-    print("mainGraphPoke: "..pokeID.." "..pokeValue)
+    --print("mainGraphPoke: "..pokeID.." "..pokeValue)
     midi.sendControlChange(DEVICE_PORT, 16, 56, 21) -- Matrix Poke command 
     midi.sendAfterTouchPoly(DEVICE_PORT, 16, pokeIndex , pokeValue) -- Change Main Graph value at zero offset index 0..47  
 end
@@ -2019,22 +2022,18 @@ function setSplitPoint(valueObject, value)
 end
 
 function setMonoMode(valueObject, value)
-    --print ("setMonoMode: Setting Mono Mode to "..value)
-    matrixPoke(46, value)
+    local val = getControlValue(140)
+    print("setMonoMode: Setting Mono Mode to "..val)
+    matrixPoke(46, val)
 end
 
 function setMonoInterval(valueObject, value)
     if (math.floor(value) < 0) then
         return -- inits to -1 (check others)
     end
-    --print ("setMonoInterval: Setting Mono Interval to "..value)
-    matrixPoke(48, value)
-    --control = controls.get(267)
-    --local controlValue = control:getValue("value")
-    --local ctrlMsg = controlValue:getMessage()
-    --local val = ctrlMsg:getValue()
-    --print ("setMonoInterval: Setting Mono Interval to "..val)
-    --matrixPoke(48, val)
+    local val = getControlValue(267)
+    print("setMonoInterval: Setting Mono Interval to "..val)
+    matrixPoke(48, val)
 end
 function setMonoSwitch(valueObject, value)
     control = controls.get(252)
@@ -2413,12 +2412,13 @@ end
 -- Set Pedal 2 Assignment
 function assignPedal2 (valueObject, value)
     if (pedal2Init == false) then
-        print ("assignPedal2: Setting pedal2Init to true")
+        --print ("assignPedal2: Setting pedal2Init to true")
         pedal2Init = true
         return
     end
-    --print ("assignPedal2: Setting Pedal 2 assignment to "..value)
-    matrixPoke(53, value) -- set assignment
+    local val = getControlValue(164)
+    print ("assignPedal2: Setting Pedal 2 assignment to "..val)
+    matrixPoke(53, val) -- set assignment
 end
 
 function processConvolution()
@@ -2662,6 +2662,17 @@ function noop (valueObject, value)
 end
 
 -- Added by SOR: Control value updates.
+-- Returns the user value of the specified control.
+-- (The value parameter of control functions 
+-- only provides the untranslated zero-based value, so it won't always work.)
+function getControlValue(controlNo)
+    local control = controls.get(controlNo)
+    local controlValue = control:getValue("value")
+    local controlMessage = controlValue:getMessage()
+    return controlMessage:getValue()
+end
+
+-- Added by SOR: Control value updates.
 function getLoadedPresetData()
     print("getLoadedPresetData: Loaded preset. Getting preset data.")
     isAccumulatingLoadContext = true
@@ -2857,8 +2868,8 @@ end
 function setControlValue(controlNo, value)
     local control = controls.get(controlNo)
     local controlValue = control:getValue("value")
-    local message = controlValue:getMessage()
-    message:setValue(value)
+    local controlMessage = controlValue:getMessage()
+    controlMessage:setValue(value)
 end
 
 -- Added by SOR: Set macro names.
