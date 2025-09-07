@@ -656,7 +656,6 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     -- Added by SOR: Get system presets.
     if ( msg.controllerNumber==109 and msg.value==49) then
         -- Start of system preset list (beginSysNames)    
-        --print("Start of system preset list")
         isGettingSystemPresets = true
         print("Start of system preset list")
         return
@@ -927,7 +926,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     -- Get Mono Mode
     if (matrixStream == true and channel==16 and noteNumber == 46) then -- Mono Mode
         local monoMode = math.floor (pressure)
-        print("onAfterTouchPoly: Mono Mode = "..monoMode)
+        --print("onAfterTouchPoly: Mono Mode = "..monoMode)
         local ctrl = controls.get(140)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
@@ -936,7 +935,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     -- Get Mono Interval
     if (matrixStream == true and channel==16 and noteNumber == 48) then -- Mono Interval
         local monoInterval = math.floor (pressure)
-        print("onAfterTouchPoly: Mono Interval = "..monoInterval)
+        --print("onAfterTouchPoly: Mono Interval = "..monoInterval)
         local ctrl = controls.get(267)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
@@ -978,7 +977,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     -- Get Pedal 2 Assignments
     if (matrixStream == true and channel==16 and noteNumber == 53) then -- Pedal2 Assign
         local pedal2Assign = math.floor (pressure)
-        print("onAfterTouchPoly: Pedal 2 Assign = "..pedal2Assign)
+        --print("onAfterTouchPoly: Pedal 2 Assign = "..pedal2Assign)
         local ctrl = controls.get(164)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
@@ -1110,20 +1109,6 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     end
 
 end -- of pPress settings
-
---function clearMacros() -- Set all Macros to 0 and set names to blank
---    local ctrl
---    local controlValue
---    local ctrlMsg
---    for i = MACRO_I, MACRO_VI
---    do
---        ctrl = controls.get(i)
---        ctrl:setName("")
---        controlValue = ctrl:getValue("value")
---        ctrlMsg = controlValue:getMessage()
---        ctrlMsg:setValue(0)
---    end
---end
 
 -- Requests the list of user presets.
 -- Once the whole list has been received, 
@@ -2034,7 +2019,7 @@ function setSplitPoint(valueObject, value)
 end
 
 function setMonoMode(valueObject, value)
-    print ("setMonoMode: Setting Mono Mode to "..value)
+    --print ("setMonoMode: Setting Mono Mode to "..value)
     matrixPoke(46, value)
 end
 
@@ -2042,7 +2027,7 @@ function setMonoInterval(valueObject, value)
     if (math.floor(value) < 0) then
         return -- inits to -1 (check others)
     end
-    print ("setMonoInterval: Setting Mono Interval to "..value)
+    --print ("setMonoInterval: Setting Mono Interval to "..value)
     matrixPoke(48, value)
     --control = controls.get(267)
     --local controlValue = control:getValue("value")
@@ -2432,7 +2417,7 @@ function assignPedal2 (valueObject, value)
         pedal2Init = true
         return
     end
-    print ("assignPedal2: Setting Pedal 2 assignment to "..value)
+    --print ("assignPedal2: Setting Pedal 2 assignment to "..value)
     matrixPoke(53, value) -- set assignment
 end
 
