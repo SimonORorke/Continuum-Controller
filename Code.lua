@@ -557,19 +557,19 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     end
     -- Set Sus, Sos1, Sos2
     if (chan == 1 and cc == 64) then --Sus
-        print("Setting Sus to "..val)
+        print("Initializing Sus to "..val)
         -- But will be reset to zero in onLoadedPresetDataReceived.
         setControlValue(260, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 66) then -- Sos1
-        print("Setting Sos1 to "..val)
+        print("Initializing Sos1 to "..val)
         -- But will be reset to zero in onLoadedPresetDataReceived.
         setControlValue(261, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 69) then -- Sos2
-        print("Setting Sos2 to "..val)
+        print("Initializing Sos2 to "..val)
         -- But will be reset to zero in onLoadedPresetDataReceived.
         setControlValue(262, val) -- SOR
         return -- SOR
@@ -581,23 +581,23 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     end
     -- Ped1
     if (chan == 1 and cc == 76) then -- Ped 1 Min Range
-        print("Setting Pedal 1 Min to "..val)
+        print("Initializing Pedal 1 Min to "..val)
         setControlValue(175, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 77) then -- Ped 1 Max Range
-        print("Setting Pedal 1 Max to "..val)
+        print("Initializing Pedal 1 Max to "..val)
         setControlValue(176, val) -- SOR
         return -- SOR
     end
     -- Ped2
     if (chan == 1 and cc == 78) then -- Ped 2 Min Range
-        print("Setting Pedal 2 Min to "..val)
+        print("Initializing Pedal 2 Min to "..val)
         setControlValue(177, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 79) then -- Ped 2 Max Range
-        print("Setting Pedal 2 Max to "..val)
+        print("Initializing Pedal 2 Max to "..val)
         setControlValue(178, val) -- SOR
         return -- SOR
     end
@@ -630,6 +630,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
             print("Unexpected Round Initial Read")
         end
         ctrlMsg:setValue(val)
+        return -- SOR
     end
 
     -- Mono Switch
@@ -640,10 +641,12 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         if (val == 0) then
             ctrl:setName("Mono Off")
             ctrl:setColor(WHITE)
+            print("Initializing Mono Switch to "..0)
             ctrlMsg:setValue(0)
-        else -- Mono Sw can be any value 1..128 with swtiched pedal that puts out continous data
+        else -- Mono Sw can be any value 0..127 with switched pedal that puts out continuous data
             ctrl:setName("Mono On")
             ctrl:setColor(GREEN)
+            print("Initializing Mono Switch to "..127)
             ctrlMsg:setValue(127)
         end
     end
@@ -880,25 +883,28 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         else
             cvcBase = 0
         end
-        local ctrl = controls.get(238) -- Which of the 7 modes are set
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(cvcMode)
-
-        ctrl = controls.get(242) -- Linear or Squared
-        controlValue = ctrl:getValue("value")
-        ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(cvcLinear)
-
-        ctrl = controls.get(243) -- Outputs
-        controlValue = ctrl:getValue("value")
-        ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(cvcOutputs)
-
-        ctrl = controls.get(235) -- Base
-        controlValue = ctrl:getValue("value")
-        ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(cvcBase)
+        -- Use setControlValue SOR 
+        setControlValue(238, cvcMode) -- Which of the 7 modes are set
+        --local ctrl = controls.get(238) -- Which of the 7 modes are set
+        --local controlValue = ctrl:getValue("value")
+        --local ctrlMsg = controlValue:getMessage()
+        --ctrlMsg:setValue(cvcMode)
+        setControlValue(242, cvcLinear) -- Linear or Squared
+        --ctrl = controls.get(242) -- Linear or Squared
+        --controlValue = ctrl:getValue("value")
+        --ctrlMsg = controlValue:getMessage()
+        --ctrlMsg:setValue(cvcLinear)
+        setControlValue(243, cvcOutputs) -- Outputs
+        --ctrl = controls.get(243) -- Outputs
+        --controlValue = ctrl:getValue("value")
+        --ctrlMsg = controlValue:getMessage()
+        --ctrlMsg:setValue(cvcOutputs)
+        setControlValue(235, cvcOutputs) -- Base
+        --ctrl = controls.get(235) -- Base
+        --controlValue = ctrl:getValue("value")
+        --ctrlMsg = controlValue:getMessage()
+        --ctrlMsg:setValue(cvcBase)
+        return
     end
     -- Get Bend - Read Only
     if (matrixStream == true and channel==16 and noteNumber == 40) then -- Bend
@@ -909,7 +915,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         ctrlMsg:setValue(curBend)
     end
     -- Get Base Polyphony - Read Only
-    if (matrixStream == true and channel==16 and noteNumber == 39) then -- Expanced Polyphony
+    if (matrixStream == true and channel==16 and noteNumber == 39) then -- Base Polyphony
         local curBasePoly = math.floor (pressure)
         local ctrl = controls.get(106)
         local controlValue = ctrl:getValue("value")
@@ -917,14 +923,14 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         ctrlMsg:setValue(curBasePoly)
     end
     -- Get Expanded Polyphony - Read Only
-    if (matrixStream == true and channel==16 and noteNumber == 11) then -- Expanced Polyphony
+    if (matrixStream == true and channel==16 and noteNumber == 11) then -- Expanded Polyphony
         local curBend = math.floor (pressure)
         local ctrl = controls.get(233)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(curBend)
     end
-    -- Increased Compuation - Read Only
+    -- Increased Computation - Read Only
     if (matrixStream == true and channel==16 and noteNumber == 5) then -- Increased Computation
         local incComp = math.floor (pressure)
         local ctrl = controls.get(264)
@@ -979,8 +985,8 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     end
     -- Get Pedal 1 Assignments
     if (matrixStream == true and channel==16 and noteNumber == 52) then -- Pedal1 Assign
-        print("Setting Pedal 1 Assign to "..pressure)
-        setControlValue(143, pressure)
+        print("Initializing Pedal 1 Assign to "..pressure)
+        setControlValue(143, pressure) -- SOR
         --local pedal1Assign = math.floor (pressure)
         ---- print("pedal1Assign = "..pedal1Assign)
         --local ctrl = controls.get(143)
@@ -990,8 +996,8 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     end
     -- Get Pedal 2 Assignments
     if (matrixStream == true and channel==16 and noteNumber == 53) then -- Pedal2 Assign
-        print("Setting Pedal 2 Assign to "..pressure)
-        setControlValue(164, pressure)
+        print("Initializing Pedal 2 Assign to "..pressure)
+        setControlValue(164, pressure) -- SOR
         --local pedal2Assign = math.floor (pressure)
         ----print("onAfterTouchPoly: Pedal 2 Assign = "..pedal2Assign)
         --local ctrl = controls.get(164)
@@ -1624,7 +1630,7 @@ function xposeMiddleC(valueObject, value)
     end
     local xAmt = 0
     local newMiddleC = valueObject:getMessage():getValue()
-    -- print("Setting Middle C: "..newMiddleC)
+    -- print("Updating Middle C to "..newMiddleC)
     matrixPoke (44,newMiddleC)
     --print("newMiddleC = "..newMiddleC) 
     -- Change the transpose indicator
@@ -2036,7 +2042,7 @@ end
 
 function setMonoMode(valueObject, value)
     local val = getControlValue(140)
-    print("setMonoMode: Setting Mono Mode to "..val)
+    print("setMonoMode: Updating Mono Mode to "..val)
     matrixPoke(46, val)
 end
 
@@ -2045,7 +2051,7 @@ function setMonoInterval(valueObject, value)
         return -- inits to -1 (check others)
     end
     local val = getControlValue(267)
-    print("setMonoInterval: Setting Mono Interval to "..val)
+    print("setMonoInterval: Updating Mono Interval to "..val)
     matrixPoke(48, val)
 end
 function setMonoSwitch(valueObject, value)
@@ -2425,12 +2431,12 @@ end
 -- Set Pedal 2 Assignment
 function assignPedal2 (valueObject, value)
     if (pedal2Init == false) then
-        --print ("assignPedal2: Setting pedal2Init to true")
+        --print ("assignPedal2: Updating pedal2Init to true")
         pedal2Init = true
         return
     end
     local val = getControlValue(164)
-    print ("assignPedal2: Setting Pedal 2 assignment to "..val)
+    print ("assignPedal2: Updating Pedal 2 assignment to "..val)
     matrixPoke(53, val) -- set assignment
 end
 
@@ -2786,7 +2792,7 @@ end
 function onLoadedPresetDataReceived()
     print("onLoadedPresetDataReceived: End of preset data.")
     isGettingLoadedPresetData = false
-    print("    Setting Sustain, Sos1 and Sos2 off.")
+    print("    Resetting Sustain, Sos1 and Sos2 to off.")
     -- Set Sustain, Sos1 and Sos2 off just in case conflict with Transposition parameters.
     -- Non-zero values should only be expected for user presets.
     midi.sendControlChange(DEVICE_PORT, 1, 64, 0) -- Sustain off
