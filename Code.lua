@@ -556,23 +556,26 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         return -- SOR
     end
     -- Set Sus, Sos1, Sos2
+    -- Amended by SOR: Control value updates.
     if (chan == 1 and cc == 64) then --Sus
-        print("Initializing Sus to "..val)
-        -- But will be reset to zero in onLoadedPresetDataReceived.
-        setControlValue(260, val) -- SOR
-        return -- SOR
+        -- Initializing to off just in case conflict with Transposition parameters.
+        print("Initializing Sus to "..0)
+        setControlValue(260, 0)
+        return
     end
+    -- Amended by SOR: Control value updates.
     if (chan == 1 and cc == 66) then -- Sos1
-        print("Initializing Sos1 to "..val)
-        -- But will be reset to zero in onLoadedPresetDataReceived.
-        setControlValue(261, val) -- SOR
-        return -- SOR
+        -- Initializing to off just in case conflict with Transposition parameters.
+        print("Initializing Sos1 to "..0)
+        setControlValue(261, 0)
+        return
     end
+    -- Amended by SOR: Control value updates.
     if (chan == 1 and cc == 69) then -- Sos2
-        print("Initializing Sos2 to "..val)
-        -- But will be reset to zero in onLoadedPresetDataReceived.
-        setControlValue(262, val) -- SOR
-        return -- SOR
+        -- Initializing to off just in case conflict with Transposition parameters.
+        print("Initializing Sos2 to "..0)
+        setControlValue(262, 0)
+        return
     end
     -- Audio Input
     if (chan == 1 and cc == 19) then -- Audio Input Level
@@ -764,7 +767,8 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         if isGettingLoadedPresetData then
             -- This is the end of the preset name stream that is the
             -- last item in current preset data we requested after loading the preset.
-            onLoadedPresetDataReceived()
+            print("End of loaded preset data.")
+            isGettingLoadedPresetData = false
         end
         if isAccumulatingSystemPresetName then
             isAccumulatingSystemPresetName = false
@@ -1175,7 +1179,8 @@ function loadUserPreset(valueObject, value)
     else
         print("Unexpected Preset Index: "..presetPos+presetOffset-1)
     end
-    -- Moved to onLoadedPresetDataReceived SOR
+    -- Does not work, because values are received after this.
+    -- Initialising to off when data is received instead.
     ---- Set Sustain, Sos1 and Sos2 off just in case conflict with Transposition parameters
     --midi.sendControlChange(DEVICE_PORT, 1, 64, 0) -- Sustain off
     --midi.sendControlChange(DEVICE_PORT, 1, 66, 0) -- Sos1 Off
@@ -1630,7 +1635,7 @@ function xposeMiddleC(valueObject, value)
     end
     local xAmt = 0
     local newMiddleC = valueObject:getMessage():getValue()
-    -- print("Updating Middle C to "..newMiddleC)
+    -- print("Setting Middle C to "..newMiddleC)
     matrixPoke (44,newMiddleC)
     --print("newMiddleC = "..newMiddleC) 
     -- Change the transpose indicator
@@ -2042,7 +2047,7 @@ end
 
 function setMonoMode(valueObject, value)
     local val = getControlValue(140)
-    print("setMonoMode: Updating Mono Mode to "..val)
+    print("setMonoMode: Setting Mono Mode to "..val)
     matrixPoke(46, val)
 end
 
@@ -2051,9 +2056,10 @@ function setMonoInterval(valueObject, value)
         return -- inits to -1 (check others)
     end
     local val = getControlValue(267)
-    print("setMonoInterval: Updating Mono Interval to "..val)
+    print("setMonoInterval: Setting Mono Interval to "..val)
     matrixPoke(48, val)
 end
+
 function setMonoSwitch(valueObject, value)
     control = controls.get(252)
     if (value == 0) then
@@ -2063,10 +2069,10 @@ function setMonoSwitch(valueObject, value)
         control:setName("Mono On")
         control:setColor(GREEN)
     end
-    --print("Mono sw value = "..val..","..math.floor(value))
-    midi.sendControlChange(DEVICE_PORT, 1, 9, math.floor(value))
-
+    print("setMonoSwitch: Setting Mono Switch to "..value)
+    midi.sendControlChange(DEVICE_PORT, 1, 9, value) -- SOR
 end
+
 function setOctRange(valueObject, value)
     control = controls.get(179)
     local controlValue = control:getValue("value")
@@ -2431,12 +2437,12 @@ end
 -- Set Pedal 2 Assignment
 function assignPedal2 (valueObject, value)
     if (pedal2Init == false) then
-        --print ("assignPedal2: Updating pedal2Init to true")
+        --print ("assignPedal2: Setting pedal2Init to true")
         pedal2Init = true
         return
     end
     local val = getControlValue(164)
-    print ("assignPedal2: Updating Pedal 2 assignment to "..val)
+    print ("assignPedal2: Setting Pedal 2 assignment to "..val)
     matrixPoke(53, val) -- set assignment
 end
 
@@ -2789,17 +2795,6 @@ function onFirmwareVersionReceived()
     print("    isSystemPresetsUpdateRequired = "..tostring( isSystemPresetsUpdateRequired))
 end
 
-function onLoadedPresetDataReceived()
-    print("onLoadedPresetDataReceived: End of preset data.")
-    isGettingLoadedPresetData = false
-    print("    Resetting Sustain, Sos1 and Sos2 to off.")
-    -- Set Sustain, Sos1 and Sos2 off just in case conflict with Transposition parameters.
-    -- Non-zero values should only be expected for user presets.
-    midi.sendControlChange(DEVICE_PORT, 1, 64, 0) -- Sustain off
-    midi.sendControlChange(DEVICE_PORT, 1, 66, 0) -- Sos1 Off
-    midi.sendControlChange(DEVICE_PORT, 1, 69, 0) -- Sos2 Off
-end
-
 -- Added by SOR: Get system presets.
 function onSystemPresetReceived()
     -- The system preset's two-letter category code has been received.
@@ -2983,6 +2978,60 @@ function setMacroNames()
     for i = 1, macroStringsCount do
         setMacroName(macroStrings[i])
     end
+end
+
+-- Added by SOR: Control value updates.
+function setPedal1Max(valueObject, value)
+    print("setPedal1Max: Setting Pedal 1 Max to "..value)
+    midi.sendControlChange(DEVICE_PORT, 1, 77, value)
+end
+
+-- Added by SOR: Control value updates.
+function setPedal1Min(valueObject, value)
+    print("setPedal1Max: Setting Pedal 1 Min to "..value)
+    midi.sendControlChange(DEVICE_PORT, 1, 76, value)
+end
+
+-- Added by SOR: Control value updates.
+function setPedal1Max(valueObject, value)
+    print("setPedal1Max: Setting Pedal 1 Max to "..value)
+    midi.sendControlChange(DEVICE_PORT, 1, 77, value)
+end
+
+-- Added by SOR: Control value updates.
+function setPedal1Min(valueObject, value)
+    print("setPedal1Min: Setting Pedal 1 Min to "..value)
+    midi.sendControlChange(DEVICE_PORT, 1, 76, value)
+end
+
+-- Added by SOR: Control value updates.
+function setPedal2Max(valueObject, value)
+    print("setPedal2Max: Setting Pedal 2 Max to "..value)
+    midi.sendControlChange(DEVICE_PORT, 1, 79, value)
+end
+
+-- Added by SOR: Control value updates.
+function setPedal2Min(valueObject, value)
+    print("setPedal2Min: Setting Pedal 2 Min to "..value)
+    midi.sendControlChange(DEVICE_PORT, 1, 78, value)
+end
+
+-- Added by SOR: Control value updates.
+function setSus(valueObject, value)
+    print("setSus: Setting Sus to "..value)
+    midi.sendControlChange(DEVICE_PORT, 1, 64, value)
+end
+
+-- Added by SOR: Control value updates.
+function setSos1(valueObject, value)
+    print("setSos1: Setting Sos1 to "..value)
+    midi.sendControlChange(DEVICE_PORT, 1, 66, value)
+end
+
+-- Added by SOR: Control value updates.
+function setSos2(valueObject, value)
+    print("setSos2: Setting Sos2 to "..value)
+    midi.sendControlChange(DEVICE_PORT, 1, 69, value)
 end
 
 -- Added by SOR: Set macro names.
