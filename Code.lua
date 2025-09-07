@@ -557,14 +557,20 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     end
     -- Set Sus, Sos1, Sos2
     if (chan == 1 and cc == 64) then --Sus
+        print("Setting Sus to "..val)
+        -- But will be reset to zero in onLoadedPresetDataReceived.
         setControlValue(260, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 66) then -- Sos1
+        print("Setting Sos1 to "..val)
+        -- But will be reset to zero in onLoadedPresetDataReceived.
         setControlValue(261, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 69) then -- Sos2
+        print("Setting Sos2 to "..val)
+        -- But will be reset to zero in onLoadedPresetDataReceived.
         setControlValue(262, val) -- SOR
         return -- SOR
     end
@@ -575,19 +581,23 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     end
     -- Ped1
     if (chan == 1 and cc == 76) then -- Ped 1 Min Range
+        print("Setting Pedal 1 Min to "..val)
         setControlValue(175, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 77) then -- Ped 1 Max Range
+        print("Setting Pedal 1 Max to "..val)
         setControlValue(176, val) -- SOR
         return -- SOR
     end
     -- Ped2
     if (chan == 1 and cc == 78) then -- Ped 2 Min Range
+        print("Setting Pedal 2 Min to "..val)
         setControlValue(177, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 79) then -- Ped 2 Max Range
+        print("Setting Pedal 2 Max to "..val)
         setControlValue(178, val) -- SOR
         return -- SOR
     end
@@ -969,15 +979,18 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     end
     -- Get Pedal 1 Assignments
     if (matrixStream == true and channel==16 and noteNumber == 52) then -- Pedal1 Assign
-        local pedal1Assign = math.floor (pressure)
-        -- print("pedal1Assign = "..pedal1Assign)
-        local ctrl = controls.get(143)
-        local controlValue = ctrl:getValue("value")
-        local ctrlMsg = controlValue:getMessage()
-        ctrlMsg:setValue(pedal1Assign)
+        print("Setting Pedal 1 Assign to "..pressure)
+        setControlValue(143, pressure)
+        --local pedal1Assign = math.floor (pressure)
+        ---- print("pedal1Assign = "..pedal1Assign)
+        --local ctrl = controls.get(143)
+        --local controlValue = ctrl:getValue("value")
+        --local ctrlMsg = controlValue:getMessage()
+        --ctrlMsg:setValue(pedal1Assign)
     end
     -- Get Pedal 2 Assignments
     if (matrixStream == true and channel==16 and noteNumber == 53) then -- Pedal2 Assign
+        print("Setting Pedal 2 Assign to "..pressure)
         setControlValue(164, pressure)
         --local pedal2Assign = math.floor (pressure)
         ----print("onAfterTouchPoly: Pedal 2 Assign = "..pedal2Assign)
@@ -2771,12 +2784,14 @@ function onFirmwareVersionReceived()
 end
 
 function onLoadedPresetDataReceived()
+    print("onLoadedPresetDataReceived: End of preset data.")
     isGettingLoadedPresetData = false
-    -- Set Sustain, Sos1 and Sos2 off just in case conflict with Transposition parameters
+    print("    Setting Sustain, Sos1 and Sos2 off.")
+    -- Set Sustain, Sos1 and Sos2 off just in case conflict with Transposition parameters.
+    -- Non-zero values should only be expected for user presets.
     midi.sendControlChange(DEVICE_PORT, 1, 64, 0) -- Sustain off
     midi.sendControlChange(DEVICE_PORT, 1, 66, 0) -- Sos1 Off
     midi.sendControlChange(DEVICE_PORT, 1, 69, 0) -- Sos2 Off
-    print("onLoadedPresetDataReceived: End of preset data.")
 end
 
 -- Added by SOR: Get system presets.
