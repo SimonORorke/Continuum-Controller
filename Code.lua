@@ -81,6 +81,7 @@ local isAccumulatingSystemPresetContext = false
 local isAccumulatingSystemPresetName = false
 local isGettingLoadedPresetData = false
 local isGettingSystemPresets = false
+local isInitializing = true
 local isLoadingPreset = false
 local isSystemPresetsUpdateRequired = false
 -- Macro names/category/filters/author data 
@@ -670,15 +671,16 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     end
 
     if (msg.controllerNumber==109 and msg.value==54) then -- Start User Names Found
-        --print("Start getting names")
+        print("Start getting user presets")
         info.setText("Getting presets...")
+        isInitializing = false -- SOR
         userNameProcessing = true
         firstName = true
         userNameIndex=0
         return -- SOR
     end
     if (msg.controllerNumber==109 and msg.value==55) then -- End User Names Found
-        --print("Finished getting names")
+        print("Finished getting user presets")
         setUserPresetNames()
         userNameProcessing = false
         userNameIndex=0
@@ -1685,10 +1687,6 @@ end
 
 function formulaPoke(formulaID, pokeID, pokeVal)
     print("formulaPoke: "..formulaID..pokeID.." "..pokeVal)
-    if isGettingData() then
-        print("    Getting data, so not poking!")
-        return
-    end
     midi.sendControlChange(DEVICE_PORT, 16, 34, formulaID) -- Set Formula
     midi.sendControlChange(DEVICE_PORT, 16, 56, 19) -- Formula Poke command     
     midi.sendAfterTouchPoly(DEVICE_PORT, 16, pokeID , pokeVal) -- Perform the Poke  
@@ -1707,19 +1705,11 @@ end
 
 function mainGraphPoke(pokeIndex, pokeValue)
     print("mainGraphPoke: "..pokeID.." "..pokeValue)
-    if isGettingData() then
-        print("    Getting data, so not poking!")
-        return
-    end
     midi.sendControlChange(DEVICE_PORT, 16, 56, 21) -- Matrix Poke command 
     midi.sendAfterTouchPoly(DEVICE_PORT, 16, pokeIndex , pokeValue) -- Change Main Graph value at zero offset index 0..47  
 end
 function setRecirc(valueObject, value)
     print("setRecirc")
-    if isGettingData() then
-        print("    Getting data, so not sending data!")
-        return
-    end
     local recircVal = valueObject:getMessage():getValue()
     midi.sendControlChange(DEVICE_PORT, 16, 56, 20)
     midi.sendAfterTouchPoly(DEVICE_PORT, 16, 62 , recircVal)
@@ -2710,7 +2700,21 @@ end
 
 -- Added by SOR: Control value updates.
 function isGettingData()
-    return isGettingLoadedPresetData or isGettingSystemPresets or userNameProcessing
+    -- The idea here is that checking the result should allow
+    -- poke functions to refrain from updating the instrument
+    -- while the controls are being populated with data received from the instrument.
+    -- Unfortunately, this does not work.
+    -- We can stop the few updates that were happening when some controls
+    -- are being initialised before any presets have been requested.
+    -- Apart from that, instrument updates are only triggered when control 
+    -- values are updated, which does not happen till after data has been 
+    -- received from the instrument.  And we can't distinguish a control update
+    -- with instrument data from a control when the user changes the control value.
+    return isInitializing
+    -- The following are always false
+    --print("    userNameProcessing = "..tostring(userNameProcessing))
+    --print("    isGettingSystemPresets = "..tostring(isGettingSystemPresets))
+    --print("    isGettingLoadedPresetData = "..tostring(isGettingLoadedPresetData))
 end
 
 -- Added by SOR: Control value updates.
