@@ -73,6 +73,10 @@ local userNames = {"U1","U2","U3","U4","U5","U6","U7","U8","U9","U10","U11","U12
              "U121", "U122", "U123", "U124", "U125", "U126", "U127","U128"}
 
 -- Added by SOR
+-- Macro names/category/filters/author data 
+-- that we can get from a context stream 
+-- when data for the loaded preset has been requested. 
+local controlText = ""
 local firmwareVersion
 local hasFirmwareVersionAlreadyBeenReceived = false
 local haveSystemPresetsBeenUpdated = false
@@ -84,10 +88,6 @@ local isGettingSystemPresets = false
 local isInitializing = true
 local isLoadingPreset = false
 local isSystemPresetsUpdateRequired = false
--- Macro names/category/filters/author data 
--- that we can get from a context stream 
--- when data for the loaded preset has been requested. 
-local loadContext = ""
 local receivedSystemPresetContext = ""
 local receivedSystemPresetName = ""
 local systemPresetContextBuffer = ""
@@ -760,8 +760,8 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
             systemPresetContextBuffer = ""
             return
         end
-        -- Start of load context stream that included macro names.
-        loadContext = ""
+        -- Start of Control Text stream that included macro names.
+        controlText = ""
         return -- SOR
     end
 
@@ -843,7 +843,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     end
     -- Amended by SOR: Set macro names.
     if (isAccumulatingLoadContext) then -- Accumulate Macro String
-        loadContext = loadContext..string.char(noteNumber)..string.char(pressure)
+        controlText = controlText..string.char(noteNumber)..string.char(pressure)
         return
     end
 
@@ -2004,7 +2004,7 @@ end
 
 function muteControl(valueObject, value)
     local muteOn = valueObject:getMessage():getValue() -- Store the current preset position elected as user store 
-    control = controls.get(230)
+    local control = controls.get(230) 
 
     if (muteOn == 0) then -- Mute off, restore pre-gain
         control:setName("Mute Off")
@@ -2938,19 +2938,19 @@ function setMacroNames()
     for controlNo = MACRO_I, MACRO_VI do
         macroControls[controlNo]:setName("")
     end
-    -- The load context string consists of two or three lines in this order:
+    -- The Control Text string consists of two or three lines in this order:
     -- a line containing macro names, which might be blank or omitted;
     -- a line containing the category and any other filters;
     -- and a line containing the author's name.
     -- Put the context lines, each trimmed, into a table.
     local lineThrow = string.char(10)
-    local loadContextLines = splitString(loadContext, lineThrow)
-    local loadContextLinesCount = #loadContextLines
-    if loadContextLinesCount == 0 then
-        print "Error: No load context lines."
+    local controlTextLines = splitString(controlText, lineThrow)
+    local controlTextLinesCount = #controlTextLines
+    if controlTextLinesCount == 0 then
+        print "Error: No Control Text lines."
         return
     end
-    local macrosLine = loadContextLines[1]
+    local macrosLine = controlTextLines[1]
     -- If the first line is blank, in which case its trimmed length will be zero,
     -- or is the category and filters line,
     -- this preset has no macros.
