@@ -663,8 +663,11 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     end
     -- Added by SOR: Control value updates.
     if msg.controllerNumber==109 and msg.value==26 then -- doneTxDsp
-        if isLoadingPreset then
+        if isLoadingPreset then -- Preset load has finished.
             isLoadingPreset = false
+            -- We are adopting a cautious approach by waiting for the preset load to
+            -- finish before requesting the preset information.
+            -- Get Current Preset Information.
             getLoadedPresetData()
         end
         return
