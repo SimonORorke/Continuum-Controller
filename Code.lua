@@ -74,23 +74,23 @@ local userNames = {"U1","U2","U3","U4","U5","U6","U7","U8","U9","U10","U11","U12
 
 -- Added by SOR
 -- Macro names/category/filters/author data 
--- that we can get from a context stream 
+-- that we can get from the Control Text context stream 
 -- when data for the loaded preset has been requested. 
 local controlText = ""
 local firmwareVersion
 local hasFirmwareVersionAlreadyBeenReceived = false
 local haveSystemPresetsBeenUpdated = false
-local isAccumulatingLoadContext = false
-local isAccumulatingSystemPresetContext = false
+local isAccumulatingControlText = false
+local isAccumulatingSystemPresetFilters = false
 local isAccumulatingSystemPresetName = false
 local isGettingLoadedPresetData = false
 local isGettingSystemPresets = false
 local isInitializing = true
 local isLoadingPreset = false
 local isSystemPresetsUpdateRequired = false
-local receivedSystemPresetContext = ""
+local receivedSystemPresetFilters = ""
 local receivedSystemPresetName = ""
-local systemPresetContextBuffer = ""
+local systemPresetFiltersBuffer = ""
 local systemPresetNameBuffer = ""
 local versionText = ""
 
@@ -752,15 +752,15 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
 
     -- Amended by SOR: Get system presets.
     if (msg.controllerNumber==56 and msg.value==1) then
-        -- Start of macro or system preset context stream 
+        -- Start of Control Text or system preset filters context stream 
         if isGettingSystemPresets then
-            -- System preset context data, which will include 
+            -- System preset filters context data, which will include 
             -- the 2-letter category code.
-            isAccumulatingSystemPresetContext = true
-            systemPresetContextBuffer = ""
+            isAccumulatingSystemPresetFilters = true
+            systemPresetFiltersBuffer = ""
             return
         end
-        -- Start of Control Text stream that included macro names.
+        -- Start of Control Text stream, which includes macro names.
         controlText = ""
         return -- SOR
     end
@@ -778,9 +778,9 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
             receivedSystemPresetName = trimTrailingNullChar(systemPresetNameBuffer)
             return
         end
-        if isAccumulatingSystemPresetContext then
-            isAccumulatingSystemPresetContext = false
-            receivedSystemPresetContext = trimTrailingNullChar(systemPresetContextBuffer)
+        if isAccumulatingSystemPresetFilters then
+            isAccumulatingSystemPresetFilters = false
+            receivedSystemPresetFilters = trimTrailingNullChar(systemPresetFiltersBuffer)
             onSystemPresetReceived()
             return
         end
@@ -823,10 +823,10 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         return
     end
     -- Added by SOR: Get system presets.
-    if (isAccumulatingSystemPresetContext) then
+    if (isAccumulatingSystemPresetFilters) then
         -- Accumulate system preset context buffer
-        systemPresetContextBuffer =
-        systemPresetContextBuffer ..string.char(noteNumber)..string.char(pressure)
+        systemPresetFiltersBuffer =
+        systemPresetFiltersBuffer ..string.char(noteNumber)..string.char(pressure)
         return
     end
     if (convInProgress) then
@@ -842,7 +842,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         return
     end
     -- Amended by SOR: Set macro names.
-    if (isAccumulatingLoadContext) then -- Accumulate Macro String
+    if (isAccumulatingControlText) then -- Accumulate Control Text, which includes macro names.
         controlText = controlText..string.char(noteNumber)..string.char(pressure)
         return
     end
@@ -1152,7 +1152,7 @@ end
 -- Load up a user preset on pressing button 1-16 offset for bank
 -- Renamed and now calls loadPreset. SOR 
 function loadUserPreset(valueObject, value)
-    --isAccumulatingLoadContext = true
+    --isAccumulatingControlText = true
     ---- Initialize controls for new preset
     --clearInfo()
     --resetMute()
@@ -1287,7 +1287,7 @@ end
 function preset.onLoad()
     -- Disable things not yet supported
     userNameProcessing = false
-    isAccumulatingLoadContext = false
+    isAccumulatingControlText = false
     userNameIndex = 0
     curName=""
     lastName=""
@@ -1993,7 +1993,7 @@ end
 
 function getMacros()
     if (macrosLoaded == true) then
-        isAccumulatingLoadContext = true
+        isAccumulatingControlText = true
         --print ("getMacros - should not be called until pressed")
         midi.sendControlChange(DEVICE_PORT, 16, 109, 22) -- Send get Current Preset Msg to get Macro labels and control values
     else
@@ -2408,7 +2408,7 @@ function loadSystemPreset(valueObject, value)
     if (curCategory == CAT_OTHER1) then
         tmpCategory = CAT_OTHER -- Really only one Other category but presented to the user as 2
     end
-    --isAccumulatingLoadContext = true
+    --isAccumulatingControlText = true
     --clearInfo()
     --clearMacros()
     --resetMute()
@@ -2703,7 +2703,7 @@ end
 -- Added by SOR: Control value updates.
 function getLoadedPresetData()
     print("getLoadedPresetData: Loaded preset. Getting preset data.")
-    isAccumulatingLoadContext = true
+    isAccumulatingControlText = true
     isGettingLoadedPresetData = true
     -- Send get Current Preset Msg to get Macro labels and control values
     midi.sendControlChange(DEVICE_PORT, 16, 109, 16)
@@ -2801,13 +2801,13 @@ end
 -- Added by SOR: Get system presets.
 function onSystemPresetReceived()
     -- The system preset's two-letter category code has been received.
-    -- It needs to be parsed from the context data that has been appended to curName.
+    -- It needs to be parsed from the Filters context data.
     -- The context data looks like "C=CC", usually followed by filter codes,
     -- where CC is the category code.  We currently don't use the filter codes.
-    local categoryCode = string.sub(receivedSystemPresetContext, 3, 4)
+    local categoryCode = string.sub(receivedSystemPresetFilters, 3, 4)
     if not categoryCode then
         print("onSystemPresetContextReceived: Cannot find category for "
-                ..receivedSystemPresetName.." in ".. receivedSystemPresetContext)
+                ..receivedSystemPresetName.." in ".. receivedSystemPresetFilters)
         return
     end
     local categoryNo = categoryNos[categoryCode]
@@ -2933,7 +2933,7 @@ end
 -- Added by SOR: Set macro names.
 function setMacroNames()
     print("setMacroNames")
-    isAccumulatingLoadContext = false
+    isAccumulatingControlText = false
     -- Blank out macro names.
     for controlNo = MACRO_I, MACRO_VI do
         macroControls[controlNo]:setName("")
