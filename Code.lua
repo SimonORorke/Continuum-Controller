@@ -2618,16 +2618,6 @@ function setConvRight4 (valueObject, value)
     convolutionPoke(27, val)
 end
 
-function format0to1(valueObject, value)
-    -- print("Formatter called")
-    local val = value/128
-    val = val + 0.004 -- make it scale to 1.0 max
-    return(string.format("%.2f", val))
-end
-
-function noop (valueObject, value)
-end
-
 -- Added by SOR: Control value updates.
 -- Returns the user value of the specified control.
 -- (The value parameter of control functions 
