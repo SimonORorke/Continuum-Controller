@@ -558,23 +558,26 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     -- Set Sus, Sos1, Sos2
     -- Amended by SOR: Control value updates.
     if (chan == 1 and cc == 64) then --Sus
-        -- Initializing to off just in case conflict with Transposition parameters.
-        print("Initializing Sus to "..0)
-        setControlValue(260, 0)
+        -- But the firmware does not save this,
+        -- so it will always be 0 (off) initially.
+        print("Initializing Sus to "..val)
+        setControlValue(260, val)
         return
     end
     -- Amended by SOR: Control value updates.
     if (chan == 1 and cc == 66) then -- Sos1
-        -- Initializing to off just in case conflict with Transposition parameters.
-        print("Initializing Sos1 to "..0)
-        setControlValue(261, 0)
+        -- But the firmware does not save this,
+        -- so it will always be 0 (off) initially.
+        print("Initializing Sos1 to "..val)
+        setControlValue(261, val)
         return
     end
     -- Amended by SOR: Control value updates.
     if (chan == 1 and cc == 69) then -- Sos2
-        -- Initializing to off just in case conflict with Transposition parameters.
-        print("Initializing Sos2 to "..0)
-        setControlValue(262, 0)
+        -- But the firmware does not save this,
+        -- so it will always be 0 (off) initially.
+        print("Initializing Sos2 to "..val)
+        setControlValue(262, val)
         return
     end
     -- Audio Input
@@ -894,25 +897,9 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         end
         -- Use setControlValue SOR 
         setControlValue(238, cvcMode) -- Which of the 7 modes are set
-        --local ctrl = controls.get(238) -- Which of the 7 modes are set
-        --local controlValue = ctrl:getValue("value")
-        --local ctrlMsg = controlValue:getMessage()
-        --ctrlMsg:setValue(cvcMode)
         setControlValue(242, cvcLinear) -- Linear or Squared
-        --ctrl = controls.get(242) -- Linear or Squared
-        --controlValue = ctrl:getValue("value")
-        --ctrlMsg = controlValue:getMessage()
-        --ctrlMsg:setValue(cvcLinear)
         setControlValue(243, cvcOutputs) -- Outputs
-        --ctrl = controls.get(243) -- Outputs
-        --controlValue = ctrl:getValue("value")
-        --ctrlMsg = controlValue:getMessage()
-        --ctrlMsg:setValue(cvcOutputs)
-        setControlValue(235, cvcOutputs) -- Base
-        --ctrl = controls.get(235) -- Base
-        --controlValue = ctrl:getValue("value")
-        --ctrlMsg = controlValue:getMessage()
-        --ctrlMsg:setValue(cvcBase)
+        setControlValue(235, cvcBase) -- Base
         return
     end
     -- Get Bend - Read Only
@@ -951,22 +938,10 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     -- Get Mono Mode
     if (matrixStream == true and channel==16 and noteNumber == 46) then -- Mono Mode
         setControlValue(140, pressure) -- SOR
-        --local monoMode = math.floor (pressure)
-        ----print("onAfterTouchPoly: Mono Mode = "..monoMode)
-        --local ctrl = controls.get(140)
-        --local controlValue = ctrl:getValue("value")
-        --local ctrlMsg = controlValue:getMessage()
-        --ctrlMsg:setValue(monoMode)
     end
     -- Get Mono Interval
     if (matrixStream == true and channel==16 and noteNumber == 48) then -- Mono Interval
         setControlValue(267, pressure) -- SOR
-        --local monoInterval = math.floor (pressure)
-        --print("onAfterTouchPoly: Mono Interval = "..monoInterval)
-        --local ctrl = controls.get(267)
-        --local controlValue = ctrl:getValue("value")
-        --local ctrlMsg = controlValue:getMessage()
-        --ctrlMsg:setValue(monoInterval)
     end
     --  SplitMode
     if (matrixStream == true and channel==16 and noteNumber == 1) then -- Split Mode
@@ -996,26 +971,14 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     if (matrixStream == true and channel==16 and noteNumber == 52) then -- Pedal1 Assign
         print("Initializing Pedal 1 Assign to "..pressure)
         setControlValue(143, pressure) -- SOR
-        --local pedal1Assign = math.floor (pressure)
-        ---- print("pedal1Assign = "..pedal1Assign)
-        --local ctrl = controls.get(143)
-        --local controlValue = ctrl:getValue("value")
-        --local ctrlMsg = controlValue:getMessage()
-        --ctrlMsg:setValue(pedal1Assign)
     end
     -- Get Pedal 2 Assignments
     if (matrixStream == true and channel==16 and noteNumber == 53) then -- Pedal2 Assign
         print("Initializing Pedal 2 Assign to "..pressure)
         setControlValue(164, pressure) -- SOR
-        --local pedal2Assign = math.floor (pressure)
-        ----print("onAfterTouchPoly: Pedal 2 Assign = "..pedal2Assign)
-        --local ctrl = controls.get(164)
-        --local controlValue = ctrl:getValue("value")
-        --local ctrlMsg = controlValue:getMessage()
-        --ctrlMsg:setValue(pedal2Assign)
     end
 
-    -- Get Octave Swith mode
+    -- Get Octave Switch mode
     if (matrixStream == true and channel==16 and noteNumber == 7) then -- Ocatve SW mode
         local octSwitchMode = math.floor (pressure)
         --print("OctSwitch Mode = "..octSwitchMode)
@@ -1154,42 +1117,22 @@ end
 -- Load up a user preset on pressing button 1-16 offset for bank
 -- Renamed and now calls loadPreset. SOR 
 function loadUserPreset(valueObject, value)
-    --isAccumulatingControlText = true
-    ---- Initialize controls for new preset
-    --clearInfo()
-    --resetMute()
     local presetPos = valueObject:getMessage():getValue()
     if (presetPos == 0) then -- adjust for initialization
         --  -- Changing pages triggers Control #1 with 0 value (not sure why) return
         return
     end
     local presetNo = presetPos + presetOffset -- 1-based for userNames table index.
+    local programNo = presetNo - 1 -- 0-based for Program change 0..127
     if (presetNo >= 1 and presetNo <= 128) then
-    --if (presetPos+presetOffset >=0 and presetPos+presetOffset-1 < 128) then
         local bankMsb = 0 -- 0 = User Presets
         local bankLsb = 0 -- Because there are a maximum of 128 user presets
-        local programNo = presetNo - 1 -- 0-based for Program change 0..127
         local presetName = userNames[presetNo] 
         loadPreset(bankMsb, bankLsb, programNo, presetName)
-        --midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- CC0 = 0 (Category 0 = USer Presets)
-        --midi.sendControlChange(DEVICE_PORT, 16, 32, 0)  -- CC 32 = 0 (< 129 presets)
-        --midi.sendProgramChange(DEVICE_PORT, 16, presetPos+presetOffset-1) -- User Preset Program change 0..127
-        --programNo = presetPos+presetOffset-1
-        -- Display Current Preset Name  
         lastName = presetName -- Override last name
-        --lastName = userNames[presetPos+presetOffset] -- Override last name
-        --control = controls.get(50)
-        --control:setName(userNames[presetPos+presetOffset])
-        --midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values            
     else
-        print("Unexpected Preset Index: "..presetPos+presetOffset-1)
+        print("Unexpected Preset Index: "..programNo)
     end
-    -- Does not work, because values are received after this.
-    -- Initialising to off when data is received instead.
-    ---- Set Sustain, Sos1 and Sos2 off just in case conflict with Transposition parameters
-    --midi.sendControlChange(DEVICE_PORT, 1, 64, 0) -- Sustain off
-    --midi.sendControlChange(DEVICE_PORT, 1, 66, 0) -- Sos1 Off
-    --midi.sendControlChange(DEVICE_PORT, 1, 69, 0) -- Sos2 Off
 end
 
 function setUserPresetPos (valueObject, value)
@@ -2416,19 +2359,7 @@ function loadSystemPreset(valueObject, value)
     if (curCategory == CAT_OTHER1) then
         tmpCategory = CAT_OTHER -- Really only one Other category but presented to the user as 2
     end
-    --isAccumulatingControlText = true
-    --clearInfo()
-    --clearMacros()
-    --resetMute()
-    loadPreset(tmpCategory, curCC32, curSystemPreset - 1, curPresetName)
-    --midi.sendControlChange(DEVICE_PORT, 16, 0, tmpCategory) -- Send Category
-    --if (curCC32 > 0) then
-    --    midi.sendControlChange(DEVICE_PORT, 16, 32, curCC32) -- Send CC32 if > 128 Presets in category  
-    --end
-    --midi.sendProgramChange(DEVICE_PORT, 16, curSystemPreset-1) -- Send Program Change
-    --local ctrl = controls.get(50)
-    --ctrl:setName(curPresetName)
-    --midi.sendControlChange(DEVICE_PORT, 16, 109, 16) -- Send get Current Preset Msg to get Macro labels and control values 
+    loadPreset(tmpCategory, curCC32, curSystemPreset - 1, curPresetName) -- SOR
 end
 
 -- Set Pedal 1 Assignment
@@ -2452,7 +2383,7 @@ function assignPedal2 (valueObject, value)
         pedal2Init = true
         return
     end
-    local val = getControlValue(164)
+    local val = getControlValue(164) -- SOR
     print ("assignPedal2: Setting Pedal 2 assignment to "..val)
     matrixPoke(53, val) -- set assignment
 end
@@ -2773,8 +2704,8 @@ function loadPreset(bankMsb, bankLsb, programNo, presetName)
     control = controls.get(50)
     control:setName(presetName)
     print("loadPreset: Loading preset '"..presetName.."'")
-    -- Data for the loaded is now requested 
-    -- on receiving confirmation that the preset has loaded.
+    -- Data for the loaded is requested 
+    -- on receiving confirmation that the preset load has finished.
 end
 
 -- Added by SOR: Get system presets.
