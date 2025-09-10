@@ -646,11 +646,13 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
             ctrl:setColor(WHITE)
             print("Initializing Mono Switch to "..0)
             ctrlMsg:setValue(0)
-        else -- Mono Sw can be any value 0..127 with switched pedal that puts out continuous data
+        else 
+            -- Mono Sw can be any value 0..127 with switched pedal that puts out continuous data.
+            -- But it needs to be 1 for the control to be updated to On.
             ctrl:setName("Mono On")
             ctrl:setColor(GREEN)
-            print("Initializing Mono Switch to "..127)
-            ctrlMsg:setValue(127)
+            print("Initializing Mono Switch to "..1)
+            ctrlMsg:setValue(1)
         end
     end
 end -- CC event processing
@@ -2064,7 +2066,7 @@ function setMonoInterval(valueObject, value)
 end
 
 function setMonoSwitch(valueObject, value)
-    control = controls.get(252)
+    local control = controls.get(252)
     if (value == 0) then
         control:setName("Mono Off")
         control:setColor(WHITE)
@@ -2072,12 +2074,18 @@ function setMonoSwitch(valueObject, value)
         control:setName("Mono On")
         control:setColor(GREEN)
     end
-    print("setMonoSwitch: Setting Mono Switch to "..value)
-    midi.sendControlChange(DEVICE_PORT, 1, 9, value) -- SOR
+    -- Mono Sw can be any value 0..127 with switched pedal that puts out continuous data.
+    -- But it needs to be 1 for the control to be updated to On.
+    local val = getControlValue(252)
+    if val > 0 then
+        val = 1
+    end
+    print("setMonoSwitch: Setting Mono Switch to "..val)
+    midi.sendControlChange(DEVICE_PORT, 1, 9, val) -- SOR
 end
 
 function setOctRange(valueObject, value)
-    control = controls.get(179)
+    local control = controls.get(179)
     local controlValue = control:getValue("value")
     local ctrlMsg = controlValue:getMessage()
     local val = ctrlMsg:getValue()
@@ -2086,7 +2094,7 @@ function setOctRange(valueObject, value)
 end
 
 function setOctSwMode(valueObject, value)
-    control = controls.get(173)
+    local control = controls.get(173)
     local controlValue = control:getValue("value")
     local ctrlMsg = controlValue:getMessage()
     local val = ctrlMsg:getValue()
@@ -2094,7 +2102,7 @@ function setOctSwMode(valueObject, value)
 end
 
 function setRoundInit(valueObject, value)
-    control = controls.get(209)
+    local control = controls.get(209)
     local val = math.floor (value)
     -- print("Round Initial = "..val)
 
@@ -2112,21 +2120,21 @@ function setRoundInit(valueObject, value)
 end
 -- Round Modes
 function setRoundMode(valueObject, value) -- Round Mode
-    control = controls.get(210)
+    local control = controls.get(210)
     local controlValue = control:getValue("value")
     local ctrlMsg = controlValue:getMessage()
     local val = ctrlMsg:getValue()
     matrixPoke(10, val)
 end
 function setRoundEqual(valueObject, value) -- Round Equal
-    control = controls.get(228)
+    local control = controls.get(228)
     local controlValue = control:getValue("value")
     local ctrlMsg = controlValue:getMessage()
     local val = ctrlMsg:getValue()
     midi.sendControlChange(DEVICE_PORT, 1, 65, val)
 end
 function setDirection(valueObject, value) -- Normal or reverse fingerboard
-    control = controls.get(253)
+    local control = controls.get(253)
     local controlValue = control:getValue("value")
     local ctrlMsg = controlValue:getMessage()
     local val = ctrlMsg:getValue()
@@ -2144,7 +2152,7 @@ function setDirection(valueObject, value) -- Normal or reverse fingerboard
     matrixPoke(9, val)
 end
 function setTuning(valueObject, value)
-    control = controls.get(189)
+    local control = controls.get(189)
     local tuning = valueObject:getMessage():getValue()
     if (tuning == 127) then -- can't set On&Off to zero for button so use sentinel
         tuning = 0
@@ -2165,7 +2173,7 @@ function setTuning(valueObject, value)
     midi.sendControlChange(DEVICE_PORT, 16, 51, tuning)
 end
 function setNdiv(valueObject, value)
-    control = controls.get(225)
+    local control = controls.get(225)
     local controlValue = control:getValue("value")
     local ctrlMsg = controlValue:getMessage()
     local val = ctrlMsg:getValue()
