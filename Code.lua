@@ -722,13 +722,13 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     if msg.controllerNumber==56 then
         if msg.value == 20 then -- Matrix Stream
             matrixStream = true
-            -- print("Start of matrix stream")
+            --print("Start of matrix stream")
             return
         end
         if matrixStream then
-            -- print("End of matrix stream")
+            matrixStream = false -- Has no CC56=127 terminator - new stream terminates it
+            --print("End of matrix stream")
         end
-        matrixStream = false -- Has no CC56=127 terminator - new stream terminates it
     end
 
     -- Amended by SOR: Get system presets.
@@ -867,6 +867,13 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         else
             -- print("Not Valid Velocity Mode - Ignore: "..curVel)
         end
+        return -- SOR
+    end
+    -- Added by SOR: Control value updates.
+    if (matrixStream and channel == 16 and noteNumber == 62) then -- Recirculator Type
+        --print("Initializing Recirculator Type to "..pressure)
+        setControlValue(85, pressure)
+        return
     end
     -- Get CVC info - Read Only (need to bit map parse it)
     if (matrixStream == true and channel==16 and noteNumber == 63) then -- CVC Info
@@ -909,6 +916,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(curBend)
+        return -- SOR
     end
     -- Get Base Polyphony - Read Only
     if (matrixStream == true and channel==16 and noteNumber == 39) then -- Base Polyphony
@@ -917,6 +925,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(curBasePoly)
+        return -- SOR
     end
     -- Get Expanded Polyphony - Read Only
     if (matrixStream == true and channel==16 and noteNumber == 11) then -- Expanded Polyphony
@@ -925,6 +934,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(curBend)
+        return -- SOR
     end
     -- Increased Computation - Read Only
     if (matrixStream == true and channel==16 and noteNumber == 5) then -- Increased Computation
@@ -934,14 +944,17 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         local ctrlMsg = controlValue:getMessage()
         --print("Increased Comp = "..incComp)
         ctrlMsg:setValue(incComp)
+        return -- SOR
     end
     -- Get Mono Mode
     if (matrixStream == true and channel==16 and noteNumber == 46) then -- Mono Mode
         setControlValue(140, pressure) -- SOR
+        return -- SOR
     end
     -- Get Mono Interval
     if (matrixStream == true and channel==16 and noteNumber == 48) then -- Mono Interval
         setControlValue(267, pressure) -- SOR
+        return -- SOR
     end
     --  SplitMode
     if (matrixStream == true and channel==16 and noteNumber == 1) then -- Split Mode
@@ -950,6 +963,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(splitMode)
+        return -- SOR
     end
     -- SplitPoint
     if (matrixStream == true and channel==16 and noteNumber == 45) then -- Split Mode
@@ -958,6 +972,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(splitPoint)
+        return -- SOR
     end
     -- Round Mode
     if (matrixStream == true and channel==16 and noteNumber == 10) then -- Round Mode
@@ -966,16 +981,19 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(roundMode)
+        return -- SOR
     end
     -- Get Pedal 1 Assignments
     if (matrixStream == true and channel==16 and noteNumber == 52) then -- Pedal1 Assign
         -- print("Initializing Pedal 1 Assign to "..pressure)
         setControlValue(143, pressure) -- SOR
+        return -- SOR
     end
     -- Get Pedal 2 Assignments
     if (matrixStream == true and channel==16 and noteNumber == 53) then -- Pedal2 Assign
-        -- print("Initializing Pedal 2 Assign to "..pressure)
+         --print("Initializing Pedal 2 Assign to "..pressure)
         setControlValue(164, pressure) -- SOR
+        return -- SOR
     end
 
     -- Get Octave Switch mode
@@ -1674,25 +1692,19 @@ function setRecirc(valueObject, value)
     midi.sendControlChange(DEVICE_PORT, 16, 56, 20)
     midi.sendAfterTouchPoly(DEVICE_PORT, 16, 62 , recircVal)
 end
+
+-- Amended by SOR: Control value updates.
 function setRecircType (valueObject, value)
     local recircType = valueObject:getMessage():getValue()
-    if (recircType == 0) then
-        matrixPoke (62, 0) -- Short Reverb
-    elseif(recircType == 1) then
-        matrixPoke (62, 1) -- Mod Delay
-    elseif(recircType == 2) then
-        matrixPoke (62, 2) -- Swept Echo
-    elseif(recircType == 3) then
-        matrixPoke (62, 3) -- Analog Echo
-    elseif(recircType == 4) then
-        matrixPoke (62, 4) -- Dig Delay with LPF
-    elseif(recircType == 5) then
-        matrixPoke (62, 5) -- Dig Delay with HPF
-    elseif(recircType == 6) then
-        matrixPoke (62, 6) -- Long Reverb
-    else
-        -- print ("Unexpected Recirc Type")
-    end
+    -- 0 Short Reverb
+    -- 1 Mod Delay
+    -- 2 Swept Echo
+    -- 3 Analog Echo
+    -- 4 Dig Delay with LPF
+    -- 5 Dig Delay with HPF
+    -- 6 Long Reverb
+    --print("setRecircType: Setting Recirculator Type to "..recircType)
+    matrixPoke (62, recircType)
 end
 
 function enableRecirc (valueObject, value)
