@@ -121,13 +121,13 @@ recall(persistableData)
 --persistableData.firmwareVersion = "9.0"
 --persistableData.systemPresetCategories = {}
 if not persistableData.isSaved then
-    -- print("persistableData not available")
+    --print("persistableData not available")
     -- Not strictly necessary,
     --  provided isSaved is always checked before accessing these items.
     persistableData.firmwareVersion = ""
     persistableData.systemPresetCategories = {}
 else
-    -- print("persistableData.firmwareVersion = "..persistableData.firmwareVersion)
+    --print("persistableData.firmwareVersion = "..persistableData.firmwareVersion)
 end
 
 -- System presets grouped by category. SOR
@@ -429,6 +429,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
 
     if (chan == 16 and cc == 102) then -- Firmware High Address
         highVersion = value
+        return -- SOR
     end
     if (chan == 16 and cc == 103) then -- Firmware Low Address
         lowVersion = value
@@ -443,7 +444,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         if (val < 16) then
             setControlValue(183, val) -- SOR
         else
-            -- print("Polyphony > 15: "..val)
+            --print("Polyphony > 15: "..val)
         end
         return -- SOR
     end
@@ -560,7 +561,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     if (chan == 1 and cc == 64) then --Sus
         -- But the firmware does not save this,
         -- so it will always be 0 (off) initially.
-        -- print("Initializing Sus to "..val)
+        --print("Initializing Sus to "..val)
         setControlValue(260, val)
         return
     end
@@ -568,7 +569,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     if (chan == 1 and cc == 66) then -- Sos1
         -- But the firmware does not save this,
         -- so it will always be 0 (off) initially.
-        -- print("Initializing Sos1 to "..val)
+        --print("Initializing Sos1 to "..val)
         setControlValue(261, val)
         return
     end
@@ -576,7 +577,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     if (chan == 1 and cc == 69) then -- Sos2
         -- But the firmware does not save this,
         -- so it will always be 0 (off) initially.
-        -- print("Initializing Sos2 to "..val)
+        --print("Initializing Sos2 to "..val)
         setControlValue(262, val)
         return
     end
@@ -587,23 +588,23 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     end
     -- Ped1
     if (chan == 1 and cc == 76) then -- Ped 1 Min Range
-        -- print("Initializing Pedal 1 Min to "..val)
+        --print("Initializing Pedal 1 Min to "..val)
         setControlValue(175, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 77) then -- Ped 1 Max Range
-        -- print("Initializing Pedal 1 Max to "..val)
+        --print("Initializing Pedal 1 Max to "..val)
         setControlValue(176, val) -- SOR
         return -- SOR
     end
     -- Ped2
     if (chan == 1 and cc == 78) then -- Ped 2 Min Range
-        -- print("Initializing Pedal 2 Min to "..val)
+        --print("Initializing Pedal 2 Min to "..val)
         setControlValue(177, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 79) then -- Ped 2 Max Range
-        -- print("Initializing Pedal 2 Max to "..val)
+        --print("Initializing Pedal 2 Max to "..val)
         setControlValue(178, val) -- SOR
         return -- SOR
     end
@@ -625,7 +626,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         local ctrl = controls.get(209)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
-        -- print("Round Initial ="..val)
+        --print("Round Initial ="..val)
         if (val == 0) then
             ctrl:setName("Initial Off")
             ctrl:setColor(WHITE)
@@ -633,7 +634,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
             ctrl:setName("Initial On")
             ctrl:setColor(GREEN)
         else
-            -- print("Unexpected Round Initial Read")
+            --print("Unexpected Round Initial Read")
         end
         ctrlMsg:setValue(val)
         return -- SOR
@@ -647,14 +648,14 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         if (val == 0) then
             ctrl:setName("Mono Off")
             ctrl:setColor(WHITE)
-            -- print("Initializing Mono Switch to "..0)
+            --print("Initializing Mono Switch to "..0)
             ctrlMsg:setValue(0)
         else 
             -- Mono Sw can be any value 0..127 with switched pedal that puts out continuous data.
             -- But it needs to be 1 for the control to be updated to On.
             ctrl:setName("Mono On")
             ctrl:setColor(GREEN)
-            -- print("Initializing Mono Switch to "..1)
+            --print("Initializing Mono Switch to "..1)
             ctrlMsg:setValue(1)
         end
     end
@@ -681,20 +682,20 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     if ( msg.controllerNumber==109 and msg.value==49) then
         -- Start of system preset list (beginSysNames)    
         isGettingSystemPresets = true
-        -- print("Start of system preset list")
+        --print("Start of system preset list")
         return
     end
     -- Added by SOR: Get system presets.
     if (msg.controllerNumber==109 and msg.value==40) then
         -- End of system preset list (endSysNames)    
         isGettingSystemPresets = false
-        -- print("End of system preset list")
+        --print("End of system preset list")
         onSystemPresetsUpdated(false)
         return
     end
 
     if (msg.controllerNumber==109 and msg.value==54) then -- Start User Names Found
-        -- print("Start getting user presets")
+        --print("Start getting user presets")
         info.setText("Getting presets...")
         isInitializing = false -- SOR
         userNameProcessing = true
@@ -703,7 +704,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         return -- SOR
     end
     if (msg.controllerNumber==109 and msg.value==55) then -- End User Names Found
-        -- print("Finished getting user presets")
+        --print("Finished getting user presets")
         setUserPresetNames()
         userNameProcessing = false
         userNameIndex=0
@@ -775,7 +776,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         if isGettingLoadedPresetData then
             -- This is the end of the preset name stream that is the
             -- last item in current preset data we requested after loading the preset.
-            -- print("End of loaded preset data.")
+            --print("End of loaded preset data.")
             isGettingLoadedPresetData = false
         end
         if isAccumulatingSystemPresetName then
@@ -865,7 +866,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         if (curVel < 3) then
             ctrlMsg:setValue(curVel)
         else
-            -- print("Not Valid Velocity Mode - Ignore: "..curVel)
+            --print("Not Valid Velocity Mode - Ignore: "..curVel)
         end
         return -- SOR
     end
@@ -985,7 +986,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     end
     -- Get Pedal 1 Assignments
     if (matrixStream == true and channel==16 and noteNumber == 52) then -- Pedal1 Assign
-        -- print("Initializing Pedal 1 Assign to "..pressure)
+        --print("Initializing Pedal 1 Assign to "..pressure)
         setControlValue(143, pressure) -- SOR
         return -- SOR
     end
@@ -1040,7 +1041,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
             ctrl:setColor(RED)
             ctrlMsg:setValue(direction)
         else
-            -- print("Unexpected Direction: "..direction)
+            --print("Unexpected Direction: "..direction)
         end
     end
     -- Preserve Surface
@@ -1058,7 +1059,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
             ctrl:setName("Preserve")
             ctrl:setColor(RED)
         else
-            -- print("Unexpected Preserve Surface")
+            --print("Unexpected Preserve Surface")
         end
     end
     -- Preserve Pedals
@@ -1076,7 +1077,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
             ctrl:setName("Preserve")
             ctrl:setColor(RED)
         else
-            -- print("Unexpected Preserve Pedals")
+            --print("Unexpected Preserve Pedals")
         end
     end
     -- Preserve Midi
@@ -1094,7 +1095,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
             ctrl:setName("Preserve")
             ctrl:setColor(RED)
         else
-            -- print("Unexpected Preserve Midi")
+            --print("Unexpected Preserve Midi")
         end
     end
     -- Process Middle C - Transpose
@@ -1103,7 +1104,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         local ctrl = controls.get(78)
         local controlValue = ctrl:getValue("value")
         --local ctrlMsg = controlValue:getMessage()
-        -- print("Transpose Val = "..xposeAssign)
+        --print("Transpose Val = "..xposeAssign)
         if (xposeAssign == 0) then
             -- nothing
         elseif (xposeAssign == 60) then
@@ -1127,7 +1128,18 @@ end -- of pPress settings
 -- system presets will be either restored from persisted data 
 -- or requested from the instrument.
 function getNames(valueObject, value)
-    -- print("getNames: Getting user presets")
+    --print("getNames: Getting user presets")
+    -- If this Electra One preset is being loaded at boot up,
+    -- starting to receive the user presets immediately is likely 
+    -- to cause the boot sequence to get stuck at the startup splash screen
+    -- and fail to complete.
+    -- See https://docs.electra.one/troubleshooting/defaultpreset.html.
+    -- So pause before requesting the user presets, to give the boot sequence
+    -- time to get past the point where it can get stuck.
+    -- I found that 400 milliseconds is just enough on my E1, regardless of
+    -- whether system presets also need to be loaded.
+    -- So 2 seconds should provide an ample safety margin.  SOR
+    helpers.delay(2000) 
     resetMute() -- reset in case on from previous preset
     midi.sendControlChange(DEVICE_PORT, 16, 109, 32) -- Send user presets Names Request
 end
@@ -1149,7 +1161,7 @@ function loadUserPreset(valueObject, value)
         loadPreset(bankMsb, bankLsb, programNo, presetName)
         lastName = presetName -- Override last name
     else
-        -- print("Unexpected Preset Index: "..programNo)
+        --print("Unexpected Preset Index: "..programNo)
     end
 end
 
@@ -1231,7 +1243,7 @@ function storeUserPreset (valueObject, value)
         end
     end
     -- Sequence needed to just store current preset back to its position
-    -- print("Storing to Preset position: "..presetPosSelect-1)
+    --print("Storing to Preset position: "..presetPosSelect-1)
     midi.sendControlChange(DEVICE_PORT, 16, 56, 127) -- End Preset string
     midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- Send CC0/CC32
     midi.sendControlChange(DEVICE_PORT, 16, 32, 0)
@@ -1259,7 +1271,7 @@ end
 
 -- Set User Preset names - they are controls 1-16
 function setUserPresetNames()
-    -- print("setUserPresetNames")
+    --print("setUserPresetNames")
     presetOffset = 0
     for i = 1,16
     do
@@ -1601,7 +1613,7 @@ function xposeMiddleC(valueObject, value)
     end
     local xAmt = 0
     local newMiddleC = valueObject:getMessage():getValue()
-    -- print("Setting Middle C to "..newMiddleC)
+    --print("Setting Middle C to "..newMiddleC)
     matrixPoke (44,newMiddleC)
     --print("newMiddleC = "..newMiddleC) 
     -- Change the transpose indicator
@@ -1687,7 +1699,7 @@ function mainGraphPoke(pokeIndex, pokeValue)
     midi.sendAfterTouchPoly(DEVICE_PORT, 16, pokeIndex , pokeValue) -- Change Main Graph value at zero offset index 0..47  
 end
 function setRecirc(valueObject, value)
-    -- print("setRecirc")
+    --print("setRecirc")
     local recircVal = valueObject:getMessage():getValue()
     midi.sendControlChange(DEVICE_PORT, 16, 56, 20)
     midi.sendAfterTouchPoly(DEVICE_PORT, 16, 62 , recircVal)
@@ -1720,7 +1732,7 @@ function enableRecirc (valueObject, value)
         control:setName("Disabled")
         control:setColor(WHITE)
     else
-        -- print ("Unexpected Recirc Enable/Disable Type")
+        --print ("Unexpected Recirc Enable/Disable Type")
     end
 end
 function setGlide(valueObject, value)
@@ -1793,7 +1805,7 @@ function setConvolutionIR1(valueObject, value) -- Convolution Poke =
     elseif (convolution1Type == 18) then
         convolutionPoke(4, 18)
     else -- Others are not applicable
-        -- print ("Unexpected IR 1 Codes ")
+        --print ("Unexpected IR 1 Codes ")
     end
 end
 
@@ -1839,7 +1851,7 @@ function setConvolutionIR2(valueObject, value) -- Convolution Poke =
     elseif (convolution2Type == 18) then
         convolutionPoke(5, 18)
     else -- Others are not applicable
-        -- print ("Unexpected IR 2 Codes ")
+        --print ("Unexpected IR 2 Codes ")
     end
 end
 function setConvolutionIR3(valueObject, value) -- Convolution Poke = 
@@ -1884,7 +1896,7 @@ function setConvolutionIR3(valueObject, value) -- Convolution Poke =
     elseif (convolution3Type == 18) then
         convolutionPoke(6, 18)
     else -- Others are not applicable
-        -- print ("Unexpected IR 3 Codes ")
+        --print ("Unexpected IR 3 Codes ")
     end
 end
 function setConvolutionIR4(valueObject, value) -- Convolution Poke = 
@@ -1929,7 +1941,7 @@ function setConvolutionIR4(valueObject, value) -- Convolution Poke =
     elseif (convolution4Type == 18) then
         convolutionPoke(7, 18)
     else -- Others are not applicable
-        -- print ("Unexpected IR 4 Codes ")
+        --print ("Unexpected IR 4 Codes ")
     end
 end
 function setConvEPCtrl(valueObject, value) -- Conv poke - using conrol parameter for Conv operation to be generic
@@ -1944,7 +1956,7 @@ function setConvEPCtrl(valueObject, value) -- Conv poke - using conrol parameter
         ctrl:setColor(WHITE)
         convolutionPoke(29,0)
     else
-        -- print("Unknown EP value: "..epvalue)
+        --print("Unknown EP value: "..epvalue)
     end
 end
 
@@ -1954,7 +1966,7 @@ function getMacros()
         --print ("getMacros - should not be called until pressed")
         midi.sendControlChange(DEVICE_PORT, 16, 109, 22) -- Send get Current Preset Msg to get Macro labels and control values
     else
-        -- print ("MacrosLoaded - called by init")
+        --print ("MacrosLoaded - called by init")
         macrosLoaded = true
     end
 end
@@ -1966,7 +1978,7 @@ function muteControl(valueObject, value)
     if (muteOn == 0) then -- Mute off, restore pre-gain
         control:setName("Mute Off")
         control:setColor(WHITE)
-        -- print("Muteval ="..muteVal)
+        --print("Muteval ="..muteVal)
         midi.sendControlChange(DEVICE_PORT, 1, 26, muteVal) -- set pregain to last value
     else
         control:setName("Mute On")
@@ -2007,7 +2019,7 @@ end
 
 function setMonoMode(valueObject, value)
     local val = getControlValue(140)
-    -- print("setMonoMode: Setting Mono Mode to "..val)
+    --print("setMonoMode: Setting Mono Mode to "..val)
     matrixPoke(46, val)
 end
 
@@ -2016,7 +2028,7 @@ function setMonoInterval(valueObject, value)
         return -- inits to -1 (check others)
     end
     local val = getControlValue(267)
-    -- print("setMonoInterval: Setting Mono Interval to "..val)
+    --print("setMonoInterval: Setting Mono Interval to "..val)
     matrixPoke(48, val)
 end
 
@@ -2035,7 +2047,7 @@ function setMonoSwitch(valueObject, value)
     if val > 0 then
         val = 1
     end
-    -- print("setMonoSwitch: Setting Mono Switch to "..val)
+    --print("setMonoSwitch: Setting Mono Switch to "..val)
     midi.sendControlChange(DEVICE_PORT, 1, 9, val) -- SOR
 end
 
@@ -2044,7 +2056,7 @@ function setOctRange(valueObject, value)
     local controlValue = control:getValue("value")
     local ctrlMsg = controlValue:getMessage()
     local val = ctrlMsg:getValue()
-    -- print("Octave Transpose = "..val)
+    --print("Octave Transpose = "..val)
     matrixPoke(54, val)
 end
 
@@ -2059,7 +2071,7 @@ end
 function setRoundInit(valueObject, value)
     local control = controls.get(209)
     local val = math.floor (value)
-    -- print("Round Initial = "..val)
+    --print("Round Initial = "..val)
 
     if (value == 0) then
         control:setName("Initial Off")
@@ -2068,7 +2080,7 @@ function setRoundInit(valueObject, value)
         control:setName("Initial On")
         control:setColor(GREEN)
     else
-        -- print("Unexpected Round Initial Control: "..val)
+        --print("Unexpected Round Initial Control: "..val)
         return
     end
     midi.sendControlChange(DEVICE_PORT, 1, 28, value)
@@ -2093,7 +2105,7 @@ function setDirection(valueObject, value) -- Normal or reverse fingerboard
     local controlValue = control:getValue("value")
     local ctrlMsg = controlValue:getMessage()
     local val = ctrlMsg:getValue()
-    -- print("Direction ="..val)
+    --print("Direction ="..val)
     if (val == 0) then
         control:setName("Normal")
         control:setColor(GREEN)
@@ -2101,7 +2113,7 @@ function setDirection(valueObject, value) -- Normal or reverse fingerboard
         control:setName("Reverse")
         control:setColor(RED)
     else
-        -- print("Unexpected Direction")
+        --print("Unexpected Direction")
         return
     end
     matrixPoke(9, val)
@@ -2121,7 +2133,7 @@ function setTuning(valueObject, value)
         control:setName("Grid "..tuning)
         control:setColor(PURPLE)
     else
-        -- print ("Unrecognized tuning: "..tuning)
+        --print ("Unrecognized tuning: "..tuning)
         return
     end
     --print("Tuning = "..tuning)
@@ -2156,16 +2168,16 @@ function replaceSurface(valueObject, value) -- Round Mode
         control:setName("Preserve")
         control:setColor(RED)
     else
-        -- print("Unexpected Replace/Preserve Surface")
+        --print("Unexpected Replace/Preserve Surface")
         return
     end
     if (repSurfacePushed == false) then
-        -- print("Surface Replace Init")        
+        --print("Surface Replace Init")        
         repSurfacePushed = true
         return
     end
     if (repSurfacePushed) then
-        -- print("Writing flash 1")
+        --print("Writing flash 1")
         -- matrixPoke(56, val)      
         -- midi.sendControlChange(DEVICE_PORT, 16, 109, 8) -- Store to flash      
     end
@@ -2184,17 +2196,17 @@ function replacePedals(valueObject, value) -- Round Mode
         control:setName("Preserve")
         control:setColor(RED)
     else
-        -- print("Unexpected Replace/Preserve Pedals")
+        --print("Unexpected Replace/Preserve Pedals")
         return
     end
     if (repPedalsPushed == false) then
-        -- print("Pedals Replace Init")        
+        --print("Pedals Replace Init")        
         repPedalsPushed = true
         return
     end
 
     if (repPedalsPushed) then
-        -- print("Writing flash 2")
+        --print("Writing flash 2")
         -- matrixPoke(57, val)              
         -- midi.sendControlChange(DEVICE_PORT, 16, 109, 8) -- Store to flash     
     end
@@ -2213,7 +2225,7 @@ function replaceMidi(valueObject, value) -- Round Mode
         control:setName("Preserve")
         control:setColor(RED)
     else
-        -- print("Unexpected Repalce/Preserve Midi")
+        --print("Unexpected Repalce/Preserve Midi")
         return
     end
     if (repMidiPushed == false) then
@@ -2239,7 +2251,7 @@ function compOrTanh(valueObject, value)
         ctrl:setName("TANH")
         setCompOrTanh(1)
     else
-        -- print("Unrecognized CompOrTanh")
+        --print("Unrecognized CompOrTanh")
         return
     end
     --print("CompOrTanh = "..val)
@@ -2353,7 +2365,7 @@ end
 
 -- Load the System Preset
 function loadSystemPreset(valueObject, value)
-    -- print("LoadSystemPreset Called")
+    --print("LoadSystemPreset Called")
     local tmpCategory = curCategory
     if (sendSysPresetInit == false) then
         sendSysPresetInit = true
@@ -2384,7 +2396,7 @@ function assignPedal1 (valueObject, value)
     local controlValue = ctrl:getValue("value")
     local ctrlMsg = controlValue:getMessage()
     local ped1Val = ctrlMsg:getValue()
-    -- print ("Pedal1 val: "..ped1Val)
+    --print ("Pedal1 val: "..ped1Val)
     matrixPoke(52, ped1Val) -- set assignment
 end
 
@@ -2396,7 +2408,7 @@ function assignPedal2 (valueObject, value)
         return
     end
     local val = getControlValue(164) -- SOR
-    -- print ("assignPedal2: Setting Pedal 2 assignment to "..val)
+    --print ("assignPedal2: Setting Pedal 2 assignment to "..val)
     matrixPoke(53, val) -- set assignment
 end
 
@@ -2545,7 +2557,7 @@ function processConvolution()
     elseif (epval == 0) then
         ctrl:setName("EP Off")
     else
-        -- print("EP - Unknown value: "..epval)
+        --print("EP - Unknown value: "..epval)
     end
 end
 
@@ -2643,7 +2655,7 @@ end
 
 -- Added by SOR: Control value updates.
 function getLoadedPresetData()
-    -- print("getLoadedPresetData: Loaded preset. Getting preset data.")
+    --print("getLoadedPresetData: Loaded preset. Getting preset data.")
     isAccumulatingControlText = true
     isGettingLoadedPresetData = true
     -- Send get Current Preset Msg to get Macro labels and control values
@@ -2652,12 +2664,12 @@ end
 
 -- Added by SOR: Get system presets.
 function getSystemPresets()
-    -- print("getSystemPresets")
+    --print("getSystemPresets")
     if isSystemPresetsUpdateRequired then
         -- Request system preset names (sysToMidi).
         midi.sendControlChange(DEVICE_PORT, 16, 109, 39)
     else
-        -- print("    Getting system presets from persisted data.")
+        --print("    Getting system presets from persisted data.")
         systemPresetCategories = persistableData.systemPresetCategories
         onSystemPresetsUpdated(true)
     end
@@ -2705,14 +2717,14 @@ function loadPreset(bankMsb, bankLsb, programNo, presetName)
     -- Show the preset name on the Current Preset control.
     control = controls.get(50)
     control:setName(presetName)
-    -- print("loadPreset: Loading preset '"..presetName.."'")
+    --print("loadPreset: Loading preset '"..presetName.."'")
     -- Data for the loaded is requested 
     -- on receiving confirmation that the preset load has finished.
 end
 
 -- Added by SOR: Get system presets.
 function onFirmwareVersionReceived()
-    -- print("onFirmwareVersionReceived")
+    --print("onFirmwareVersionReceived")
     -- There's no specific command to request the firmware version.
     -- The instrument sends it more than once: on connecting to E1;
     -- when sending user presets; when sending system presets, etc.
@@ -2724,19 +2736,19 @@ function onFirmwareVersionReceived()
     firmwareVersion = ((128 * highVersion)  + lowVersion) / 100
     versionText = "Ver: "..E1_PRESET_VERSION.."/"..firmwareVersion
     info.setText(versionText) -- Versions to Info Text
-    if persistableData.isSaved then
-        -- print("    Previous firmware version = "..persistableData.firmwareVersion)
-        -- print("    Current firmware version = "..firmwareVersion)
-        -- print("    "..#persistableData.systemPresetCategories..
-        --        " system preset categories have been recalled.")
-    else
-        -- print("    The previous firmware version is not available.")
-    end
+    --if persistableData.isSaved then
+    --    print("    Previous firmware version = "..persistableData.firmwareVersion)
+    --    print("    Current firmware version = "..firmwareVersion)
+    --    print("    "..#persistableData.systemPresetCategories..
+    --            " system preset categories have been recalled.")
+    --else
+    --    print("    The previous firmware version is not available.")
+    --end
     isSystemPresetsUpdateRequired =
     not persistableData.isSaved
             or persistableData.firmwareVersion ~= firmwareVersion
             or #persistableData.systemPresetCategories == 0
-    -- print("    isSystemPresetsUpdateRequired = "..tostring( isSystemPresetsUpdateRequired))
+    --print("    isSystemPresetsUpdateRequired = "..tostring( isSystemPresetsUpdateRequired))
 end
 
 -- Added by SOR: Get system presets.
@@ -2816,7 +2828,7 @@ end
 
 -- Added by SOR: Get system presets.
 function savePersistableData()
-    -- print("Saving persistableData")
+    --print("Saving persistableData")
     persistableData.isSaved = true
     persistableData.firmwareVersion = firmwareVersion
     persistableData.systemPresetCategories = systemPresetCategories
@@ -2838,7 +2850,7 @@ end
 -- or 'id=name_range1..._rangeN', e.g. 'iv=Width_Less_More'
 -- Spaces in names are not supported, as whitespace delimits the macro strings.
 function setMacroName(macroString)
-    -- print("setMacroName: macroString = '"..macroString.."'")
+    --print("setMacroName: macroString = '"..macroString.."'")
     -- E.g. "iv=Width_Less_More" will give us {"iv", "Width_Less_More"}.
     local lhsRhs = splitString(macroString, "=")
     local lhsRhsCount = #lhsRhs
@@ -2872,7 +2884,7 @@ end
 
 -- Added by SOR: Set macro names.
 function setMacroNames()
-    -- print("setMacroNames")
+    --print("setMacroNames")
     isAccumulatingControlText = false
     -- Blank out macro names.
     for controlNo = MACRO_I, MACRO_VI do
@@ -2887,7 +2899,7 @@ function setMacroNames()
     local controlTextLines = splitString(controlText, lineThrow)
     local controlTextLinesCount = #controlTextLines
     if controlTextLinesCount == 0 then
-        -- print "Error: No Control Text lines."
+        --print "Error: No Control Text lines."
         return
     end
     local macrosLine = controlTextLines[1]
@@ -2925,55 +2937,55 @@ end
 
 -- Added by SOR: Control value updates.
 function setPedal1Max(valueObject, value)
-    -- print("setPedal1Max: Setting Pedal 1 Max to "..value)
+    --print("setPedal1Max: Setting Pedal 1 Max to "..value)
     midi.sendControlChange(DEVICE_PORT, 1, 77, value)
 end
 
 -- Added by SOR: Control value updates.
 function setPedal1Min(valueObject, value)
-    -- print("setPedal1Max: Setting Pedal 1 Min to "..value)
+    --print("setPedal1Max: Setting Pedal 1 Min to "..value)
     midi.sendControlChange(DEVICE_PORT, 1, 76, value)
 end
 
 -- Added by SOR: Control value updates.
 function setPedal1Max(valueObject, value)
-    -- print("setPedal1Max: Setting Pedal 1 Max to "..value)
+    --print("setPedal1Max: Setting Pedal 1 Max to "..value)
     midi.sendControlChange(DEVICE_PORT, 1, 77, value)
 end
 
 -- Added by SOR: Control value updates.
 function setPedal1Min(valueObject, value)
-    -- print("setPedal1Min: Setting Pedal 1 Min to "..value)
+    --print("setPedal1Min: Setting Pedal 1 Min to "..value)
     midi.sendControlChange(DEVICE_PORT, 1, 76, value)
 end
 
 -- Added by SOR: Control value updates.
 function setPedal2Max(valueObject, value)
-    -- print("setPedal2Max: Setting Pedal 2 Max to "..value)
+    --print("setPedal2Max: Setting Pedal 2 Max to "..value)
     midi.sendControlChange(DEVICE_PORT, 1, 79, value)
 end
 
 -- Added by SOR: Control value updates.
 function setPedal2Min(valueObject, value)
-    -- print("setPedal2Min: Setting Pedal 2 Min to "..value)
+    --print("setPedal2Min: Setting Pedal 2 Min to "..value)
     midi.sendControlChange(DEVICE_PORT, 1, 78, value)
 end
 
 -- Added by SOR: Control value updates.
 function setSus(valueObject, value)
-    -- print("setSus: Setting Sus to "..value)
+    --print("setSus: Setting Sus to "..value)
     midi.sendControlChange(DEVICE_PORT, 1, 64, value)
 end
 
 -- Added by SOR: Control value updates.
 function setSos1(valueObject, value)
-    -- print("setSos1: Setting Sos1 to "..value)
+    --print("setSos1: Setting Sos1 to "..value)
     midi.sendControlChange(DEVICE_PORT, 1, 66, value)
 end
 
 -- Added by SOR: Control value updates.
 function setSos2(valueObject, value)
-    -- print("setSos2: Setting Sos2 to "..value)
+    --print("setSos2: Setting Sos2 to "..value)
     midi.sendControlChange(DEVICE_PORT, 1, 69, value)
 end
 
