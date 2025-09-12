@@ -1132,9 +1132,9 @@ function getNames(valueObject, value)
     --print("getNames: Getting user presets")
     info.setText(GETTING_PRESETS)
     isInitializing = false -- SOR
-    -- Flagging the start of user preset processing here allows the GETTING_PRESETS
-    -- info message to remain displayed if the firmware version is received
-    -- before the user preset list starts to be received.
+    -- Flagging the start of user preset names processing here allows the GETTING_PRESETS
+    -- info message to remain displayed when the firmware version is received
+    -- before the user preset name list starts to be received.
     userNameProcessing = true -- SOR
     resetMute() -- reset in case on from previous preset
     -- If this Electra One preset is being loaded at boot up,
@@ -1143,8 +1143,8 @@ function getNames(valueObject, value)
     -- and fail to complete.
     -- See https://docs.electra.one/troubleshooting/defaultpreset.html.
     --
-    -- So pause before requesting the user presets, to give the boot sequence
-    -- time to get past the point where it can get stuck.
+    -- So, to give the boot sequence time to get past the point where
+    -- it can get stuck, pause before requesting the user preset names.
     -- I found that 400 milliseconds is just enough on my E1, regardless of
     -- whether system presets also need to be loaded.
     -- So 2 seconds should provide an ample safety margin.
