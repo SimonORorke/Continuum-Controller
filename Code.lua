@@ -696,8 +696,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     end
 
     if (msg.controllerNumber==109 and msg.value==54) then -- Start User Names Found
-        print("Start getting user presets")
-        --info.setText(GETTING_PRESETS)
+        --print("Start getting user presets")
         -- Moved to getNames(). See comment there. SOR
         --userNameProcessing = true
         firstName = true
@@ -1128,6 +1127,7 @@ end -- of pPress settings
 -- Once the whole list has been received, 
 -- system presets will be either restored from persisted data 
 -- or requested from the instrument.
+-- Amended by SOR to prevent the boot sequence from getting stuck at the startup splash screen. 
 function getNames(valueObject, value)
     --print("getNames: Getting user presets")
     info.setText(GETTING_PRESETS)
@@ -1136,19 +1136,27 @@ function getNames(valueObject, value)
     -- info message to remain displayed if the firmware version is received
     -- before the user preset list starts to be received.
     userNameProcessing = true -- SOR
+    resetMute() -- reset in case on from previous preset
     -- If this Electra One preset is being loaded at boot up,
     -- starting to receive the user presets immediately is likely 
     -- to cause the boot sequence to get stuck at the startup splash screen
     -- and fail to complete.
     -- See https://docs.electra.one/troubleshooting/defaultpreset.html.
+    --
     -- So pause before requesting the user presets, to give the boot sequence
     -- time to get past the point where it can get stuck.
     -- I found that 400 milliseconds is just enough on my E1, regardless of
     -- whether system presets also need to be loaded.
-    -- So 2 seconds should provide an ample safety margin.  SOR
-    helpers.delay(2000) 
-    resetMute() -- reset in case on from previous preset
-    midi.sendControlChange(DEVICE_PORT, 16, 109, 32) -- Send user presets Names Request
+    -- So 2 seconds should provide an ample safety margin.
+    --
+    -- Send the user preset names request in a one-off timer to allow the
+    -- GETTING_PRESETS info message to be shown first.
+    -- I don't think this works any better than helpers.delay(2000).
+    -- But the only time I'm still seeing a pause before GETTING_PRESETS is shown
+    -- is when the E1 preset has been sent to the E1 by the preset editor,
+    -- which users will not see.
+    timer.setPeriod(2000)
+    timer.enable() -- Will trigger timer.tick().
 end
 
 -- Load up a user preset on pressing button 1-16 offset for bank
@@ -2731,7 +2739,7 @@ end
 
 -- Added by SOR: Get system presets.
 function onFirmwareVersionReceived()
-    print("onFirmwareVersionReceived")
+    --print("onFirmwareVersionReceived")
     -- There's no specific command to request the firmware version.
     -- The instrument sends it more than once: on connecting to E1;
     -- when sending user presets; when sending system presets, etc.
@@ -2748,12 +2756,6 @@ function onFirmwareVersionReceived()
     if not userNameProcessing then
         info.setText(versionText) -- Versions to Info Text
     end
-    --if userNameProcessing then
-    --    --print("    "..GETTING_PRESETS)
-    --    info.setText(GETTING_PRESETS)
-    --else
-    --    info.setText(versionText) -- Versions to Info Text
-    --end
     --if persistableData.isSaved then
     --    print("    Previous firmware version = "..persistableData.firmwareVersion)
     --    print("    Current firmware version = "..firmwareVersion)
@@ -3022,6 +3024,14 @@ function splitString(inputString, delimiter)
         table.insert(result, trimString(component))
     end
     return result
+end
+
+function timer.onTick()
+    -- One off timer to delay the request for user preset names.
+    if userNameProcessing then
+        timer.disable()
+        midi.sendControlChange(DEVICE_PORT, 16, 109, 32) -- Send user preset names request
+    end
 end
 
 -- Added by SOR: Set macro names.
