@@ -21,6 +21,7 @@ local CAT_MIDI = 11
 local CAT_CVC = 12
 local CAT_UTILITY = 13
 local CAT_OTHER1 = 14
+local GETTING_PRESETS = "Getting presets..." -- SOR
 local E1_PRESET_VERSION = "1.1" -- SOR
 -- Macro control numbers SOR
 local MACRO_I = 25
@@ -695,10 +696,10 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     end
 
     if (msg.controllerNumber==109 and msg.value==54) then -- Start User Names Found
-        --print("Start getting user presets")
-        info.setText("Getting presets...")
-        isInitializing = false -- SOR
-        userNameProcessing = true
+        print("Start getting user presets")
+        --info.setText(GETTING_PRESETS)
+        -- Moved to getNames(). See comment there. SOR
+        --userNameProcessing = true
         firstName = true
         userNameIndex=0
         return -- SOR
@@ -1129,6 +1130,12 @@ end -- of pPress settings
 -- or requested from the instrument.
 function getNames(valueObject, value)
     --print("getNames: Getting user presets")
+    info.setText(GETTING_PRESETS)
+    isInitializing = false -- SOR
+    -- Flagging the start of user preset processing here allows the GETTING_PRESETS
+    -- info message to remain displayed if the firmware version is received
+    -- before the user preset list starts to be received.
+    userNameProcessing = true -- SOR
     -- If this Electra One preset is being loaded at boot up,
     -- starting to receive the user presets immediately is likely 
     -- to cause the boot sequence to get stuck at the startup splash screen
@@ -2724,7 +2731,7 @@ end
 
 -- Added by SOR: Get system presets.
 function onFirmwareVersionReceived()
-    --print("onFirmwareVersionReceived")
+    print("onFirmwareVersionReceived")
     -- There's no specific command to request the firmware version.
     -- The instrument sends it more than once: on connecting to E1;
     -- when sending user presets; when sending system presets, etc.
@@ -2735,7 +2742,18 @@ function onFirmwareVersionReceived()
     -- when all the preset data has been received.
     firmwareVersion = ((128 * highVersion)  + lowVersion) / 100
     versionText = "Ver: "..E1_PRESET_VERSION.."/"..firmwareVersion
-    info.setText(versionText) -- Versions to Info Text
+    -- If we are awaiting the user preset name list, 
+    -- keep showing the GETTING_PRESETS info message.
+    -- Otherwise show the version info. 
+    if not userNameProcessing then
+        info.setText(versionText) -- Versions to Info Text
+    end
+    --if userNameProcessing then
+    --    --print("    "..GETTING_PRESETS)
+    --    info.setText(GETTING_PRESETS)
+    --else
+    --    info.setText(versionText) -- Versions to Info Text
+    --end
     --if persistableData.isSaved then
     --    print("    Previous firmware version = "..persistableData.firmwareVersion)
     --    print("    Current firmware version = "..firmwareVersion)
