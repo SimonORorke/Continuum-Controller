@@ -1960,15 +1960,16 @@ function setConvolutionIR4(valueObject, value) -- Convolution Poke =
     end
 end
 
-function setConvEqualPower(valueObject, value) -- Renamed by SOR
+-- Set Phase Cancellation Compensation (labelled Ep in Haken Editor).
+function setPhaseCnclCompnsat(valueObject, value) -- Renamed by SOR
     -- Conv poke - using control parameter for Conv operation to be generic
     local ctrl = controls.get(127)
     if (value == 1) then
-        ctrl:setName("EP On")
+        ctrl:setName("Compensate On")
         ctrl:setColor(GREEN)
         convolutionPoke(28,1) -- Fixed pokeID. SOR
     elseif (value == 0) then
-        ctrl:setName("EP Off")
+        ctrl:setName("Compensate Off")
         ctrl:setColor(WHITE)
         convolutionPoke(28,0) -- Fixed pokeID. SOR
     else
@@ -2439,7 +2440,7 @@ function processConvolution()
     local strLen = string.len(tmpStr)
     while ix < strLen
     do
-        if (tmpStr:sub(ix,ix) =="|") then -- parse the individual parametgers into an array
+        if (tmpStr:sub(ix,ix) =="|") then -- parse the individual parameters into an array
             convParams[pi] = tmpStr:sub(j,ix-1)
             --print("C="..convParams[pi]) -- debugit
             pi = pi + 1
@@ -2447,6 +2448,8 @@ function processConvolution()
         end
         ix = ix + 1
     end
+    -- Due to Lua tables being 1-based, each convParams index is one more 
+    -- than the corresponding poke id used when updating the instrument. SOR
     -- IRs
     local ctrl = controls.get(93) -- IR1 Type
     local controlValue = ctrl:getValue("value")
@@ -2562,15 +2565,16 @@ function processConvolution()
     controlValue = ctrl:getValue("value")
     ctrlMsg = controlValue:getMessage()
     ctrlMsg:setValue(convParams[28])
-    ctrl = controls.get(127) -- Equal Power -- SOR
+    -- Phase Cancellation Compensation (labelled Ep in Haken Editor). SOR
+    ctrl = controls.get(127) 
     controlValue = ctrl:getValue("value")
     ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(convParams[29])
-    local epval = math.floor(convParams[29])
-    if (epval == 1) then
-        ctrl:setName("EP On")
-    elseif (epval == 0) then
-        ctrl:setName("EP Off")
+    local phaseCancellationCompensation = convParams[29] 
+    ctrlMsg:setValue(phaseCancellationCompensation)
+    if phaseCancellationCompensation == 1 then
+        ctrl:setName("Compensate On") -- SOR
+    elseif phaseCancellationCompensation == 0 then
+        ctrl:setName("Compensate Off") -- SOR
     else
         --print("EP - Unknown value: "..epval)
     end
