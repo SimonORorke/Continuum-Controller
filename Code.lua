@@ -1025,8 +1025,8 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         ctrlMsg:setValue(cOrT)
         setCompOrTanh(cOrT)
     end
-    -- Direction
-    if (matrixStream == true and channel==16 and noteNumber == 9) then -- Ocatve SW mode
+    -- Surface Direction
+    if (matrixStream == true and channel==16 and noteNumber == 9) then
         local direction = math.floor (pressure)
         --print("Direction = "..direction)
         local ctrl = controls.get(253)
@@ -2562,8 +2562,7 @@ function processConvolution()
     controlValue = ctrl:getValue("value")
     ctrlMsg = controlValue:getMessage()
     ctrlMsg:setValue(convParams[28])
-    -- Equal Power -- SOR
-    ctrl = controls.get(127) -- EP
+    ctrl = controls.get(127) -- Equal Power -- SOR
     controlValue = ctrl:getValue("value")
     ctrlMsg = controlValue:getMessage()
     ctrlMsg:setValue(convParams[29])
