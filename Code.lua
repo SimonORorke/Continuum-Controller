@@ -1959,19 +1959,20 @@ function setConvolutionIR4(valueObject, value) -- Convolution Poke =
         --print ("Unexpected IR 4 Codes ")
     end
 end
-function setConvEPCtrl(valueObject, value) -- Conv poke - using conrol parameter for Conv operation to be generic
-    local epvalue = math.floor(value)
+
+function setConvEqualPower(valueObject, value) -- Renamed by SOR
+    -- Conv poke - using control parameter for Conv operation to be generic
     local ctrl = controls.get(127)
-    if (epvalue == 1) then
+    if (value == 1) then
         ctrl:setName("EP On")
         ctrl:setColor(GREEN)
-        convolutionPoke(29,1)
-    elseif (epvalue == 0) then
+        convolutionPoke(28,1) -- Fixed pokeID. SOR
+    elseif (value == 0) then
         ctrl:setName("EP Off")
         ctrl:setColor(WHITE)
-        convolutionPoke(29,0)
+        convolutionPoke(28,0) -- Fixed pokeID. SOR
     else
-        --print("Unknown EP value: "..epvalue)
+        --print("Unknown EP value: "..value)
     end
 end
 
@@ -2561,7 +2562,7 @@ function processConvolution()
     controlValue = ctrl:getValue("value")
     ctrlMsg = controlValue:getMessage()
     ctrlMsg:setValue(convParams[28])
-    -- Enhanced Phase
+    -- Equal Power -- SOR
     ctrl = controls.get(127) -- EP
     controlValue = ctrl:getValue("value")
     ctrlMsg = controlValue:getMessage()
