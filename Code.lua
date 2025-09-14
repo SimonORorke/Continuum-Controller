@@ -619,10 +619,6 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         setControlValue(213, val) -- SOR
         return -- SOR
     end
-    if (chan == 1 and cc == 65) then -- Round Equal
-        setControlValue(228, val) -- SOR
-        return -- SOR
-    end
     if (chan == 1 and cc == 28) then -- Round Initial
         local ctrl = controls.get(209)
         local controlValue = ctrl:getValue("value")
@@ -2110,13 +2106,7 @@ function setRoundMode(valueObject, value) -- Round Mode
     local val = ctrlMsg:getValue()
     matrixPoke(10, val)
 end
-function setRoundEqual(valueObject, value) -- Round Equal
-    local control = controls.get(228)
-    local controlValue = control:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    local val = ctrlMsg:getValue()
-    midi.sendControlChange(DEVICE_PORT, 1, 65, val)
-end
+
 function setDirection(valueObject, value) -- Normal or reverse fingerboard
     local control = controls.get(253)
     local controlValue = control:getValue("value")
