@@ -675,15 +675,13 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         end
         return
     end
-    -- Added by SOR: Get system presets.
-    if ( msg.controllerNumber==109 and msg.value==49) then
+    if ( msg.controllerNumber==109 and msg.value==49) then -- SOR
         -- Start of system preset list (beginSysNames)    
         isGettingSystemPresets = true
         --print("Start of system preset list")
         return
     end
-    -- Added by SOR: Get system presets.
-    if (msg.controllerNumber==109 and msg.value==40) then
+    if (msg.controllerNumber==109 and msg.value==40) then -- SOR
         -- End of system preset list (endSysNames)    
         isGettingSystemPresets = false
         --print("End of system preset list")
