@@ -704,9 +704,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         if not haveSystemPresetsBeenUpdated then
             getSystemPresets()
         else
-            -- Replace the "Getting presets..." notification 
-            -- on the status bar with the version info.
-            info.setText(versionText)
+            onAllPresetsReceived()
         end
         return -- SOR
     end
@@ -2704,6 +2702,7 @@ end
 -- programNo: zero-based program number.
 -- presetName:  preset name for display on the Current Preset control.
 function loadPreset(bankMsb, bankLsb, programNo, presetName) -- SOR
+    --print("loadPreset: Loading preset '"..presetName.."'")
     isLoadingPreset = true
     -- Initialize controls for new preset
     clearInfo()
@@ -2719,9 +2718,16 @@ function loadPreset(bankMsb, bankLsb, programNo, presetName) -- SOR
     -- Show the preset name on the Current Preset control.
     control = controls.get(50)
     control:setName(presetName)
-    --print("loadPreset: Loading preset '"..presetName.."'")
     -- Data for the loaded is requested 
     -- on receiving confirmation that the preset load has finished.
+end
+
+function onAllPresetsReceived() -- SOR
+    -- Replace the "Getting presets..." notification 
+    -- on the status bar with the version info.
+    info.setText(versionText)
+    -- Get the data for the preset that is loaded on the instrument.
+    getLoadedPresetData()
 end
 
 function onFirmwareVersionReceived() -- SOR
@@ -2786,9 +2792,7 @@ function onSystemPresetsUpdated(fromPersistedData) -- SOR
         replaceLongSystemPresetNamesWithShortNames()
         savePersistableData()
     end
-    -- Replace the "Getting presets..." notification 
-    -- on the status bar with the version info.
-    info.setText(versionText)
+    onAllPresetsReceived()
     --local categoryCount = #systemPresetCategories
     --for category = 1, categoryCount do
     --    local presetNames = systemPresetCategories[category]
