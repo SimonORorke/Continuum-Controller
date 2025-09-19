@@ -1,7 +1,6 @@
--- Added by SOR: Get system presets.
 -- Check if E1 model and firmware requirements are met.
 -- The firmware version is required for persist() and recall().
--- Assert will terminate the script on a failed check.
+-- Assert will terminate the script on a failed check. SOR
 assert(
     controller.isRequired(MODEL_MK2, "4.0.0"),
     "Electra One firmware version 4.0.0 or higher is required."
@@ -80,6 +79,7 @@ local userNames = {"U1","U2","U3","U4","U5","U6","U7","U8","U9","U10","U11","U12
 local controlText = ""
 local firmwareVersion
 local hasFirmwareVersionAlreadyBeenReceived = false
+local hasJustLoaded = false
 local haveSystemPresetsBeenUpdated = false
 local isAccumulatingControlText = false
 local isAccumulatingSystemPresetFilters = false
@@ -693,9 +693,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
 
     if (msg.controllerNumber==109 and msg.value==54) then -- Start User Names Found
         --print("Start getting user presets")
-        -- Moved to getNames(). See comment there. SOR
-        --userNameProcessing = true
-        firstName = true
+        info.setText(GETTING_PRESETS)
         userNameIndex=0
         return -- SOR
     end
@@ -1126,15 +1124,23 @@ end -- of pPress settings
 -- Amended by SOR to prevent the boot sequence from getting stuck at the startup splash screen. 
 function getNames(valueObject, value)
     --print("getNames: Getting user presets")
-    info.setText(GETTING_PRESETS)
     isInitializing = false -- SOR
-    -- Flagging the start of user preset names processing here allows the GETTING_PRESETS
-    -- info message to remain displayed when the firmware version is received
-    -- before the user preset name list starts to be received.
     userNameProcessing = true -- SOR
     resetMute() -- reset in case on from previous preset
-    -- If this Electra One preset is being loaded at boot up,
-    -- starting to receive the user presets immediately is likely 
+    -- Ideally we would like to show the GETTING_PRESETS status bar message immediately.
+    -- But it is not feasible.  The GETTING_PRESETS message would become stuck on
+    -- if the instrument was not on when the E1 preset is loaded.
+    -- And we can't time out if data is not received,
+    -- as the E1 timer does not run on on a separate thread and so would block
+    -- MIDI messages from being received.
+    -- So GETTING_PRESETS will be shown once data starts to be received.
+    if not hasJustLoaded then
+        requestUserPresetNames()
+        return
+    end
+    hasJustLoaded = false
+    -- This Electra One preset is being loaded at boot up.
+    -- Starting to receive the user presets immediately is likely 
     -- to cause the boot sequence to get stuck at the startup splash screen
     -- and fail to complete.
     -- See https://docs.electra.one/troubleshooting/defaultpreset.html.
@@ -1144,15 +1150,8 @@ function getNames(valueObject, value)
     -- I found that 400 milliseconds is just enough on my E1, regardless of
     -- whether system presets also need to be loaded.
     -- So 2 seconds should provide an ample safety margin.
-    --
-    -- Send the user preset names request in a one-off timer to allow the
-    -- GETTING_PRESETS info message to be shown first.
-    -- I don't think this works any better than helpers.delay(2000).
-    -- But the only time I'm still seeing a pause before GETTING_PRESETS is shown
-    -- is when the E1 preset has been sent to the E1 by the preset editor,
-    -- which users will not see.
-    timer.setPeriod(2000)
-    timer.enable() -- Will trigger timer.tick().
+    helpers.delay(2000)
+    requestUserPresetNames()
 end
 
 -- Load up a user preset on pressing button 1-16 offset for bank
@@ -1271,13 +1270,14 @@ end
 
 
 function preset.onLoad()
-    -- Disable things not yet supported
+    --print("preset.onLoad()")
     userNameProcessing = false
     isAccumulatingControlText = false
     userNameIndex = 0
     curName=""
     lastName=""
     curCategory = 1
+    hasJustLoaded = true -- SOR
 end
 
 -- Set User Preset names - they are controls 1-16
@@ -2651,19 +2651,17 @@ function setConvRight4 (valueObject, value)
     convolutionPoke(27, val)
 end
 
--- Added by SOR: Control value updates.
 -- Returns the user value of the specified control.
 -- (The value parameter of control functions 
 -- only provides the untranslated zero-based value, so it won't always work.)
-function getControlValue(controlNo)
+function getControlValue(controlNo) -- SOR
     local control = controls.get(controlNo)
     local controlValue = control:getValue("value")
     local controlMessage = controlValue:getMessage()
     return controlMessage:getValue()
 end
 
--- Added by SOR: Control value updates.
-function getLoadedPresetData()
+function getLoadedPresetData() -- SOR
     --print("getLoadedPresetData: Loaded preset. Getting preset data.")
     isAccumulatingControlText = true
     isGettingLoadedPresetData = true
@@ -2671,8 +2669,7 @@ function getLoadedPresetData()
     midi.sendControlChange(DEVICE_PORT, 16, 109, 16)
 end
 
--- Added by SOR: Get system presets.
-function getSystemPresets()
+function getSystemPresets() -- SOR
     --print("getSystemPresets")
     if isSystemPresetsUpdateRequired then
         -- Request system preset names (sysToMidi).
@@ -2684,8 +2681,7 @@ function getSystemPresets()
     end
 end
 
--- Added by SOR: Control value updates.
-function isGettingData()
+function isGettingData() -- SOR
     -- The idea here is that checking the result should allow
     -- poke functions to refrain from updating the instrument
     -- while the controls are being populated with data received from the instrument.
@@ -2703,14 +2699,13 @@ function isGettingData()
     --print("    isGettingLoadedPresetData = "..tostring(isGettingLoadedPresetData))
 end
 
--- Added by SOR: Control value updates.
 -- Loads a system or user preset.
 -- bankMsb: category for system preset, 0 for user preset.
 -- bankLsb: 0 for user presets and most categories.
 --     Can be > 0 for categories with more than 128 presets.
 -- programNo: zero-based program number.
 -- presetName:  preset name for display on the Current Preset control.
-function loadPreset(bankMsb, bankLsb, programNo, presetName)
+function loadPreset(bankMsb, bankLsb, programNo, presetName) -- SOR
     isLoadingPreset = true
     -- Initialize controls for new preset
     clearInfo()
@@ -2731,8 +2726,7 @@ function loadPreset(bankMsb, bankLsb, programNo, presetName)
     -- on receiving confirmation that the preset load has finished.
 end
 
--- Added by SOR: Get system presets.
-function onFirmwareVersionReceived()
+function onFirmwareVersionReceived() -- SOR
     --print("onFirmwareVersionReceived")
     -- There's no specific command to request the firmware version.
     -- The instrument sends it more than once: on connecting to E1;
@@ -2744,12 +2738,7 @@ function onFirmwareVersionReceived()
     -- when all the preset data has been received.
     firmwareVersion = ((128 * highVersion)  + lowVersion) / 100
     versionText = "Ver: "..E1_PRESET_VERSION.."/"..firmwareVersion
-    -- If we are awaiting the user preset name list, 
-    -- keep showing the GETTING_PRESETS info message.
-    -- Otherwise show the version info. 
-    if not userNameProcessing then
-        info.setText(versionText) -- Versions to Info Text
-    end
+    info.setText(versionText) -- Versions to Info Text
     --if persistableData.isSaved then
     --    print("    Previous firmware version = "..persistableData.firmwareVersion)
     --    print("    Current firmware version = "..firmwareVersion)
@@ -2765,8 +2754,7 @@ function onFirmwareVersionReceived()
     --print("    isSystemPresetsUpdateRequired = "..tostring( isSystemPresetsUpdateRequired))
 end
 
--- Added by SOR: Get system presets.
-function onSystemPresetReceived()
+function onSystemPresetReceived() -- SOR
     -- The system preset's two-letter category code has been received.
     -- It needs to be parsed from the Filters context data.
     -- The context data looks like "C=CC", usually followed by filter codes,
@@ -2794,8 +2782,7 @@ function onSystemPresetReceived()
     systemPresetCategories[categoryNo][newPresetNo] = receivedSystemPresetName
 end
 
--- Added by SOR: Get system presets.
-function onSystemPresetsUpdated(fromPersistedData)
+function onSystemPresetsUpdated(fromPersistedData) -- SOR
     haveSystemPresetsBeenUpdated = true
     if not fromPersistedData then
         replaceLongSystemPresetNamesWithShortNames()
@@ -2814,10 +2801,9 @@ function onSystemPresetsUpdated(fromPersistedData)
     selectSystemPreset()
 end
 
--- Added by SOR: Get system presets.
 -- To avoid truncation when a system preset name is shown on the E1,
 -- replace any names that are too long with short names.
-function replaceLongSystemPresetNamesWithShortNames()
+function replaceLongSystemPresetNamesWithShortNames() -- SOR
     local categoryCount = #systemPresetCategories
     for category = 1, categoryCount do
         local presets = systemPresetCategories[category]
@@ -2840,8 +2826,11 @@ function replaceLongSystemPresetNamesWithShortNames()
     end
 end
 
--- Added by SOR: Get system presets.
-function savePersistableData()
+function requestUserPresetNames() -- SOR
+    midi.sendControlChange(DEVICE_PORT, 16, 109, 32)
+end
+
+function savePersistableData() -- SOR
     --print("Saving persistableData")
     persistableData.isSaved = true
     persistableData.firmwareVersion = firmwareVersion
@@ -2849,21 +2838,19 @@ function savePersistableData()
     persist(persistableData)
 end
 
--- Added by SOR: Control value updates.
-function setControlValue(controlNo, value)
+function setControlValue(controlNo, value) -- SOR
     local control = controls.get(controlNo)
     local controlValue = control:getValue("value")
     local controlMessage = controlValue:getMessage()
     controlMessage:setValue(value)
 end
 
--- Added by SOR: Set macro names.
 -- Parses the specified macro string for a macro id and name,
 -- setting the name shown on the corresponding macro control.
 -- The expected format of the string is 'id=name', e.g. 'ii=ChordVol',
 -- or 'id=name_range1..._rangeN', e.g. 'iv=Width_Less_More'
 -- Spaces in names are not supported, as whitespace delimits the macro strings.
-function setMacroName(macroString)
+function setMacroName(macroString) -- SOR
     --print("setMacroName: macroString = '"..macroString.."'")
     -- E.g. "iv=Width_Less_More" will give us {"iv", "Width_Less_More"}.
     local lhsRhs = splitString(macroString, "=")
@@ -2896,8 +2883,7 @@ function setMacroName(macroString)
     macroControls[controlNo]:setName(macroName)
 end
 
--- Added by SOR: Set macro names.
-function setMacroNames()
+function setMacroNames() -- SOR
     --print("setMacroNames")
     isAccumulatingControlText = false
     -- Blank out macro names.
@@ -2949,67 +2935,57 @@ function setMacroNames()
     end
 end
 
--- Added by SOR: Control value updates.
-function setPedal1Max(valueObject, value)
+function setPedal1Max(valueObject, value) -- SOR
     --print("setPedal1Max: Setting Pedal 1 Max to "..value)
     midi.sendControlChange(DEVICE_PORT, 1, 77, value)
 end
 
--- Added by SOR: Control value updates.
-function setPedal1Min(valueObject, value)
+function setPedal1Min(valueObject, value) -- SOR
     --print("setPedal1Max: Setting Pedal 1 Min to "..value)
     midi.sendControlChange(DEVICE_PORT, 1, 76, value)
 end
 
--- Added by SOR: Control value updates.
-function setPedal1Max(valueObject, value)
+function setPedal1Max(valueObject, value) -- SOR
     --print("setPedal1Max: Setting Pedal 1 Max to "..value)
     midi.sendControlChange(DEVICE_PORT, 1, 77, value)
 end
 
--- Added by SOR: Control value updates.
-function setPedal1Min(valueObject, value)
+function setPedal1Min(valueObject, value) -- SOR
     --print("setPedal1Min: Setting Pedal 1 Min to "..value)
     midi.sendControlChange(DEVICE_PORT, 1, 76, value)
 end
 
--- Added by SOR: Control value updates.
-function setPedal2Max(valueObject, value)
+function setPedal2Max(valueObject, value) -- SOR
     --print("setPedal2Max: Setting Pedal 2 Max to "..value)
     midi.sendControlChange(DEVICE_PORT, 1, 79, value)
 end
 
--- Added by SOR: Control value updates.
-function setPedal2Min(valueObject, value)
+function setPedal2Min(valueObject, value) -- SOR
     --print("setPedal2Min: Setting Pedal 2 Min to "..value)
     midi.sendControlChange(DEVICE_PORT, 1, 78, value)
 end
 
--- Added by SOR: Control value updates.
-function setSus(valueObject, value)
+function setSus(valueObject, value) -- SOR
     --print("setSus: Setting Sus to "..value)
     midi.sendControlChange(DEVICE_PORT, 1, 64, value)
 end
 
--- Added by SOR: Control value updates.
-function setSos1(valueObject, value)
+function setSos1(valueObject, value) -- SOR
     --print("setSos1: Setting Sos1 to "..value)
     midi.sendControlChange(DEVICE_PORT, 1, 66, value)
 end
 
--- Added by SOR: Control value updates.
-function setSos2(valueObject, value)
+function setSos2(valueObject, value) -- SOR
     --print("setSos2: Setting Sos2 to "..value)
     midi.sendControlChange(DEVICE_PORT, 1, 69, value)
 end
 
--- Added by SOR: Set macro names.
 -- Splits the delimited components of the specified string into a table.
 -- If not specified, the delimiter will be any whitespace.
 -- According to https://stackoverflow.com/questions/1426954/split-string-in-lua,
 -- empty components will be omitted from the table. That should be fine.
 -- Any leading or trailing whitespace will be trimmed from the component strings.
-function splitString(inputString, delimiter)
+function splitString(inputString, delimiter) -- SOR
     if delimiter == nil then
         delimiter = "%s" -- Any whitespace
     end
@@ -3020,22 +2996,12 @@ function splitString(inputString, delimiter)
     return result
 end
 
-function timer.onTick()
-    -- One off timer to delay the request for user preset names.
-    if userNameProcessing then
-        timer.disable()
-        midi.sendControlChange(DEVICE_PORT, 16, 109, 32) -- Send user preset names request
-    end
-end
-
--- Added by SOR: Set macro names.
 -- Removes leading and trailing whitespace from the specified string.
 -- See http://lua-users.org/wiki/StringTrim.
-function trimString(inputString)
+function trimString(inputString) -- SOR
     return (inputString:gsub("^%s*(.-)%s*$", "%1"))
 end
 
--- Added by SOR: Get system presets.
 -- The text streams provide characters in pairs,
 -- So if the string received has an odd number of characters,
 -- there will be an null character (ASCII 0) at the end to make it even.
@@ -3044,7 +3010,7 @@ end
 -- And it is removed for system preset contexts too, just for tidiness.
 -- If there's already code to remove the null character for user preset names,
 -- I've not spotted it. Maybe it does not matter in that case.
-function trimTrailingNullChar(text)
+function trimTrailingNullChar(text) -- SOR
     local textLength = string.len(text)
     local lastCharNo = string.byte(text, textLength)
     if lastCharNo == 0 then
