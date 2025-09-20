@@ -755,8 +755,8 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     -- Added by SOR: Get system presets.
     if msg.controllerNumber==56 and msg.value==127 then -- End of stream
         if isGettingLoadedPresetData then
-            -- This is the end of the preset name stream that is the
-            -- last item in current preset data we requested after loading the preset.
+            -- This is the end of the preset??? name stream that is the
+            -- last item in loaded preset data.
             --print("End of loaded preset data.")
             isGettingLoadedPresetData = false
         end
@@ -785,7 +785,6 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
                 curName = string.sub(tmpstr, 1, 14)
             end
             userNames[userNameIndex]=curName -- Store Preset name in name buffer array"
-        elseif (currentNameProcessing == true) then
         end
         curName="" -- Reset curName to accumulate the next name
     elseif (contextInProgress and msg.controllerNumber==56 and msg.value==127) then
