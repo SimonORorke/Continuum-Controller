@@ -418,11 +418,6 @@ shortPresetNames["Windtube Single Reed"] = "Wtube Sin Reed"
 shortPresetNames["Winter Skipping Pond"] = "WinterSkipPond"
 shortPresetNames["Zwei Baende with Noise"] = "ZweiBaendNoise"
 
--- Clear the Info text
-function clearInfo()
-    info.setText("")
-end
-
 -- Test getting just CCs
 function midi.onControlChange(midiInput, channel, controllerNumber, value)
     local chan = math.floor (channel)
@@ -1200,8 +1195,6 @@ function storeUserPreset (valueObject, value)
         end
         info.setText("Select Preset Pos")
         return
-    else
-        clearInfo()
     end
     -- Don't initialize this function
     whichUserButton = (presetPosSelect) % 16
@@ -1258,14 +1251,12 @@ function storeUserPreset (valueObject, value)
     ctrlMsg:setValue(0) -- Reset Store control
 end
 
-
 function preset.onLoad()
     --print("preset.onLoad()")
     userNameProcessing = false
     isAccumulatingControlText = false
     userNameIndex = 0
     curName=""
-    lastName=""
     curCategory = 1
     hasJustLoaded = true -- SOR
 end
@@ -2374,8 +2365,6 @@ function loadSystemPreset(valueObject, value)
     elseif (curCategory == 0) then
         info.setText("Select Category")
         return
-    else
-        info.setText("") -- redundant, since clearInfo is called below.
     end
     if (curCategory == CAT_OTHER1) then
         tmpCategory = CAT_OTHER -- Really only one Other category but presented to the user as 2
@@ -2698,9 +2687,7 @@ end
 function loadPreset(bankMsb, bankLsb, programNo) -- SOR
     --print("loadPreset: Loading preset '"..presetName.."'")
     isLoadingPreset = true
-    -- Initialize controls for new preset
-    clearInfo()
-    resetMute()
+    resetMute() -- Reset in case on from previous preset
     -- We don't need to clear initialise macros because all 6 macro values are always 
     -- received for each preset, and the macro names are initialized in setMacroNames.
     midi.sendControlChange(DEVICE_PORT, 16, 0, bankMsb)
@@ -2709,7 +2696,7 @@ function loadPreset(bankMsb, bankLsb, programNo) -- SOR
         midi.sendControlChange(DEVICE_PORT, 16, 32, bankLsb)
     end
     midi.sendProgramChange(DEVICE_PORT, 16, programNo)
-    -- Data for the loaded is requested 
+    -- Data for the loaded preset is requested 
     -- on receiving confirmation that the preset load has finished.
     -- The preset name is shown on the Current Preset control
     -- when the loaded preset data is received. This allows the loaded preset name
