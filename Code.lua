@@ -53,7 +53,7 @@ local macrosLoaded = false
 local userNameIndex = 0
 local curName=""
 local convString = ""
-local presetOffset = 0 -- Offset to change user preset on COntinuum as only 16 are shown, need to track bank 
+local presetOffset = 0 -- Offset to change user preset on Continuum as only 16 are shown, need to track bank 
 local presetPosSelect = 0
 local muteVal = 60 -- Default pre-gain (but will be set from reading presets)
 local matrixStream = false
@@ -89,6 +89,7 @@ local isGettingSystemPresets = false
 local isInitializing = true
 local isLoadingPreset = false
 local isSystemPresetsUpdateRequired = false
+local lastBankMsbReceived = 0 -- 0 = user preset; 127 = system preset.
 local loadedPresetNameBuffer = ""
 local receivedSystemPresetFilters = ""
 local receivedSystemPresetName = ""
@@ -752,8 +753,8 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         return -- SOR
     end
 
-    -- Added by SOR: Get system presets.
-    if msg.controllerNumber==56 and msg.value==127 then -- End of stream
+    if msg.controllerNumber==56 and msg.value==127 then -- SOR 
+        -- End of text stream
         if isAccumulatingLoadedPresetName then
             isAccumulatingLoadedPresetName = false
             onLoadedPresetDataReceived()
@@ -1160,20 +1161,11 @@ function loadUserPreset(valueObject, value)
     end
 end
 
+-- Set the selected user preset position in which the current preset is to be stored.
 function setUserPresetPos (valueObject, value)
-    presetPosSelect = valueObject:getMessage():getValue() -- Store the current preset position selected as user store 
-
-    group = groups.get(49)
-    control = controls.get(50)
-    if (value == 0) then -- Make red if its in store preset mode
-        control:setColor(ORANGE)
-        group:setLabel("CURRENT PRESET")
-        group:setColor(ORANGE)
-    else
-        control:setColor(RED)
-        group:setLabel("Store Preset")
-        group:setColor(RED)
-    end
+    local slotNo = valueObject:getMessage():getValue()
+    print("setUserPresetPos: slotNo = "..slotNo)
+    updateUserPresetPos(slotNo)
 end
 
 function storeUserPreset (valueObject, value)
@@ -3024,4 +3016,22 @@ function trimTrailingNullChar(text) -- SOR
         return result
     end
     return text
+end
+
+-- Set the user preset position in which the current preset is to be stored.
+-- slotNo: The 1-based user preset slot number.
+function updateUserPresetPos(slotNo) -- SOR
+    presetPosSelect = slotNo  
+    print("updateUserPresetPos: presetPosSelect = "..presetPosSelect)
+    group = groups.get(49)
+    control = controls.get(50)
+    if (value == 0) then -- Make red if its in store preset mode
+        control:setColor(ORANGE)
+        group:setLabel("CURRENT PRESET")
+        group:setColor(ORANGE)
+    else
+        control:setColor(RED)
+        group:setLabel("Store Preset")
+        group:setColor(RED)
+    end
 end
