@@ -52,7 +52,6 @@ local convInProgress = false
 local macrosLoaded = false
 local userNameIndex = 0
 local curName=""
-local lastName = "" -- Last CC56 name processed - should be current preset
 local convString = ""
 local presetOffset = 0 -- Offset to change user preset on COntinuum as only 16 are shown, need to track bank 
 local presetPosSelect = 0
@@ -80,7 +79,7 @@ local controlText = ""
 local firmwareVersion
 local hasFirmwareVersionAlreadyBeenReceived = false
 local hasJustLoaded = false
-local haveSystemPresetsBeenUpdated = false
+local haveSystemPresetsBeenReceived = false
 local isAccumulatingControlText = false
 local isAccumulatingSystemPresetFilters = false
 local isAccumulatingSystemPresetName = false
@@ -685,7 +684,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         -- End of system preset list (endSysNames)    
         isGettingSystemPresets = false
         --print("End of system preset list")
-        onSystemPresetsUpdated(false)
+        onSystemPresetsReceived(false)
         return
     end
 
@@ -697,15 +696,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     end
     if (msg.controllerNumber==109 and msg.value==55) then -- End User Names Found
         --print("Finished getting user presets")
-        setUserPresetNames()
-        userNameProcessing = false
-        userNameIndex=0
-        -- Added by SOR: Get system presets.
-        if not haveSystemPresetsBeenUpdated then
-            getSystemPresets()
-        else
-            onAllPresetsReceived()
-        end
+        onUserPresetsReceived() -- SOR
         return -- SOR
     end
 
@@ -832,10 +823,6 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     end
     if (nameInProgress) then -- Accumulate name global name buffer
         curName = curName..string.char(noteNumber)..string.char(pressure)
-    end
-    if (lastNameInProgress) then
-        lastName = lastName..string.char(noteNumber)..string.char(pressure)
-        return
     end
     -- Amended by SOR: Set macro names.
     if (isAccumulatingControlText) then -- Accumulate Control Text, which includes macro names.
@@ -1165,7 +1152,6 @@ function loadUserPreset(valueObject, value)
         local bankLsb = 0 -- Because there are a maximum of 128 user presets
         local presetName = userNames[presetNo] 
         loadPreset(bankMsb, bankLsb, programNo, presetName)
-        lastName = presetName -- Override last name
     else
         --print("Unexpected Preset Index: "..programNo)
     end
@@ -2305,7 +2291,7 @@ end
 -- Store the current Preset category selected
 function selectPresetCategory(valueObject, value)
     -- Added by SOR: Get system presets.
-    if not haveSystemPresetsBeenUpdated then
+    if not haveSystemPresetsBeenReceived then
         -- This function will be called again, from the Lua code,
         -- once all the system presets have been received.
         return
@@ -2331,7 +2317,7 @@ end
 -- Get the preset name and index based on Category set
 function selectSystemPreset(valueObject, value)
     -- Added by SOR: Get system presets.
-    if not haveSystemPresetsBeenUpdated then
+    if not haveSystemPresetsBeenReceived then
         -- This function will be called again, from the Lua code,
         -- once all the system presets have been received.
         return
@@ -2673,7 +2659,7 @@ function getSystemPresets() -- SOR
     else
         --print("    Getting system presets from persisted data.")
         systemPresetCategories = persistableData.systemPresetCategories
-        onSystemPresetsUpdated(true)
+        onSystemPresetsReceived(true)
     end
 end
 
@@ -2786,8 +2772,8 @@ function onSystemPresetReceived() -- SOR
     systemPresetCategories[categoryNo][newPresetNo] = receivedSystemPresetName
 end
 
-function onSystemPresetsUpdated(fromPersistedData) -- SOR
-    haveSystemPresetsBeenUpdated = true
+function onSystemPresetsReceived(fromPersistedData) -- SOR
+    haveSystemPresetsBeenReceived = true
     if not fromPersistedData then
         replaceLongSystemPresetNamesWithShortNames()
         savePersistableData()
@@ -2801,6 +2787,17 @@ function onSystemPresetsUpdated(fromPersistedData) -- SOR
     --end
     selectPresetCategory(nil, nil)
     selectSystemPreset()
+end
+
+function onUserPresetsReceived() -- SOR
+    setUserPresetNames()
+    userNameProcessing = false
+    userNameIndex = 0
+    if not haveSystemPresetsBeenReceived then
+        getSystemPresets()
+    else
+        onAllPresetsReceived()
+    end
 end
 
 -- To avoid truncation when a system preset name is shown on the E1,
