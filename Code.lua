@@ -81,6 +81,7 @@ local hasFirmwareVersionAlreadyBeenReceived = false
 local hasJustLoaded = false
 local haveSystemPresetsBeenReceived = false
 local isAccumulatingControlText = false
+local isAccumulatingLoadedPresetName = false
 local isAccumulatingSystemPresetFilters = false
 local isAccumulatingSystemPresetName = false
 local isGettingLoadedPresetData = false
@@ -88,6 +89,7 @@ local isGettingSystemPresets = false
 local isInitializing = true
 local isLoadingPreset = false
 local isSystemPresetsUpdateRequired = false
+local loadedPresetNameBuffer = ""
 local receivedSystemPresetFilters = ""
 local receivedSystemPresetName = ""
 local systemPresetFiltersBuffer = ""
@@ -715,10 +717,13 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
 
     -- Amended by SOR: Get system presets.
     if (msg.controllerNumber==56 and msg.value==0) then
-        -- Start of system or user preset name stream
+        -- Start of system or user or loaded preset name stream
         if isGettingSystemPresets then
             isAccumulatingSystemPresetName = true
             systemPresetNameBuffer = ""
+        elseif isGettingLoadedPresetData then
+            isAccumulatingLoadedPresetName = true
+            loadedPresetNameBuffer = ""
         else
             -- Processing user presets  
             userNameIndex = userNameIndex + 1 -- Index Lua arrays from 1
@@ -754,11 +759,9 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
 
     -- Added by SOR: Get system presets.
     if msg.controllerNumber==56 and msg.value==127 then -- End of stream
-        if isGettingLoadedPresetData then
-            -- This is the end of the preset??? name stream that is the
-            -- last item in loaded preset data.
-            --print("End of loaded preset data.")
-            isGettingLoadedPresetData = false
+        if isAccumulatingLoadedPresetName then
+            isAccumulatingLoadedPresetName = false
+            onLoadedPresetDataReceived()
         end
         if isAccumulatingSystemPresetName then
             isAccumulatingSystemPresetName = false
@@ -802,6 +805,12 @@ end
 
 function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     -- Added by SOR: Get system presets.
+    if (isAccumulatingLoadedPresetName) then
+        -- Accumulate loaded preset name buffer
+        loadedPresetNameBuffer =
+        loadedPresetNameBuffer ..string.char(noteNumber)..string.char(pressure)
+        return
+    end
     if (isAccumulatingSystemPresetName) then
         -- Accumulate system preset name buffer
         systemPresetNameBuffer =
@@ -1149,8 +1158,8 @@ function loadUserPreset(valueObject, value)
     if (presetNo >= 1 and presetNo <= 128) then
         local bankMsb = 0 -- 0 = User Presets
         local bankLsb = 0 -- Because there are a maximum of 128 user presets
-        local presetName = userNames[presetNo] 
-        loadPreset(bankMsb, bankLsb, programNo, presetName)
+        -- For preset name display, see comment in loadPreset.  
+        loadPreset(bankMsb, bankLsb, programNo)
     else
         --print("Unexpected Preset Index: "..programNo)
     end
@@ -2371,7 +2380,8 @@ function loadSystemPreset(valueObject, value)
     if (curCategory == CAT_OTHER1) then
         tmpCategory = CAT_OTHER -- Really only one Other category but presented to the user as 2
     end
-    loadPreset(tmpCategory, curCC32, curSystemPreset - 1, curPresetName) -- SOR
+    -- For preset name display, see comment in loadPreset.  
+    loadPreset(tmpCategory, curCC32, curSystemPreset - 1) -- SOR
 end
 
 -- Set Pedal 1 Assignment
@@ -2685,8 +2695,7 @@ end
 -- bankLsb: 0 for user presets and most categories.
 --     Can be > 0 for categories with more than 128 presets.
 -- programNo: zero-based program number.
--- presetName:  preset name for display on the Current Preset control.
-function loadPreset(bankMsb, bankLsb, programNo, presetName) -- SOR
+function loadPreset(bankMsb, bankLsb, programNo) -- SOR
     --print("loadPreset: Loading preset '"..presetName.."'")
     isLoadingPreset = true
     -- Initialize controls for new preset
@@ -2700,11 +2709,11 @@ function loadPreset(bankMsb, bankLsb, programNo, presetName) -- SOR
         midi.sendControlChange(DEVICE_PORT, 16, 32, bankLsb)
     end
     midi.sendProgramChange(DEVICE_PORT, 16, programNo)
-    -- Show the preset name on the Current Preset control.
-    control = controls.get(50)
-    control:setName(presetName)
     -- Data for the loaded is requested 
     -- on receiving confirmation that the preset load has finished.
+    -- The preset name is shown on the Current Preset control
+    -- when the loaded preset data is received. This allows the loaded preset name
+    -- to be shown after receiving preset names.
 end
 
 function onAllPresetsReceived() -- SOR
@@ -2741,6 +2750,18 @@ function onFirmwareVersionReceived() -- SOR
             or persistableData.firmwareVersion ~= firmwareVersion
             or #persistableData.systemPresetCategories == 0
     --print("    isSystemPresetsUpdateRequired = "..tostring( isSystemPresetsUpdateRequired))
+end
+
+function onLoadedPresetDataReceived() -- SOR
+    -- Currently we are judging the end of the loaded preset data
+    -- by the end of the preset name stream. However, after that
+    -- there are actually the bank MSB, bank LSB and program number.
+    -- We don't currently use any of those.
+    isGettingLoadedPresetData = false
+    local receivedLoadedPresetName = trimTrailingNullChar(loadedPresetNameBuffer)
+    -- Show the preset name on the Current Preset control.
+    control = controls.get(50)
+    control:setName(receivedLoadedPresetName)
 end
 
 function onSystemPresetReceived() -- SOR
