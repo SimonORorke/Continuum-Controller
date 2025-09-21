@@ -2641,6 +2641,14 @@ function setConvRight4 (valueObject, value)
     convolutionPoke(27, val)
 end
 
+function formatUserPresetPos(valueObject, value) -- SOR
+    print("formatUserPresetPos: value = "..value)
+    if value == 0 then
+        return "Pick Position"
+    end
+    return "User "..tostring(value) 
+end
+
 -- Returns the user value of the specified control.
 -- (The value parameter of control functions 
 -- only provides the untranslated zero-based value, so it won't always work.)
