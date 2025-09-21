@@ -3053,7 +3053,7 @@ function trimTrailingNullChar(text) -- SOR
 end
 
 -- Set the user preset position in which the current preset is to be stored.
--- slotNo: The 1-based user preset slot number, or zero if none.
+-- slotNo: The 1-based user preset slot number, or zero if none has been selected or set.
 function updateUserPresetPos(slotNo) -- SOR
     presetPosSelect = slotNo  
     --print("updateUserPresetPos: presetPosSelect = "..presetPosSelect)
