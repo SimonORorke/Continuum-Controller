@@ -41,17 +41,12 @@ local pedal1Init = false
 local pedal2Init = false
 
 -- Other Globals
-local curSystemPreset = 0
-local curCategory = 1
-local curCC32 = 0 -- If more than 128 presets in a category
-local curPresetName = ""
 local userNameProcessing = false
 local nameInProgress = false
 local thumbInProgress = false
 local convInProgress = false
 local macrosLoaded = false
 local userNameIndex = 0
-local curName=""
 local convString = ""
 local presetOffset = 0 -- Offset to change user preset on Continuum as only 16 are shown, need to track bank 
 local presetPosSelect = 0
@@ -76,38 +71,60 @@ local userNames = {"U1","U2","U3","U4","U5","U6","U7","U8","U9","U10","U11","U12
 -- that we can get from the Control Text context stream 
 -- when data for the loaded preset has been requested. 
 local controlText = ""
+local currentPresetNameBuffer = ""
 local firmwareVersion
 local hasFirmwareVersionAlreadyBeenReceived = false
 local hasJustLoaded = false
-local hasLoadedPreset = false
 local haveSystemPresetsBeenReceived = false
 local isAccumulatingControlText = false
-local isAccumulatingLoadedPresetName = false
+local isAccumulatingCurrentPresetName = false
 local isAccumulatingSystemPresetFilters = false
 local isAccumulatingSystemPresetName = false
-local isGettingLoadedPresetData = false
+local isGettingCurrentPresetData = false
 local isGettingSystemPresets = false
 local isInitializing = true
-local isLoadedPresetUserPreset = false
-local isLoadingPreset = false
 local isSystemPresetsUpdateRequired = false
-local loadedPresetNameBuffer = ""
 local receivedSystemPresetFilters = ""
 local receivedSystemPresetName = ""
 local systemPresetFiltersBuffer = ""
 local systemPresetNameBuffer = ""
+local userPresetNameBuffer = ""
 local versionText = ""
 
--- Added by SOR: Set macro names.
-local macroControls = {}
+-- Tables
+
+-- For selecting and loading a system preset.
+local currentSystemPreset = {} -- SOR
+currentSystemPreset.category = 1
+currentSystemPreset.bankLsb = 0 -- Can be > 0 if more than 128 presets in a category.
+currentSystemPreset.presetNo = 0 -- 0 if none selected.
+currentSystemPreset.name = ""
+
+-- An enumeration (enum) of preset load states.
+local presetLoadState = {} -- SOR
+-- The preset was already loaded on the instrument when the E1 preset was loaded.
+presetLoadState.alreadyLoaded = 1
+presetLoadState.loading = 2 -- The preset is being loaded.
+presetLoadState.loaded = 3 -- The preset has been loaded by this E1 preset.
+
+-- Parameters used to load a preset.
+local currentPreset = {} -- SOR
+currentPreset.bankMsb = 0 -- 0 for user preset, otherwise category number.
+currentPreset.bankLsb = 0 -- Can be > 0 if more than 128 presets in a category.
+currentPreset.programNo = 0 -- 0-based index within bank.
+currentPreset.loadState = presetLoadState.alreadyLoaded
+-- Needs to be updated when bankMsb changes.
+-- Cannot be relied on if loadState = presetLoadState.alreadyLoaded.
+currentPreset.IsUserPreset = false
+
+local macroControls = {} -- SOR
 for controlNo = MACRO_I, MACRO_VI do
     macroControls[controlNo] = controls.get(controlNo)
 end
 
--- Added by SOR: Set macro names.
 -- A dictionary for looking up the macro control number 
 -- corresponding to the macro id provided by the instrument.
-local macroControlNos = {}
+local macroControlNos = {} -- SOR
 macroControlNos["i"] = MACRO_I
 macroControlNos["ii"] = MACRO_II
 macroControlNos["iii"] = MACRO_III
@@ -659,18 +676,17 @@ end -- CC event processing
 function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message Events
     local msg = midiMessage
     -- Added by SOR: Get system presets.
-    if msg.channel ~= 16 then
+    if msg.channel ~= 16 then -- SOR
         return
     end
     -- Added by SOR: Control value updates.
     if msg.controllerNumber==109 and msg.value==26 then -- doneTxDsp
-        if isLoadingPreset then -- Preset load has finished.
-            isLoadingPreset = false
-            hasLoadedPreset = true
+        if currentPreset.loadState == presetLoadState.loading then -- Preset load has finished.
+            currentPreset.loadState = presetLoadState.loaded
             -- We are adopting a cautious approach by waiting for the preset load to
             -- finish before requesting the preset information.
             -- Get Current Preset Information.
-            getLoadedPresetData()
+            getCurrentPresetData()
         end
         return
     end
@@ -719,9 +735,9 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         if isGettingSystemPresets then
             isAccumulatingSystemPresetName = true
             systemPresetNameBuffer = ""
-        elseif isGettingLoadedPresetData then
-            isAccumulatingLoadedPresetName = true
-            loadedPresetNameBuffer = ""
+        elseif isGettingCurrentPresetData then
+            isAccumulatingCurrentPresetName = true
+            currentPresetNameBuffer = ""
         else
             -- Processing user presets  
             userNameIndex = userNameIndex + 1 -- Index Lua arrays from 1
@@ -757,8 +773,8 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
 
     if msg.controllerNumber==56 and msg.value==127 then -- SOR 
         -- End of text stream
-        if isAccumulatingLoadedPresetName then
-            isAccumulatingLoadedPresetName = false
+        if isAccumulatingCurrentPresetName then
+            isAccumulatingCurrentPresetName = false
         end
         if isAccumulatingSystemPresetName then
             isAccumulatingSystemPresetName = false
@@ -776,17 +792,18 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     if (nameInProgress and msg.controllerNumber==56 and msg.value==127) then -- Stream Ends
         nameInProgress=false
         if (userNameProcessing) then
-            if (curName == "" or curName == "-") then
-                curName = "Empty"
+            if (userPresetNameBuffer == "" or userPresetNameBuffer == "-") then
+                userPresetNameBuffer = "Empty"
             end
-            if (string.len(curName) > 14) then -- Limit strings for congtrols to 14 chars
-                --print("CurName:|"..curName.."|")
-                local tmpstr = curName
-                curName = string.sub(tmpstr, 1, 14)
+            if (string.len(userPresetNameBuffer) > 14) then -- Limit strings for congtrols to 14 chars
+                --print("userPresetNameBuffer:|"..userPresetNameBuffer.."|")
+                local tmpstr = userPresetNameBuffer
+                userPresetNameBuffer = string.sub(tmpstr, 1, 14)
             end
-            userNames[userNameIndex]=curName -- Store Preset name in name buffer array"
+            -- Store Preset name in array 
+            userNames[userNameIndex] = userPresetNameBuffer -- SOR
         end
-        curName="" -- Reset curName to accumulate the next name
+        userPresetNameBuffer = "" -- Reset userPresetNameBuffer to accumulate the next name
     elseif (contextInProgress and msg.controllerNumber==56 and msg.value==127) then
         contextInProgress = false
     elseif (convInProgress and msg.controllerNumber==56 and msg.value==127) then
@@ -802,10 +819,10 @@ end
 
 function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     -- Added by SOR: Get system presets.
-    if (isAccumulatingLoadedPresetName) then
+    if (isAccumulatingCurrentPresetName) then
         -- Accumulate loaded preset name buffer
-        loadedPresetNameBuffer =
-        loadedPresetNameBuffer ..string.char(noteNumber)..string.char(pressure)
+        currentPresetNameBuffer =
+        currentPresetNameBuffer ..string.char(noteNumber)..string.char(pressure)
         return
     end
     if (isAccumulatingSystemPresetName) then
@@ -827,7 +844,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         return
     end
     if (nameInProgress) then -- Accumulate name global name buffer
-        curName = curName..string.char(noteNumber)..string.char(pressure)
+        userPresetNameBuffer = userPresetNameBuffer..string.char(noteNumber)..string.char(pressure)
     end
     -- Amended by SOR: Set macro names.
     if (isAccumulatingControlText) then -- Accumulate Control Text, which includes macro names.
@@ -1105,11 +1122,21 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
 
 end -- of pPress settings
 
-function midi.onProgramChange(midiInput, channel, programNumber)
-    if channel == 16 and isGettingLoadedPresetData then
-        isGettingLoadedPresetData = false
-        -- programNumber is 1-based in the current preset data, unlike the preset lists.
-        onLoadedPresetDataReceived(programNumber)
+function midi.onProgramChange(midiInput, channel, programNumber) -- SOR
+    if channel == 16 and isGettingCurrentPresetData then
+        -- This is the last item in the current preset data.
+        isGettingCurrentPresetData = false
+        -- We don't need the program number, as that will have already been
+        -- conserved when the preset load was requested. 
+        -- And programNumber cannot be relied on in the current preset data,
+        -- for the following reasons.
+        -- In the current preset data, in contrast to the preset lists:
+        --     the bank MSB (ch16 cc32) is 126, regardless of whether it's a user preset
+        --     or a system preset; 
+        --     programNumber is 1-based, at least for user presets;
+        -- I've not checked programNumber in the current preset data for system presets.
+        -- What could it even mean when the bank MSB does not specify the category? 
+        onCurrentPresetDataReceived()
     end    
 end
 
@@ -1252,11 +1279,7 @@ end
 
 function preset.onLoad()
     --print("preset.onLoad()")
-    userNameProcessing = false
-    isAccumulatingControlText = false
-    userNameIndex = 0
-    curName=""
-    curCategory = 1
+    -- Redundant initializations removed by SOR
     hasJustLoaded = true -- SOR
 end
 
@@ -2295,7 +2318,7 @@ function selectPresetCategory(valueObject, value)
         return
     end
     -- Reset Preset index to beginning
-    curSystemPreset = 0
+    currentSystemPreset.presetNo = 0
     local ctrl = controls.get(273) -- Preset index
     local controlValue = ctrl:getValue("value")
     local ctrlMsg = controlValue:getMessage()
@@ -2304,11 +2327,11 @@ function selectPresetCategory(valueObject, value)
     controlValue = ctrl:getValue("value")
     ctrlMsg = controlValue:getMessage()
     local val = ctrlMsg:getValue() -- Get the category value (not index)
-    curCategory = val+1
-    if (curCategory == CAT_OTHER1) then
-        curCC32 = 1
+    currentSystemPreset.category = val+1
+    if (currentSystemPreset.category == CAT_OTHER1) then
+        currentSystemPreset.bankLsb = 1
     else
-        curCC32 = 0
+        currentSystemPreset.bankLsb = 0
     end
 end
 
@@ -2320,12 +2343,12 @@ function selectSystemPreset(valueObject, value)
         -- once all the system presets have been received.
         return
     end
-    curSystemPreset = getMaxPresetIndex(math.floor(value))
+    currentSystemPreset.presetNo = getMaxPresetIndex(math.floor(value))
     local ctrl = controls.get(278)
-    if (curSystemPreset == 0) then
+    if (currentSystemPreset.presetNo == 0) then
         ctrl:setName("SELECT PRESET")
-    elseif (curPresetName ~= "") then
-        ctrl:setName(curPresetName)
+    elseif (currentSystemPreset.name ~= "") then
+        ctrl:setName(currentSystemPreset.name)
     end
 end
 
@@ -2340,36 +2363,36 @@ function getMaxPresetIndex (pIndex) -- cap inex at max range for each category
     local ctrl = controls.get(273)
     local controlValue = ctrl:getValue("value")
     local ctrlMsg = controlValue:getMessage()
-    local systemPresets = systemPresetCategories[curCategory]
+    local systemPresets = systemPresetCategories[currentSystemPreset.category]
     local systemPresetCount = #systemPresets
     if (pIndex > systemPresetCount) then
         ctrlMsg:setValue(systemPresetCount)
         return pIndex - 1
     end
-    curPresetName = systemPresets[pIndex]
+    currentSystemPreset.name = systemPresets[pIndex]
     return pIndex
 end
 
 -- Load the System Preset
 function loadSystemPreset(valueObject, value)
     --print("LoadSystemPreset Called")
-    local tmpCategory = curCategory
+    local tmpCategory = currentSystemPreset.category
     if (sendSysPresetInit == false) then
         sendSysPresetInit = true
         return
     end
-    if (curSystemPreset == 0) then
+    if (currentSystemPreset.presetNo == 0) then
         info.setText("Select System Preset")
         return
-    elseif (curCategory == 0) then
+    elseif (currentSystemPreset.category == 0) then
         info.setText("Select Category")
         return
     end
-    if (curCategory == CAT_OTHER1) then
+    if (currentSystemPreset.category == CAT_OTHER1) then
         tmpCategory = CAT_OTHER -- Really only one Other category but presented to the user as 2
     end
     -- For preset name display, see comment in loadPreset.  
-    loadPreset(tmpCategory, curCC32, curSystemPreset - 1) -- SOR
+    loadPreset(tmpCategory, currentSystemPreset.bankLsb, currentSystemPreset.presetNo - 1) -- SOR
 end
 
 -- Set Pedal 1 Assignment
@@ -2650,10 +2673,10 @@ function getControlValue(controlNo) -- SOR
     return controlMessage:getValue()
 end
 
-function getLoadedPresetData() -- SOR
-    --print("getLoadedPresetData: Loaded preset. Getting preset data.")
+function getCurrentPresetData() -- SOR
+    --print("getCurrentPresetData: Loaded preset. Getting preset data.")
     isAccumulatingControlText = true
-    isGettingLoadedPresetData = true
+    isGettingCurrentPresetData = true
     -- Send get Current Preset Msg to get Macro labels and control values
     midi.sendControlChange(DEVICE_PORT, 16, 109, 16)
 end
@@ -2685,7 +2708,7 @@ function isGettingData() -- SOR
     -- The following are always false
     --print("    userNameProcessing = "..tostring(userNameProcessing))
     --print("    isGettingSystemPresets = "..tostring(isGettingSystemPresets))
-    --print("    isGettingLoadedPresetData = "..tostring(isGettingLoadedPresetData))
+    --print("    isGettingCurrentPresetData = "..tostring(isGettingCurrentPresetData))
 end
 
 -- Loads a system or user preset.
@@ -2694,18 +2717,21 @@ end
 --     Can be > 0 for categories with more than 128 presets.
 -- programNo: zero-based program number.
 function loadPreset(bankMsb, bankLsb, programNo) -- SOR
-    isLoadingPreset = true
-    isLoadedPresetUserPreset = bankMsb == 0
-    --print("loadPreset: isLoadedPresetUserPreset = "..tostring(isLoadedPresetUserPreset))
+    currentPreset.bankMsb = bankMsb
+    currentPreset.bankLsb = bankLsb
+    currentPreset.programNo = programNo
+    currentPreset.IsUserPreset = currentPreset.bankMsb == 0
+    currentPreset.loadState = presetLoadState.loading
+    --print("loadPreset: currentPreset.IsUserPreset = "..tostring(currentPreset.IsUserPreset))
     resetMute() -- Reset in case on from previous preset
     -- We don't need to clear initialise macros because all 6 macro values are always 
     -- received for each preset, and the macro names are initialized in setMacroNames.
-    midi.sendControlChange(DEVICE_PORT, 16, 0, bankMsb)
+    midi.sendControlChange(DEVICE_PORT, 16, 0, currentPreset.bankMsb)
     -- Send bank LSB if > 128 Presets in category and this preset is not in bank 0. 
-    if bankLsb > 0 then
-        midi.sendControlChange(DEVICE_PORT, 16, 32, bankLsb)
+    if currentPreset.bankLsb > 0 then
+        midi.sendControlChange(DEVICE_PORT, 16, 32, currentPreset.bankLsb)
     end
-    midi.sendProgramChange(DEVICE_PORT, 16, programNo)
+    midi.sendProgramChange(DEVICE_PORT, 16, currentPreset.programNo)
     -- Data for the loaded preset is requested 
     -- on receiving confirmation that the preset load has finished.
     -- The preset name is shown on the Current Preset control
@@ -2718,7 +2744,36 @@ function onAllPresetsReceived() -- SOR
     -- on the status bar with the version info.
     info.setText(versionText)
     -- Get the data for the preset that is loaded on the instrument.
-    getLoadedPresetData()
+    getCurrentPresetData()
+end
+
+function onCurrentPresetDataReceived() -- SOR
+    --print("onCurrentPresetDataReceived: currentPreset.programNo = "..currentPreset.programNo..
+    --        "; currentPreset.loadState = "..tostring(currentPreset.loadState)..
+    --"; currentPreset.IsUserPreset = "..tostring(currentPreset.IsUserPreset))
+    local presetNo = currentPreset.programNo + 1
+    local receivedCurrentPresetName = trimTrailingNullChar(currentPresetNameBuffer)
+    -- Show the preset name on the Current Preset control.
+    local currentPresetControl = controls.get(50)
+    currentPresetControl:setName(receivedCurrentPresetName)
+    updateUserPresetPos(presetNo)
+    if currentPreset.loadState == presetLoadState.alreadyLoaded then
+        -- We must have just received the data for the preset that was
+        -- already loaded on the instrument when the E1 preset was loaded.
+        -- Unfortunately, there's no way to tell whether it is a user preset
+        -- or a system preset. This is because, in the current preset data, 
+        -- unlike the preset lists, Bank MSB (ch16 cc0) is always 126, 
+        -- regardless of whether it's a user preset or system preset.
+        -- So we cannot even get round the problem by reloading the preset.
+        return
+    end
+    local selectPosControlNo = 32
+    if currentPreset.IsUserPreset then
+        -- Show the preset number on the Select Pos control.
+        setControlValue(selectPosControlNo, presetNo)
+    else
+        setControlValue(selectPosControlNo, 0)
+    end
 end
 
 function onFirmwareVersionReceived() -- SOR
@@ -2747,34 +2802,6 @@ function onFirmwareVersionReceived() -- SOR
             or persistableData.firmwareVersion ~= firmwareVersion
             or #persistableData.systemPresetCategories == 0
     --print("    isSystemPresetsUpdateRequired = "..tostring(isSystemPresetsUpdateRequired))
-end
-
-function onLoadedPresetDataReceived(presetNo) -- SOR
-    --print("onLoadedPresetDataReceived: presetNo = "..presetNo..
-    --        "; hasLoadedPreset = "..tostring(hasLoadedPreset)
-    --        "; isLoadedPresetUserPreset = "..tostring(isLoadedPresetUserPreset))
-    local receivedLoadedPresetName = trimTrailingNullChar(loadedPresetNameBuffer)
-    -- Show the preset name on the Current Preset control.
-    local currentPresetControl = controls.get(50)
-    currentPresetControl:setName(receivedLoadedPresetName)
-    updateUserPresetPos(presetNo)
-    if not hasLoadedPreset then
-        -- We must have just received the data for the preset that was
-        -- already loaded on the instrument when the E1 preset was loaded.
-        -- Unfortunately, there's no way to tell whether it is a user preset
-        -- or a system preset. This is because, in the current preset data, 
-        -- unlike the preset lists, Bank MSB (ch16 cc0) is always 126, 
-        -- regardless of whether it's a user preset or system preset.
-        -- So we cannot even get round the problem by reloading the preset.
-        return
-    end
-    local selectPosControlNo = 32
-    if isLoadedPresetUserPreset then
-        -- Show the preset number on the Select Pos control.
-        setControlValue(selectPosControlNo, presetNo)
-    else
-        setControlValue(selectPosControlNo, 0)
-    end
 end
 
 function onSystemPresetReceived() -- SOR
@@ -3056,10 +3083,11 @@ end
 -- slotNo: The 1-based user preset slot number, or zero if none has been selected or set.
 function updateUserPresetPos(slotNo) -- SOR
     presetPosSelect = slotNo  
-    --print("updateUserPresetPos: presetPosSelect = "..presetPosSelect)
+    --print("updateUserPresetPos: presetPosSelect = "..presetPosSelect..
+    --    "; currentPreset.IsUserPreset = "..tostring(currentPreset.IsUserPreset))
     local currentPresetGroup = groups.get(49)
     local currentPresetControl = controls.get(50)
-    if isLoadedPresetUserPreset and presetPosSelect > 0 then
+    if currentPreset.IsUserPreset and presetPosSelect > 0 then
         currentPresetControl:setColor(RED)
         currentPresetGroup:setLabel("Store Preset")
         currentPresetGroup:setColor(RED)
