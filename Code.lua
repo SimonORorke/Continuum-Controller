@@ -79,6 +79,7 @@ local controlText = ""
 local firmwareVersion
 local hasFirmwareVersionAlreadyBeenReceived = false
 local hasJustLoaded = false
+local hasLoadedPreset = false
 local haveSystemPresetsBeenReceived = false
 local isAccumulatingControlText = false
 local isAccumulatingLoadedPresetName = false
@@ -425,17 +426,6 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     local cc = math.floor (controllerNumber)
     local val = math.floor (value)
 
-    -- This does not work. In the current preset data, unlike the preset lists,
-    -- Bank MSB is 126, regardless of whether it's a user preset or system preset.
-    --if (chan == 16 and cc == 0) then -- SOR 
-    --    -- Bank MSB: 0 for user preset; 127 for system preset.
-    --    if isGettingLoadedPresetData then
-    --        isLoadedPresetUserPreset = val == 0
-    --        print("Bank MSB = "..val)
-    --        print("isLoadedPresetUserPreset = "..tostring(isLoadedPresetUserPreset))
-    --    end
-    --    return
-    --end
     if (chan == 16 and cc == 102) then -- Firmware High Address
         highVersion = value
         return -- SOR
@@ -676,6 +666,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     if msg.controllerNumber==109 and msg.value==26 then -- doneTxDsp
         if isLoadingPreset then -- Preset load has finished.
             isLoadingPreset = false
+            hasLoadedPreset = true
             -- We are adopting a cautious approach by waiting for the preset load to
             -- finish before requesting the preset information.
             -- Get Current Preset Information.
@@ -1116,7 +1107,8 @@ end -- of pPress settings
 
 function midi.onProgramChange(midiInput, channel, programNumber)
     if channel == 16 and isGettingLoadedPresetData then
-        -- programNumber is 1-based in the case of the current preset data.
+        isGettingLoadedPresetData = false
+        -- programNumber is 1-based in the current preset data, unlike the preset lists.
         onLoadedPresetDataReceived(programNumber)
     end    
 end
@@ -1180,9 +1172,10 @@ end
 
 -- Set the selected user preset position in which the current preset is to be stored.
 function setUserPresetPos (valueObject, value)
+    -- Get value without its decimal part.
     local slotNo = valueObject:getMessage():getValue()
-    print("setUserPresetPos: slotNo = "..slotNo.."; value = "..value)
-    updateUserPresetPos(slotNo)
+    --print("setUserPresetPos: slotNo = "..slotNo.."; value = "..value)
+    updateUserPresetPos(slotNo) -- SOR
 end
 
 function storeUserPreset (valueObject, value)
@@ -1205,7 +1198,7 @@ function storeUserPreset (valueObject, value)
         info.setText("Select Preset Pos")
         return
     end
-    print("storeUserPreset: presetPosSelect = "..presetPosSelect)
+    --print("storeUserPreset: presetPosSelect = "..presetPosSelect)
     -- Don't initialize this function
     whichUserButton = (presetPosSelect) % 16
     if (whichUserButton == 0) then
@@ -1246,19 +1239,15 @@ function storeUserPreset (valueObject, value)
         end
     end
     -- Sequence needed to just store current preset back to its position
-    --print("Storing to Preset position: "..presetPosSelect-1)
+    local programNo = presetPosSelect -1 -- SOR
+    --print("Storing to Preset position: "..programNo)
     midi.sendControlChange(DEVICE_PORT, 16, 56, 127) -- End Preset string
     midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- Send CC0/CC32
     midi.sendControlChange(DEVICE_PORT, 16, 32, 0)
-    midi.sendControlChange(DEVICE_PORT, 16, 112, presetPosSelect-1) -- Send Store Command
+    midi.sendControlChange(DEVICE_PORT, 16, 112, programNo) -- Send Store Command
     midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- Send CC0/C32
-    --midi.sendControlChange(DEVICE_PORT, 16, 32, 0)enablere
-    midi.sendProgramChange(DEVICE_PORT, 16, presetPosSelect-1)  -- Send Program change - current preset to user position    
-    ---- Reset so Store is no longer active
-    --local ctrl = controls.get(32) -- Preset index
-    --local controlValue = ctrl:getValue("value")
-    --local ctrlMsg = controlValue:getMessage()
-    --ctrlMsg:setValue(0) -- Reset Store control
+    -- Send Program change - current preset to user position
+    midi.sendProgramChange(DEVICE_PORT, 16, programNo) -- SOR    
 end
 
 function preset.onLoad()
@@ -2642,11 +2631,13 @@ function setConvRight4 (valueObject, value)
 end
 
 function formatUserPresetPos(valueObject, value) -- SOR
-    print("formatUserPresetPos: value = "..value)
-    if value == 0 then
+    -- Remove the decimal part of value for the formatted display.
+    local val = math.floor(value)
+    --print("formatUserPresetPos: value = "..value)
+    if val == 0 then
         return "Pick Position"
     end
-    return "User "..tostring(value) 
+    return "User "..tostring(val) 
 end
 
 -- Returns the user value of the specified control.
@@ -2705,7 +2696,7 @@ end
 function loadPreset(bankMsb, bankLsb, programNo) -- SOR
     isLoadingPreset = true
     isLoadedPresetUserPreset = bankMsb == 0
-    print("loadPreset: isLoadedPresetUserPreset = "..tostring(isLoadedPresetUserPreset))
+    --print("loadPreset: isLoadedPresetUserPreset = "..tostring(isLoadedPresetUserPreset))
     resetMute() -- Reset in case on from previous preset
     -- We don't need to clear initialise macros because all 6 macro values are always 
     -- received for each preset, and the macro names are initialized in setMacroNames.
@@ -2755,20 +2746,34 @@ function onFirmwareVersionReceived() -- SOR
     not persistableData.isSaved
             or persistableData.firmwareVersion ~= firmwareVersion
             or #persistableData.systemPresetCategories == 0
-    --print("    isSystemPresetsUpdateRequired = "..tostring( isSystemPresetsUpdateRequired))
+    --print("    isSystemPresetsUpdateRequired = "..tostring(isSystemPresetsUpdateRequired))
 end
 
 function onLoadedPresetDataReceived(presetNo) -- SOR
-    print("onLoadedPresetDataReceived: presetNo = "..presetNo)
-    isGettingLoadedPresetData = false
+    --print("onLoadedPresetDataReceived: presetNo = "..presetNo..
+    --        "; hasLoadedPreset = "..tostring(hasLoadedPreset)
+    --        "; isLoadedPresetUserPreset = "..tostring(isLoadedPresetUserPreset))
     local receivedLoadedPresetName = trimTrailingNullChar(loadedPresetNameBuffer)
     -- Show the preset name on the Current Preset control.
-    control = controls.get(50)
-    control:setName(receivedLoadedPresetName)
+    local currentPresetControl = controls.get(50)
+    currentPresetControl:setName(receivedLoadedPresetName)
     updateUserPresetPos(presetNo)
+    if not hasLoadedPreset then
+        -- We must have just received the data for the preset that was
+        -- already loaded on the instrument when the E1 preset was loaded.
+        -- Unfortunately, there's no way to tell whether it is a user preset
+        -- or a system preset. This is because, in the current preset data, 
+        -- unlike the preset lists, Bank MSB (ch16 cc0) is always 126, 
+        -- regardless of whether it's a user preset or system preset.
+        -- So we cannot even get round the problem by reloading the preset.
+        return
+    end
+    local selectPosControlNo = 32
     if isLoadedPresetUserPreset then
-        setControlValue(32, presetNo)
-        updateUserPresetPos(presetNo)
+        -- Show the preset number on the Select Pos control.
+        setControlValue(selectPosControlNo, presetNo)
+    else
+        setControlValue(selectPosControlNo, 0)
     end
 end
 
@@ -3051,16 +3056,16 @@ end
 -- slotNo: The 1-based user preset slot number, or zero if none.
 function updateUserPresetPos(slotNo) -- SOR
     presetPosSelect = slotNo  
-    print("updateUserPresetPos: presetPosSelect = "..presetPosSelect)
-    group = groups.get(49)
-    control = controls.get(50)
-    if (value == 0) then -- Make red if its in store preset mode
-        control:setColor(ORANGE)
-        group:setLabel("CURRENT PRESET")
-        group:setColor(ORANGE)
+    --print("updateUserPresetPos: presetPosSelect = "..presetPosSelect)
+    local currentPresetGroup = groups.get(49)
+    local currentPresetControl = controls.get(50)
+    if isLoadedPresetUserPreset and presetPosSelect > 0 then
+        currentPresetControl:setColor(RED)
+        currentPresetGroup:setLabel("Store Preset")
+        currentPresetGroup:setColor(RED)
     else
-        control:setColor(RED)
-        group:setLabel("Store Preset")
-        group:setColor(RED)
-    end
+        currentPresetControl:setColor(ORANGE)
+        currentPresetGroup:setLabel("CURRENT PRESET")
+        currentPresetGroup:setColor(ORANGE)
+    end 
 end
