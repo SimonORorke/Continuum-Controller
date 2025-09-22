@@ -22,13 +22,6 @@ local CAT_UTILITY = 13
 local CAT_OTHER1 = 14
 local GETTING_PRESETS = "Getting presets..." -- SOR
 local E1_PRESET_VERSION = "1.1" -- SOR
--- Macro control numbers SOR
-local MACRO_I = 25
-local MACRO_II = 26
-local MACRO_III = 27
-local MACRO_IV = 28
-local MACRO_V = 29
-local MACRO_VI = 30
 -- Names longer than this will be truncated when shown on controls. SOR
 local MAX_NAME_LENGTH = 14
 
@@ -91,7 +84,16 @@ local systemPresetNameBuffer = ""
 local userPresetNameBuffer = ""
 local versionText = ""
 
--- Tables
+-- Enums
+
+-- An enumeration (enum) of macro control numbers.
+local macroControlNo = {} -- SOR
+macroControlNo.i = 25
+macroControlNo.ii = 26
+macroControlNo.iii = 27
+macroControlNo.iv = 28
+macroControlNo.v = 29
+macroControlNo.vi = 30
 
 -- An enumeration (enum) of preset load states.
 local presetLoadState = {} -- SOR
@@ -99,6 +101,8 @@ local presetLoadState = {} -- SOR
 presetLoadState.alreadyLoaded = 1
 presetLoadState.loading = 2 -- The preset is being loaded.
 presetLoadState.loaded = 3 -- The preset has been loaded by this E1 preset.
+
+-- Tables
 
 -- Parameters used to load a preset.
 local currentPreset = {} -- SOR
@@ -111,19 +115,19 @@ currentPreset.loadState = presetLoadState.alreadyLoaded
 currentPreset.IsUserPreset = false
 
 local macroControls = {} -- SOR
-for controlNo = MACRO_I, MACRO_VI do
+for controlNo = macroControlNo.i, macroControlNo.vi do
     macroControls[controlNo] = controls.get(controlNo)
 end
 
 -- A dictionary for looking up the macro control number 
 -- corresponding to the macro id provided by the instrument.
 local macroControlNos = {} -- SOR
-macroControlNos["i"] = MACRO_I
-macroControlNos["ii"] = MACRO_II
-macroControlNos["iii"] = MACRO_III
-macroControlNos["iv"] = MACRO_IV
-macroControlNos["v"] = MACRO_V
-macroControlNos["vi"] = MACRO_VI
+macroControlNos["i"] = macroControlNo.i
+macroControlNos["ii"] = macroControlNo.ii
+macroControlNos["iii"] = macroControlNo.iii
+macroControlNos["iv"] = macroControlNo.iv
+macroControlNos["v"] = macroControlNo.v
+macroControlNos["vi"] = macroControlNo.vi
 
 -- Added by SOR: Get system presets.
 local persistableData = {}
@@ -475,27 +479,27 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
 
     -- End Read Only Controls
     if (chan == 1 and cc == 12) then -- Set i
-        setControlValue(MACRO_I, val) -- SOR
+        setControlValue(macroControlNo.i, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 13) then -- Set ii
-        setControlValue(MACRO_II, val) -- SOR
+        setControlValue(macroControlNo.ii, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 14) then -- Set iii
-        setControlValue(MACRO_III, val) -- SOR
+        setControlValue(macroControlNo.iii, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 15) then -- Set iv
-        setControlValue(MACRO_IV, val) -- SOR
+        setControlValue(macroControlNo.iv, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 16) then -- Set v
-        setControlValue(MACRO_V, val) -- SOR
+        setControlValue(macroControlNo.v, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 17) then -- Set vi
-        setControlValue(MACRO_VI, val) -- SOR
+        setControlValue(macroControlNo.vi, val) -- SOR
         -- Set all macro names here as this will always be the last macro output SOR
         setMacroNames()
         return -- SOR
@@ -2946,7 +2950,7 @@ function setMacroNames() -- SOR
     --print("setMacroNames")
     isAccumulatingControlText = false
     -- Blank out macro names.
-    for controlNo = MACRO_I, MACRO_VI do
+    for controlNo = macroControlNo.i, macroControlNo.vi do
         macroControls[controlNo]:setName("")
     end
     -- The Control Text string consists of two or three lines in this order:
