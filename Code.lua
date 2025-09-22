@@ -6,20 +6,6 @@ assert(
     "Electra One firmware version 4.0.0 or higher is required."
 )
 local DEVICE_PORT = PORT_1
-local CAT_STRINGS = 1
-local CAT_WINDS = 2
-local CAT_VOCAL = 3
-local CAT_KEYBOARD = 4
-local CAT_CLASSIC = 5
-local CAT_OTHER = 6
-local CAT_PERCUSSION = 7
-local CAT_TUNEDPERC = 8
-local CAT_PROCESSOR = 9
-local CAT_DRONE = 10
-local CAT_MIDI = 11
-local CAT_CVC = 12
-local CAT_UTILITY = 13
-local CAT_OTHER1 = 14
 local GETTING_PRESETS = "Getting presets..." -- SOR
 local E1_PRESET_VERSION = "1.1" -- SOR
 -- Names longer than this will be truncated when shown on controls. SOR
@@ -86,6 +72,23 @@ local versionText = ""
 
 -- Enums
 
+-- An enumeration (enum) of category numbers.
+local Category = {} -- SOR
+Category.Strings = 1
+Category.Winds = 2
+Category.Vocal = 3
+Category.Keyboard = 4
+Category.Classic = 5
+Category.Other = 6
+Category.Percussion = 7
+Category.TunedPercussion = 8
+Category.Processor = 9
+Category.Drone = 10
+Category.Midi = 11
+Category.Cvc = 12
+Category.Utility = 13
+Category.Other1 = 14
+
 -- An enumeration (enum) of macro control numbers.
 local MacroControlNo = {} -- SOR
 MacroControlNo.I = 25
@@ -150,14 +153,14 @@ end
 
 -- For selecting and loading a system preset.
 local selectedSystemPreset = {} -- SOR
-selectedSystemPreset.category = 1
+selectedSystemPreset.category = Category.Strings
 selectedSystemPreset.bankLsb = 0 -- Can be > 0 if more than 128 presets in a category.
 selectedSystemPreset.presetNo = 0 -- 0 if none selected.
 selectedSystemPreset.name = ""
 
 -- System presets grouped by category. SOR
 local systemPresetCategories = {}
-for category = CAT_STRINGS, CAT_OTHER1 do
+for category = Category.Strings, Category.Other1 do
     systemPresetCategories[category] = {}
 end
 
@@ -166,19 +169,19 @@ end
 -- in the system preset list. The category number identifies the category
 -- when loading a preset on the instrument. SOR
 local categoryNos = {}
-categoryNos["CL"] = CAT_CLASSIC
-categoryNos["CV"] = CAT_CVC
-categoryNos["DO"] = CAT_DRONE
-categoryNos["KY"] = CAT_KEYBOARD
-categoryNos["MD"] = CAT_MIDI
-categoryNos["OT"] = CAT_OTHER
-categoryNos["PE"] = CAT_PERCUSSION
-categoryNos["PR"] = CAT_PROCESSOR
-categoryNos["PT"] = CAT_TUNEDPERC
-categoryNos["ST"] = CAT_STRINGS
-categoryNos["VO"] = CAT_VOCAL
-categoryNos["UT"] = CAT_UTILITY
-categoryNos["WI"] = CAT_WINDS
+categoryNos["CL"] = Category.Classic
+categoryNos["CV"] = Category.Cvc
+categoryNos["DO"] = Category.Drone
+categoryNos["KY"] = Category.Keyboard
+categoryNos["MD"] = Category.Midi
+categoryNos["OT"] = Category.Other
+categoryNos["PE"] = Category.Percussion
+categoryNos["PR"] = Category.Processor
+categoryNos["PT"] = Category.TunedPercussion
+categoryNos["ST"] = Category.Strings
+categoryNos["VO"] = Category.Vocal
+categoryNos["UT"] = Category.Utility
+categoryNos["WI"] = Category.Winds
 
 -- A dictionary of short preset names, for display on the E1,
 -- corresponding to preset names longer than MAX_NAME_LENGTH characters. 
@@ -2332,7 +2335,7 @@ function selectPresetCategory(valueObject, value)
     ctrlMsg = controlValue:getMessage()
     local val = ctrlMsg:getValue() -- Get the category value (not index)
     selectedSystemPreset.category = val+1
-    if (selectedSystemPreset.category == CAT_OTHER1) then
+    if (selectedSystemPreset.category == Category.Other1) then
         selectedSystemPreset.bankLsb = 1
     else
         selectedSystemPreset.bankLsb = 0
@@ -2392,8 +2395,8 @@ function loadSystemPreset(valueObject, value)
         info.setText("Select Category")
         return
     end
-    if (selectedSystemPreset.category == CAT_OTHER1) then
-        tmpCategory = CAT_OTHER -- Really only one Other category but presented to the user as 2
+    if (selectedSystemPreset.category == Category.Other1) then
+        tmpCategory = Category.Other -- Really only one Other category but presented to the user as 2
     end
     -- For preset name display, see comment in loadPreset.  
     loadPreset(tmpCategory, selectedSystemPreset.bankLsb, selectedSystemPreset.presetNo - 1) -- SOR
@@ -2828,8 +2831,8 @@ function onSystemPresetReceived() -- SOR
     -- Now that we know the new system preset's name and category number,
     -- we can add the name to the category's system preset table.
     local categoryPresetCount = #systemPresetCategories[categoryNo]
-    if categoryNo == CAT_OTHER and categoryPresetCount == 128 then
-        categoryNo = CAT_OTHER1
+    if categoryNo == Category.Other and categoryPresetCount == 128 then
+        categoryNo = Category.Other1
         categoryPresetCount = #systemPresetCategories[categoryNo]
     end
     local newPresetNo = categoryPresetCount + 1
