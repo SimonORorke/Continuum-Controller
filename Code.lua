@@ -87,20 +87,20 @@ local versionText = ""
 -- Enums
 
 -- An enumeration (enum) of macro control numbers.
-local macroControlNo = {} -- SOR
-macroControlNo.i = 25
-macroControlNo.ii = 26
-macroControlNo.iii = 27
-macroControlNo.iv = 28
-macroControlNo.v = 29
-macroControlNo.vi = 30
+local MacroControlNo = {} -- SOR
+MacroControlNo.I = 25
+MacroControlNo.II = 26
+MacroControlNo.III = 27
+MacroControlNo.IV = 28
+MacroControlNo.V = 29
+MacroControlNo.VI = 30
 
 -- An enumeration (enum) of preset load states.
-local presetLoadState = {} -- SOR
+local PresetLoadState = {} -- SOR
 -- The preset was already loaded on the instrument when the E1 preset was loaded.
-presetLoadState.alreadyLoaded = 1
-presetLoadState.loading = 2 -- The preset is being loaded.
-presetLoadState.loaded = 3 -- The preset has been loaded by this E1 preset.
+PresetLoadState.AlreadyLoaded = 1
+PresetLoadState.Loading = 2 -- The preset is being loaded.
+PresetLoadState.Loaded = 3 -- The preset has been loaded by this E1 preset.
 
 -- Tables
 
@@ -109,25 +109,25 @@ local currentPreset = {} -- SOR
 currentPreset.bankMsb = 0 -- 0 for user preset, otherwise category number.
 currentPreset.bankLsb = 0 -- Can be > 0 if more than 128 presets in a category.
 currentPreset.programNo = 0 -- 0-based index within bank.
-currentPreset.loadState = presetLoadState.alreadyLoaded
+currentPreset.loadState = PresetLoadState.AlreadyLoaded
 -- Needs to be updated when bankMsb changes.
--- Cannot be relied on if loadState = presetLoadState.alreadyLoaded.
+-- Cannot be relied on if loadState = PresetLoadState.AlreadyLoaded.
 currentPreset.IsUserPreset = false
 
 local macroControls = {} -- SOR
-for controlNo = macroControlNo.i, macroControlNo.vi do
+for controlNo = MacroControlNo.I, MacroControlNo.VI do
     macroControls[controlNo] = controls.get(controlNo)
 end
 
 -- A dictionary for looking up the macro control number 
 -- corresponding to the macro id provided by the instrument.
 local macroControlNos = {} -- SOR
-macroControlNos["i"] = macroControlNo.i
-macroControlNos["ii"] = macroControlNo.ii
-macroControlNos["iii"] = macroControlNo.iii
-macroControlNos["iv"] = macroControlNo.iv
-macroControlNos["v"] = macroControlNo.v
-macroControlNos["vi"] = macroControlNo.vi
+macroControlNos["i"] = MacroControlNo.I
+macroControlNos["ii"] = MacroControlNo.II
+macroControlNos["iii"] = MacroControlNo.III
+macroControlNos["iv"] = MacroControlNo.IV
+macroControlNos["v"] = MacroControlNo.V
+macroControlNos["vi"] = MacroControlNo.VI
 
 -- Added by SOR: Get system presets.
 local persistableData = {}
@@ -479,27 +479,27 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
 
     -- End Read Only Controls
     if (chan == 1 and cc == 12) then -- Set i
-        setControlValue(macroControlNo.i, val) -- SOR
+        setControlValue(MacroControlNo.I, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 13) then -- Set ii
-        setControlValue(macroControlNo.ii, val) -- SOR
+        setControlValue(MacroControlNo.II, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 14) then -- Set iii
-        setControlValue(macroControlNo.iii, val) -- SOR
+        setControlValue(MacroControlNo.III, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 15) then -- Set iv
-        setControlValue(macroControlNo.iv, val) -- SOR
+        setControlValue(MacroControlNo.IV, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 16) then -- Set v
-        setControlValue(macroControlNo.v, val) -- SOR
+        setControlValue(MacroControlNo.V, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 17) then -- Set vi
-        setControlValue(macroControlNo.vi, val) -- SOR
+        setControlValue(MacroControlNo.VI, val) -- SOR
         -- Set all macro names here as this will always be the last macro output SOR
         setMacroNames()
         return -- SOR
@@ -685,8 +685,8 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     end
     -- Added by SOR: Control value updates.
     if msg.controllerNumber==109 and msg.value==26 then -- doneTxDsp
-        if currentPreset.loadState == presetLoadState.loading then -- Preset load has finished.
-            currentPreset.loadState = presetLoadState.loaded
+        if currentPreset.loadState == PresetLoadState.Loading then -- Preset load has finished.
+            currentPreset.loadState = PresetLoadState.Loaded
             -- We are adopting a cautious approach by waiting for the preset load to
             -- finish before requesting the preset information.
             -- Get Current Preset Information.
@@ -2725,7 +2725,7 @@ function loadPreset(bankMsb, bankLsb, programNo) -- SOR
     currentPreset.bankLsb = bankLsb
     currentPreset.programNo = programNo
     currentPreset.IsUserPreset = currentPreset.bankMsb == 0
-    currentPreset.loadState = presetLoadState.loading
+    currentPreset.loadState = PresetLoadState.Loading
     --print("loadPreset: currentPreset.IsUserPreset = "..tostring(currentPreset.IsUserPreset))
     resetMute() -- Reset in case on from previous preset
     -- We don't need to clear initialise macros because all 6 macro values are always 
@@ -2761,7 +2761,7 @@ function onCurrentPresetDataReceived() -- SOR
     local currentPresetControl = controls.get(50)
     currentPresetControl:setName(receivedCurrentPresetName)
     updateUserPresetPos(presetNo)
-    if currentPreset.loadState == presetLoadState.alreadyLoaded then
+    if currentPreset.loadState == PresetLoadState.AlreadyLoaded then
         -- We must have just received the data for the preset that was
         -- already loaded on the instrument when the E1 preset was loaded.
         -- Unfortunately, there's no way to tell whether it is a user preset
@@ -2950,7 +2950,7 @@ function setMacroNames() -- SOR
     --print("setMacroNames")
     isAccumulatingControlText = false
     -- Blank out macro names.
-    for controlNo = macroControlNo.i, macroControlNo.vi do
+    for controlNo = MacroControlNo.I, MacroControlNo.VI do
         macroControls[controlNo]:setName("")
     end
     -- The Control Text string consists of two or three lines in this order:
