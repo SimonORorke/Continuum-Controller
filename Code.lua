@@ -93,13 +93,6 @@ local versionText = ""
 
 -- Tables
 
--- For selecting and loading a system preset.
-local currentSystemPreset = {} -- SOR
-currentSystemPreset.category = 1
-currentSystemPreset.bankLsb = 0 -- Can be > 0 if more than 128 presets in a category.
-currentSystemPreset.presetNo = 0 -- 0 if none selected.
-currentSystemPreset.name = ""
-
 -- An enumeration (enum) of preset load states.
 local presetLoadState = {} -- SOR
 -- The preset was already loaded on the instrument when the E1 preset was loaded.
@@ -150,6 +143,13 @@ if not persistableData.isSaved then
 else
     --print("persistableData.firmwareVersion = "..persistableData.firmwareVersion)
 end
+
+-- For selecting and loading a system preset.
+local selectedSystemPreset = {} -- SOR
+selectedSystemPreset.category = 1
+selectedSystemPreset.bankLsb = 0 -- Can be > 0 if more than 128 presets in a category.
+selectedSystemPreset.presetNo = 0 -- 0 if none selected.
+selectedSystemPreset.name = ""
 
 -- System presets grouped by category. SOR
 local systemPresetCategories = {}
@@ -2318,7 +2318,7 @@ function selectPresetCategory(valueObject, value)
         return
     end
     -- Reset Preset index to beginning
-    currentSystemPreset.presetNo = 0
+    selectedSystemPreset.presetNo = 0
     local ctrl = controls.get(273) -- Preset index
     local controlValue = ctrl:getValue("value")
     local ctrlMsg = controlValue:getMessage()
@@ -2327,11 +2327,11 @@ function selectPresetCategory(valueObject, value)
     controlValue = ctrl:getValue("value")
     ctrlMsg = controlValue:getMessage()
     local val = ctrlMsg:getValue() -- Get the category value (not index)
-    currentSystemPreset.category = val+1
-    if (currentSystemPreset.category == CAT_OTHER1) then
-        currentSystemPreset.bankLsb = 1
+    selectedSystemPreset.category = val+1
+    if (selectedSystemPreset.category == CAT_OTHER1) then
+        selectedSystemPreset.bankLsb = 1
     else
-        currentSystemPreset.bankLsb = 0
+        selectedSystemPreset.bankLsb = 0
     end
 end
 
@@ -2343,12 +2343,12 @@ function selectSystemPreset(valueObject, value)
         -- once all the system presets have been received.
         return
     end
-    currentSystemPreset.presetNo = getMaxPresetIndex(math.floor(value))
+    selectedSystemPreset.presetNo = getMaxPresetIndex(math.floor(value))
     local ctrl = controls.get(278)
-    if (currentSystemPreset.presetNo == 0) then
+    if (selectedSystemPreset.presetNo == 0) then
         ctrl:setName("SELECT PRESET")
-    elseif (currentSystemPreset.name ~= "") then
-        ctrl:setName(currentSystemPreset.name)
+    elseif (selectedSystemPreset.name ~= "") then
+        ctrl:setName(selectedSystemPreset.name)
     end
 end
 
@@ -2363,36 +2363,36 @@ function getMaxPresetIndex (pIndex) -- cap inex at max range for each category
     local ctrl = controls.get(273)
     local controlValue = ctrl:getValue("value")
     local ctrlMsg = controlValue:getMessage()
-    local systemPresets = systemPresetCategories[currentSystemPreset.category]
+    local systemPresets = systemPresetCategories[selectedSystemPreset.category]
     local systemPresetCount = #systemPresets
     if (pIndex > systemPresetCount) then
         ctrlMsg:setValue(systemPresetCount)
         return pIndex - 1
     end
-    currentSystemPreset.name = systemPresets[pIndex]
+    selectedSystemPreset.name = systemPresets[pIndex]
     return pIndex
 end
 
 -- Load the System Preset
 function loadSystemPreset(valueObject, value)
     --print("LoadSystemPreset Called")
-    local tmpCategory = currentSystemPreset.category
+    local tmpCategory = selectedSystemPreset.category
     if (sendSysPresetInit == false) then
         sendSysPresetInit = true
         return
     end
-    if (currentSystemPreset.presetNo == 0) then
+    if (selectedSystemPreset.presetNo == 0) then
         info.setText("Select System Preset")
         return
-    elseif (currentSystemPreset.category == 0) then
+    elseif (selectedSystemPreset.category == 0) then
         info.setText("Select Category")
         return
     end
-    if (currentSystemPreset.category == CAT_OTHER1) then
+    if (selectedSystemPreset.category == CAT_OTHER1) then
         tmpCategory = CAT_OTHER -- Really only one Other category but presented to the user as 2
     end
     -- For preset name display, see comment in loadPreset.  
-    loadPreset(tmpCategory, currentSystemPreset.bankLsb, currentSystemPreset.presetNo - 1) -- SOR
+    loadPreset(tmpCategory, selectedSystemPreset.bankLsb, selectedSystemPreset.presetNo - 1) -- SOR
 end
 
 -- Set Pedal 1 Assignment
