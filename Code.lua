@@ -21,16 +21,11 @@ local pedal2Init = false
 
 -- Other Globals
 local userNameProcessing = false
-local nameInProgress = false
-local thumbInProgress = false
-local convInProgress = false
 local macrosLoaded = false
 local userNameIndex = 0
-local convString = ""
 local presetOffset = 0 -- Offset to change user preset on Continuum as only 16 are shown, need to track bank 
 local presetPosSelect = 0
 local muteVal = 60 -- Default pre-gain (but will be set from reading presets)
-local matrixStream = false
 local lowVersion = 8.0 -- Default to 10.35
 local highVersion = 12.0 -- Default to 10.35
 -- Dummies to reserve some memory up front
@@ -44,31 +39,6 @@ local userNames = {"U1","U2","U3","U4","U5","U6","U7","U8","U9","U10","U11","U12
              "U105", "U106", "U107", "U108", "U109", "U110", "U111","U112",
              "U113", "U114", "U115", "U116", "U117", "U118", "U119", "120",
              "U121", "U122", "U123", "U124", "U125", "U126", "U127","U128"}
-
--- Added by SOR
--- Macro names/category/filters/author data 
--- that we can get from the Control Text context stream 
--- when data for the loaded preset has been requested. 
-local controlText = ""
-local currentPresetNameBuffer = ""
-local firmwareVersion
-local hasFirmwareVersionAlreadyBeenReceived = false
-local hasJustLoaded = false
-local haveSystemPresetsBeenReceived = false
-local isAccumulatingControlText = false
-local isAccumulatingCurrentPresetName = false
-local isAccumulatingSystemPresetFilters = false
-local isAccumulatingSystemPresetName = false
-local isGettingCurrentPresetData = false
-local isGettingSystemPresets = false
-local isInitializing = true
-local isSystemPresetsUpdateRequired = false
-local receivedSystemPresetFilters = ""
-local receivedSystemPresetName = ""
-local systemPresetFiltersBuffer = ""
-local systemPresetNameBuffer = ""
-local userPresetNameBuffer = ""
-local versionText = ""
 
 -- Enums
 
@@ -104,6 +74,39 @@ local PresetLoadState = {} -- SOR
 PresetLoadState.AlreadyLoaded = 1
 PresetLoadState.Loading = 2 -- The preset is being loaded.
 PresetLoadState.Loaded = 3 -- The preset has been loaded by this E1 preset.
+
+-- An enumeration (enum) of preset data stream types.
+local Stream = {} -- SOR
+Stream.None = 0
+Stream.UserPresetName = 1
+Stream.SystemPresetName = 2
+Stream.SystemPresetFilters = 3
+Stream.ControlText = 4
+Stream.Convolution = 5
+Stream.Matrix = 6
+Stream.CurrentPresetName = 7
+
+-- Macro names/category/filters/author data 
+-- that we can get from the Control Text context stream 
+-- when data for the loaded preset has been requested. 
+local controlTextBuffer = ""
+local convolutionBuffer = ""
+local currentPresetNameBuffer = ""
+local firmwareVersion
+local hasFirmwareVersionAlreadyBeenReceived = false
+local hasJustLoaded = false
+local haveSystemPresetsBeenReceived = false
+local isGettingCurrentPresetData = false
+local isGettingSystemPresets = false
+local isInitializing = true
+local isSystemPresetsUpdateRequired = false
+local receivedSystemPresetFilters = ""
+local receivedSystemPresetName = ""
+local stream = Stream.None
+local systemPresetFiltersBuffer = ""
+local systemPresetNameBuffer = ""
+local userPresetNameBuffer = ""
+local versionText = ""
 
 -- Tables
 
@@ -723,81 +726,70 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         return -- SOR
     end
 
-    -- Amended by SOR: Control value updates.
-    if msg.controllerNumber==56 then
+    if msg.controllerNumber==56 then -- SOR
         if msg.value == 20 then -- Matrix Stream
-            matrixStream = true
-            --print("Start of matrix stream")
+            -- Has no CC56=127 terminator - new stream terminates it
+            stream = Stream.Matrix
             return
-        end
-        if matrixStream then
-            matrixStream = false -- Has no CC56=127 terminator - new stream terminates it
-            --print("End of matrix stream")
         end
     end
 
-    -- Amended by SOR: Get system presets.
-    if (msg.controllerNumber==56 and msg.value==0) then
+    if (msg.controllerNumber==56 and msg.value==0) then -- SOR
         -- Start of system or user or loaded preset name stream
         if isGettingSystemPresets then
-            isAccumulatingSystemPresetName = true
+            stream = Stream.SystemPresetName
             systemPresetNameBuffer = ""
         elseif isGettingCurrentPresetData then
-            isAccumulatingCurrentPresetName = true
+            stream = Stream.CurrentPresetName
             currentPresetNameBuffer = ""
         else
             -- Processing user presets  
             userNameIndex = userNameIndex + 1 -- Index Lua arrays from 1
-            nameInProgress = true
+            stream = Stream.UserPresetName
         end
         return
     end
 
     if (msg.controllerNumber==56 and msg.value==14) then -- Convolution Stream
-        convInProgress = true
+        stream = Stream.Convolution -- SOR
         return -- SOR
     end
 
-    if (msg.controllerNumber==56 and msg.value==15) then -- Convolution Stream
-        thumbInProgress = true
-        return -- SOR
-    end
-
-    -- Amended by SOR: Get system presets.
-    if (msg.controllerNumber==56 and msg.value==1) then
+    if (msg.controllerNumber==56 and msg.value==1) then -- SOR
         -- Start of Control Text or system preset filters context stream 
         if isGettingSystemPresets then
             -- System preset filters context data, which will include 
             -- the 2-letter category code.
-            isAccumulatingSystemPresetFilters = true
+            stream = Stream.SystemPresetFilters
             systemPresetFiltersBuffer = ""
             return
         end
         -- Start of Control Text stream, which includes macro names.
-        controlText = ""
+        controlTextBuffer = ""
         return -- SOR
     end
 
     if msg.controllerNumber==56 and msg.value==127 then -- SOR 
-        -- End of text stream
-        if isAccumulatingCurrentPresetName then
-            isAccumulatingCurrentPresetName = false
+        -- End of stream
+        if stream == Stream.CurrentPresetName then
+            stream = Stream.None
+            return
         end
-        if isAccumulatingSystemPresetName then
-            isAccumulatingSystemPresetName = false
+        if stream == Stream.SystemPresetName then
+            stream = Stream.None
             receivedSystemPresetName = trimTrailingNullChar(systemPresetNameBuffer)
             return
         end
-        if isAccumulatingSystemPresetFilters then
-            isAccumulatingSystemPresetFilters = false
+        if stream == Stream.SystemPresetFilters then
+            stream = Stream.None
             receivedSystemPresetFilters = trimTrailingNullChar(systemPresetFiltersBuffer)
             onSystemPresetReceived()
             return
         end
     end
 
-    if (nameInProgress and msg.controllerNumber==56 and msg.value==127) then -- Stream Ends
-        nameInProgress=false
+    if (stream == Stream.UserPresetName and msg.controllerNumber==56 and msg.value==127) then -- Stream Ends
+        stream = Stream.None -- SOR
         if (userNameProcessing) then
             if (userPresetNameBuffer == "" or userPresetNameBuffer == "-") then
                 userPresetNameBuffer = "Empty"
@@ -811,51 +803,45 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
             userNames[userNameIndex] = userPresetNameBuffer -- SOR
         end
         userPresetNameBuffer = "" -- Reset userPresetNameBuffer to accumulate the next name
-    elseif (contextInProgress and msg.controllerNumber==56 and msg.value==127) then
-        contextInProgress = false
-    elseif (convInProgress and msg.controllerNumber==56 and msg.value==127) then
-        convInProgress = false
+    elseif (stream == Stream.Convolution and msg.controllerNumber==56 and msg.value==127) then -- SOR
+        stream = Stream.None -- SOR
         processConvolution() -- Process the Convolution stream                    
-    elseif (matrixStream == true and msg.controllerNumber==56 and msg.value==127) then
-        matrixStream = false  -- Won't hurt anything but 127 is not signal of matrix stream end
-    elseif (thumbInProgress) then
-        thumbInProgress = false
+    elseif (stream == Stream.Matrix and msg.controllerNumber==56 and msg.value==127) then -- SOR
+        stream = Stream.None  -- Won't hurt anything but 127 is not signal of matrix stream end
     end
 end
 
 
 function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
-    -- Added by SOR: Get system presets.
-    if (isAccumulatingCurrentPresetName) then
+    if (stream == Stream.CurrentPresetName) then -- SOR
         -- Accumulate loaded preset name buffer
         currentPresetNameBuffer =
         currentPresetNameBuffer ..string.char(noteNumber)..string.char(pressure)
         return
     end
-    if (isAccumulatingSystemPresetName) then
+    if (stream == Stream.SystemPresetName) then -- SOR
         -- Accumulate system preset name buffer
         systemPresetNameBuffer =
         systemPresetNameBuffer ..string.char(noteNumber)..string.char(pressure)
         return
     end
-    -- Added by SOR: Get system presets.
-    if (isAccumulatingSystemPresetFilters) then
+    if (stream == Stream.SystemPresetFilters) then -- SOR
         -- Accumulate system preset context buffer
         systemPresetFiltersBuffer =
         systemPresetFiltersBuffer ..string.char(noteNumber)..string.char(pressure)
         return
     end
-    if (convInProgress) then
-        convString = convString..math.floor(noteNumber).."|"..math.floor(pressure).."|"
-        --print("CS=|"..convString.."|")--debugit       
+    if (stream == Stream.Convolution) then -- SOR
+        convolutionBuffer = convolutionBuffer..math.floor(noteNumber).."|"..math.floor(pressure).."|" -- SOR
+        --print("CS=|"..convolutionBuffer.."|")--debugit       
         return
     end
-    if (nameInProgress) then -- Accumulate name global name buffer
-        userPresetNameBuffer = userPresetNameBuffer..string.char(noteNumber)..string.char(pressure)
+    if (stream == Stream.UserPresetName) then -- Accumulate name global name buffer
+        userPresetNameBuffer = userPresetNameBuffer..string.char(noteNumber)..string.char(pressure) -- SOR
     end
-    -- Amended by SOR: Set macro names.
-    if (isAccumulatingControlText) then -- Accumulate Control Text, which includes macro names.
-        controlText = controlText..string.char(noteNumber)..string.char(pressure)
+    if (stream == Stream.ControlText) then -- SOR
+        -- Accumulate Control Text, which includes macro names.
+        controlTextBuffer = controlTextBuffer..string.char(noteNumber)..string.char(pressure)
         return
     end
 
@@ -864,7 +850,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     -- Ignore: MNoNote = 3, // do not output keyOn,keyOff,bends -- for CVC+Midi control of Voyager
     -- Ignore: MMidC = 4, // nn 60 and static velocity all notes (Moog Theremin) 7.44984
     -- Ignore: MAnnounce = 5, // announce continuum presence for SNBN
-    if (matrixStream == true and channel==16 and noteNumber == 2) then -- Note Message
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 2) then -- Note Message
         local curVel = math.floor (pressure)
         local ctrl = controls.get(231)
         local controlValue = ctrl:getValue("value")
@@ -876,14 +862,13 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         end
         return -- SOR
     end
-    -- Added by SOR: Control value updates.
-    if (matrixStream and channel == 16 and noteNumber == 62) then -- Recirculator Type
+    if (stream == Stream.Matrix and channel == 16 and noteNumber == 62) then -- Recirculator Type
         --print("Initializing Recirculator Type to "..pressure)
         setControlValue(85, pressure)
         return
     end
     -- Get CVC info - Read Only (need to bit map parse it)
-    if (matrixStream == true and channel==16 and noteNumber == 63) then -- CVC Info
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 63) then -- CVC Info
         local curCVC = math.floor (pressure)
         --print("CURCVC = "..curCVC)
         local cvcMode = curCVC & 7
@@ -917,7 +902,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         return
     end
     -- Get Bend - Read Only
-    if (matrixStream == true and channel==16 and noteNumber == 40) then -- Bend
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 40) then -- Bend
         local curBend = math.floor (pressure)
         local ctrl = controls.get(277)
         local controlValue = ctrl:getValue("value")
@@ -926,7 +911,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         return -- SOR
     end
     -- Get Base Polyphony - Read Only
-    if (matrixStream == true and channel==16 and noteNumber == 39) then -- Base Polyphony
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 39) then -- Base Polyphony
         local curBasePoly = math.floor (pressure)
         local ctrl = controls.get(106)
         local controlValue = ctrl:getValue("value")
@@ -935,7 +920,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         return -- SOR
     end
     -- Get Expanded Polyphony - Read Only
-    if (matrixStream == true and channel==16 and noteNumber == 11) then -- Expanded Polyphony
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 11) then -- Expanded Polyphony
         local curBend = math.floor (pressure)
         local ctrl = controls.get(233)
         local controlValue = ctrl:getValue("value")
@@ -944,7 +929,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         return -- SOR
     end
     -- Increased Computation - Read Only
-    if (matrixStream == true and channel==16 and noteNumber == 5) then -- Increased Computation
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 5) then -- Increased Computation
         local incComp = math.floor (pressure)
         local ctrl = controls.get(264)
         local controlValue = ctrl:getValue("value")
@@ -954,17 +939,17 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         return -- SOR
     end
     -- Get Mono Mode
-    if (matrixStream == true and channel==16 and noteNumber == 46) then -- Mono Mode
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 46) then -- Mono Mode
         setControlValue(140, pressure) -- SOR
         return -- SOR
     end
     -- Get Mono Interval
-    if (matrixStream == true and channel==16 and noteNumber == 48) then -- Mono Interval
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 48) then -- Mono Interval
         setControlValue(267, pressure) -- SOR
         return -- SOR
     end
     --  SplitMode
-    if (matrixStream == true and channel==16 and noteNumber == 1) then -- Split Mode
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 1) then -- Split Mode
         local splitMode = math.floor (pressure)
         local ctrl = controls.get(188)
         local controlValue = ctrl:getValue("value")
@@ -973,7 +958,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         return -- SOR
     end
     -- SplitPoint
-    if (matrixStream == true and channel==16 and noteNumber == 45) then -- Split Mode
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 45) then -- Split Mode
         local splitPoint = math.floor (pressure)
         local ctrl = controls.get(236)
         local controlValue = ctrl:getValue("value")
@@ -982,7 +967,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         return -- SOR
     end
     -- Round Mode
-    if (matrixStream == true and channel==16 and noteNumber == 10) then -- Round Mode
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 10) then -- Round Mode
         local roundMode = math.floor (pressure)
         local ctrl = controls.get(210)
         local controlValue = ctrl:getValue("value")
@@ -991,20 +976,20 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         return -- SOR
     end
     -- Get Pedal 1 Assignments
-    if (matrixStream == true and channel==16 and noteNumber == 52) then -- Pedal1 Assign
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 52) then -- Pedal1 Assign
         --print("Initializing Pedal 1 Assign to "..pressure)
         setControlValue(143, pressure) -- SOR
         return -- SOR
     end
     -- Get Pedal 2 Assignments
-    if (matrixStream == true and channel==16 and noteNumber == 53) then -- Pedal2 Assign
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 53) then -- Pedal2 Assign
          --print("Initializing Pedal 2 Assign to "..pressure)
         setControlValue(164, pressure) -- SOR
         return -- SOR
     end
 
     -- Get Octave Switch mode
-    if (matrixStream == true and channel==16 and noteNumber == 7) then -- Ocatve SW mode
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 7) then -- Ocatve SW mode
         local octSwitchMode = math.floor (pressure)
         --print("OctSwitch Mode = "..octSwitchMode)
         local ctrl = controls.get(173)
@@ -1013,7 +998,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         ctrlMsg:setValue(octSwitchMode)
     end
     -- Get Octave Range
-    if (matrixStream == true and channel==16 and noteNumber == 54) then -- Octave Swtich Range
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 54) then -- Octave Swtich Range
         local octRange = math.floor (pressure)
         --print("Oct Range = "..octRange)
         local ctrl = controls.get(179)
@@ -1022,7 +1007,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         ctrlMsg:setValue(octRange)
     end
     -- Get Compressor or TANH (parameters are shared so only this needs to be done)
-    if (matrixStream == true and channel==16 and noteNumber == 16) then -- Process Compressor/Tanh
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 16) then -- Process Compressor/Tanh
         local cOrT = math.floor (pressure)
         --print("ComporTanh = "..cOrT)
         local ctrl = controls.get(163)
@@ -1032,7 +1017,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         setCompOrTanh(cOrT)
     end
     -- Surface Direction
-    if (matrixStream == true and channel==16 and noteNumber == 9) then
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 9) then
         local direction = math.floor (pressure)
         --print("Direction = "..direction)
         local ctrl = controls.get(253)
@@ -1051,7 +1036,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         end
     end
     -- Preserve Surface
-    if (matrixStream == true and channel==16 and noteNumber == 56) then -- Ocatve SW mode
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 56) then -- Ocatve SW mode
         local presSurf = math.floor (pressure)
         --print("Preserve Surface = "..presSurf)
         local ctrl = controls.get(167)
@@ -1069,7 +1054,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         end
     end
     -- Preserve Pedals
-    if (matrixStream == true and channel==16 and noteNumber == 57) then -- Ocatve SW mode
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 57) then -- Ocatve SW mode
         local presPed = math.floor (pressure)
         --print("Preserve Surface = "..presPed)
         local ctrl = controls.get(168)
@@ -1087,7 +1072,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         end
     end
     -- Preserve Midi
-    if (matrixStream == true and channel==16 and noteNumber == 58) then -- Ocatve SW mode
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 58) then -- Ocatve SW mode
         local presMid = math.floor (pressure)
         --print("Preserve Surface = "..presMid)
         local ctrl = controls.get(169)
@@ -1105,7 +1090,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         end
     end
     -- Process Middle C - Transpose
-    if (matrixStream == true and channel==16 and noteNumber == 44) then -- MiddleC/Transpose
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 44) then -- MiddleC/Transpose
         local xposeAssign = math.floor (pressure)
         local ctrl = controls.get(78)
         local controlValue = ctrl:getValue("value")
@@ -1985,7 +1970,7 @@ end
 
 function getMacros()
     if (macrosLoaded == true) then
-        isAccumulatingControlText = true
+        stream = Stream.ControlText -- SOR
         --print ("getMacros - should not be called until pressed")
         midi.sendControlChange(DEVICE_PORT, 16, 109, 22) -- Send get Current Preset Msg to get Macro labels and control values
     else
@@ -2429,13 +2414,13 @@ function assignPedal2 (valueObject, value)
 end
 
 function processConvolution()
-    local tmpStr = convString
+    local tmpStr = convolutionBuffer
     local ix = 1
     local j = 1
     local pi = 1
     local convParams = {"0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0",
                         "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"}
-    convString = ""
+    convolutionBuffer = ""
     local strLen = string.len(tmpStr)
     while ix < strLen
     do
@@ -2682,7 +2667,7 @@ end
 
 function getCurrentPresetData() -- SOR
     --print("getCurrentPresetData: Loaded preset. Getting preset data.")
-    isAccumulatingControlText = true
+    stream = Stream.ControlText
     isGettingCurrentPresetData = true
     -- Send get Current Preset Msg to get Macro labels and control values
     midi.sendControlChange(DEVICE_PORT, 16, 109, 16)
@@ -2951,7 +2936,7 @@ end
 
 function setMacroNames() -- SOR
     --print("setMacroNames")
-    isAccumulatingControlText = false
+    stream = Stream.None
     -- Blank out macro names.
     for controlNo = MacroControlNo.I, MacroControlNo.VI do
         macroControls[controlNo]:setName("")
@@ -2962,7 +2947,7 @@ function setMacroNames() -- SOR
     -- and a line containing the author's name.
     -- Put the context lines, each trimmed, into a table.
     local lineThrow = string.char(10)
-    local controlTextLines = splitString(controlText, lineThrow)
+    local controlTextLines = splitString(controlTextBuffer, lineThrow)
     local controlTextLinesCount = #controlTextLines
     if controlTextLinesCount == 0 then
         --print "Error: No Control Text lines."
