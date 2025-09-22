@@ -24,7 +24,7 @@ local userNameProcessing = false
 local macrosLoaded = false
 local userNameIndex = 0
 local presetOffset = 0 -- Offset to change user preset on Continuum as only 16 are shown, need to track bank 
-local presetPosSelect = 0
+local userPresetPosSelect = 0
 local muteVal = 60 -- Default pre-gain (but will be set from reading presets)
 local lowVersion = 8.0 -- Default to 10.35
 local highVersion = 12.0 -- Default to 10.35
@@ -1209,7 +1209,7 @@ function storeUserPreset (valueObject, value)
     local control = controls.get(50)
     local tStr = control:getName()
 
-    if (presetPosSelect == 0) then -- no write if preset is not selected (initial pick list item)
+    if (userPresetPosSelect == 0) then -- no write if preset is not selected (initial pick list item)
         if (storeInitialized == false) then -- handle stupid Electra One init process
             storeInitialized = true
             return
@@ -1217,9 +1217,9 @@ function storeUserPreset (valueObject, value)
         info.setText("Select Preset Pos")
         return
     end
-    --print("storeUserPreset: presetPosSelect = "..presetPosSelect)
+    --print("storeUserPreset: userPresetPosSelect = "..userPresetPosSelect)
     -- Don't initialize this function
-    whichUserButton = (presetPosSelect) % 16
+    whichUserButton = (userPresetPosSelect) % 16
     if (whichUserButton == 0) then
         whichUserButton = 16
     end
@@ -1258,7 +1258,7 @@ function storeUserPreset (valueObject, value)
         end
     end
     -- Sequence needed to just store current preset back to its position
-    local programNo = presetPosSelect -1 -- SOR
+    local programNo = userPresetPosSelect -1 -- SOR
     --print("Storing to Preset position: "..programNo)
     midi.sendControlChange(DEVICE_PORT, 16, 56, 127) -- End Preset string
     midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- Send CC0/CC32
@@ -2648,11 +2648,14 @@ end
 function formatUserPresetPos(valueObject, value) -- SOR
     -- Remove the decimal part of value for the formatted display.
     local val = math.floor(value)
-    --print("formatUserPresetPos: value = "..value)
-    if val == 0 then
-        return "Pick Position"
+    local result = ""
+    if val > 0 then
+        result = "User "..tostring(val)
+    else
+        result = "Pick Position"
     end
-    return "User "..tostring(val) 
+    --print("formatUserPresetPos: Formatting value = "..value.." to "..result)
+    return result
 end
 
 -- Returns the user value of the specified control.
@@ -2759,12 +2762,13 @@ function onCurrentPresetDataReceived() -- SOR
         -- So we cannot even get round the problem by reloading the preset.
         return
     end
-    local selectPosControlNo = 32
+    local selectUserPresetPosControlNo = 32
     if currentPreset.IsUserPreset then
-        -- Show the preset number on the Select Pos control.
-        setControlValue(selectPosControlNo, presetNo)
+        -- Show the preset number on the Select User Preset Pos control.
+        --print("    Setting user preset position to "..presetNo)
+        setControlValue(selectUserPresetPosControlNo, presetNo)
     else
-        setControlValue(selectPosControlNo, 0)
+        setControlValue(selectUserPresetPosControlNo, 0)
     end
 end
 
@@ -3074,12 +3078,13 @@ end
 -- Set the user preset position in which the current preset is to be stored.
 -- slotNo: The 1-based user preset slot number, or zero if none has been selected or set.
 function updateUserPresetPos(slotNo) -- SOR
-    presetPosSelect = slotNo  
-    --print("updateUserPresetPos: presetPosSelect = "..presetPosSelect..
+    --print("updateUserPresetPos: Unformatted value is now "..slotNo)
+    userPresetPosSelect = slotNo  
+    --print("updateUserPresetPos: userPresetPosSelect = "..userPresetPosSelect..
     --    "; currentPreset.IsUserPreset = "..tostring(currentPreset.IsUserPreset))
     local currentPresetGroup = groups.get(49)
     local currentPresetControl = controls.get(50)
-    if currentPreset.IsUserPreset and presetPosSelect > 0 then
+    if currentPreset.IsUserPreset and userPresetPosSelect > 0 then
         currentPresetControl:setColor(RED)
         currentPresetGroup:setLabel("Store Preset")
         currentPresetGroup:setColor(RED)
