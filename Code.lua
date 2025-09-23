@@ -1199,8 +1199,8 @@ function loadUserPreset(valueObject, value)
     if (presetNo >= 1 and presetNo <= 128) then
         local bankMsb = 0 -- 0 = User Presets
         local bankLsb = 0 -- Because there are a maximum of 128 user presets
-        -- For preset name display, see comment in loadPreset.  
-        loadPreset(bankMsb, bankLsb, programNo)
+        local presetName = userNames[presetNo]
+        loadPreset(bankMsb, bankLsb, programNo, presetName)
     else
         --print("Unexpected Preset Index: "..programNo)
     end
@@ -2357,9 +2357,8 @@ function selectSystemPreset(valueObject, value)
     local ctrl = controls.get(278)
     if (selectedSystemPreset.presetNo == 0) then
         ctrl:setName("SELECT PRESET")
-    elseif (selectedSystemPreset.name ~= "") then
+    else
         -- name has been set in getMaxPresetIndex.
-        -- When can it be empty?
         ctrl:setName(selectedSystemPreset.name) 
     end
 end
@@ -2806,6 +2805,10 @@ function onCurrentPresetDataReceived() -- SOR
     --        "; currentPreset.loadState = "..tostring(currentPreset.loadState)..
     --"; currentPreset.type = "..currentPreset.type)
     currentPreset.name = trimTrailingNullChar(currentPresetNameBuffer)
+    local shortName = findShortPresetName(currentPreset.name)
+    if shortName then
+        currentPreset.name = shortName
+    end
     -- Show the preset name on the Current Preset control.
     local currentPresetControl = controls.get(50)
     currentPresetControl:setName(currentPreset.name)
