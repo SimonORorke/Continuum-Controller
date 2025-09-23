@@ -2333,22 +2333,17 @@ function selectPresetCategory(valueObject, value)
         -- once all the system presets have been received.
         return
     end
-    -- Reset Preset index to beginning
-    selectedSystemPreset.presetNo = 0
-    local ctrl = controls.get(273) -- Preset index
-    local controlValue = ctrl:getValue("value")
-    local ctrlMsg = controlValue:getMessage()
-    ctrlMsg:setValue(0) -- New Category then reset preset Index control to default
-    ctrl = controls.get(46) -- Get Category control
-    controlValue = ctrl:getValue("value")
-    ctrlMsg = controlValue:getMessage()
-    local val = ctrlMsg:getValue() -- Get the category value (not index)
-    selectedSystemPreset.category = val+1
+    -- Zero-based category control value, so System is 0, not 1.
+    local val = getControlValue(46) 
+    selectedSystemPreset.category = val + 1
     if (selectedSystemPreset.category == Category.Other1) then
         selectedSystemPreset.bankLsb = 1
     else
         selectedSystemPreset.bankLsb = 0
     end
+    -- As the category has changed, reset the Preset index to the beginning.
+    selectedSystemPreset.presetNo = 0
+    setControlValue(273, 0) -- System preset index 
 end
 
 -- Get the preset name and index based on Category set
@@ -2363,7 +2358,9 @@ function selectSystemPreset(valueObject, value)
     if (selectedSystemPreset.presetNo == 0) then
         ctrl:setName("SELECT PRESET")
     elseif (selectedSystemPreset.name ~= "") then
-        ctrl:setName(selectedSystemPreset.name)
+        -- name has been set in getMaxPresetIndex.
+        -- When can it be empty?
+        ctrl:setName(selectedSystemPreset.name) 
     end
 end
 
@@ -2406,8 +2403,8 @@ function loadSystemPreset(valueObject, value)
     if (selectedSystemPreset.category == Category.Other1) then
         tmpCategory = Category.Other -- Really only one Other category but presented to the user as 2
     end
-    -- For preset name display, see comment in loadPreset.  
-    loadPreset(tmpCategory, selectedSystemPreset.bankLsb, selectedSystemPreset.presetNo - 1) -- SOR
+    loadPreset(tmpCategory, selectedSystemPreset.bankLsb, 
+            selectedSystemPreset.presetNo - 1, selectedSystemPreset.name) -- SOR
 end
 
 -- Set Pedal 1 Assignment
@@ -2668,6 +2665,21 @@ function setConvRight4 (valueObject, value)
     convolutionPoke(27, val)
 end
 
+function findShortPresetName(presetName, printWarning) -- SOR
+    local nameLength = #presetName
+    if (nameLength <= MAX_NAME_LENGTH) then
+        return nil
+    end
+    local result = shortPresetNames[presetName]
+    if result == nil and printWarning then
+        -- Keep this print. We will need it for identifying new
+        -- long names introduced in future firmware versions. SOR
+        print("A short name has not been specified for system preset "
+                ..presetName)
+    end
+    return result
+end
+
 function formatUserPresetPos(valueObject, value) -- SOR
     -- This formatter is not used at present.
     -- But it will be when and if we implement
@@ -2752,13 +2764,19 @@ end
 -- bankLsb: 0 for user presets and most categories.
 --     Can be > 0 for categories with more than 128 presets.
 -- programNo: zero-based program number.
-function loadPreset(bankMsb, bankLsb, programNo) -- SOR
+-- presetName:  preset name for display on the Current Preset control.
+function loadPreset(bankMsb, bankLsb, programNo, presetName) -- SOR
     currentPreset.bankMsb = bankMsb
     currentPreset.bankLsb = bankLsb
     currentPreset.programNo = programNo
-    currentPreset.IsUserPreset = currentPreset.bankMsb == 0
+    currentPreset.name = presetName
     currentPreset.loadState = PresetLoadState.Loading
-    --print("loadPreset: currentPreset.IsUserPreset = "..tostring(currentPreset.IsUserPreset))
+    if currentPreset.bankMsb == 0 then
+        currentPreset.type = PresetType.User
+    else
+        currentPreset.type = PresetType.System
+    end
+    --print("loadPreset: currentPreset.type = "..currentPreset.type)
     resetMute() -- Reset in case on from previous preset
     -- We don't need to clear initialise macros because all 6 macro values are always 
     -- received for each preset, and the macro names are initialized in setMacroNames.
@@ -2786,44 +2804,47 @@ end
 function onCurrentPresetDataReceived() -- SOR
     --print("onCurrentPresetDataReceived: currentPreset.programNo = "..currentPreset.programNo..
     --        "; currentPreset.loadState = "..tostring(currentPreset.loadState)..
-    --"; currentPreset.IsUserPreset = "..tostring(currentPreset.IsUserPreset))
-    local presetNo = currentPreset.programNo + 1
-    local receivedCurrentPresetName = trimTrailingNullChar(currentPresetNameBuffer)
+    --"; currentPreset.type = "..currentPreset.type)
+    currentPreset.name = trimTrailingNullChar(currentPresetNameBuffer)
     -- Show the preset name on the Current Preset control.
     local currentPresetControl = controls.get(50)
-    currentPresetControl:setName(receivedCurrentPresetName)
-    if currentPreset.loadState == PresetLoadState.AlreadyLoaded then
+    currentPresetControl:setName(currentPreset.name)
+    if currentPreset.type == PresetType.Unknown then
         -- We must have just received the data for the preset that was
         -- already loaded on the instrument when the E1 preset was loaded.
-        -- Unfortunately, there's no way to tell whether it is a user preset
-        -- or a system preset. This is because, in the current preset data, 
-        -- unlike the preset lists, Bank MSB (ch16 cc0) is always 126, 
-        -- regardless of whether it's a user preset or system preset.
-        -- So we cannot even get round the problem by reloading the preset.
+        -- So we don't know whether it's a user preset or a system preset.
+        -- See comment above the declaration of currentPreset.type. 
         return
     end
-    if currentPreset.IsUserPreset then
-        -- Uncomment the following when and if we implement
-        --     "Default Store User Position to the user preset number of 
-        --     the current preset, if it's a user preset."
-        -- For further information, see the comment in formatUserPresetPos.
-        --
-        --updateUserPresetPos(presetNo)
-        --local selectUserPresetPosControlNo = 32
-        --if currentPreset.IsUserPreset then
-        --    -- Show the preset number on the Select User Preset Pos control.
-        --    --print("    Setting user preset position to "..presetNo)
-        --    setControlValue(selectUserPresetPosControlNo, presetNo)
-        --else
-        --    setControlValue(selectUserPresetPosControlNo, 0)
-        --end
-    else -- System preset
-        selectedSystemPreset.Name = currentPreset.
-        selectedSystemPreset.category = currentPreset.bankMsb
-        
-        selectPresetCategory.
-        selectSystemPreset
+    local presetNo = currentPreset.programNo + 1
+    if currentPreset.type == PresetType.System then
+        if currentPreset.bankMsb == Category.Other
+                and currentPreset.bankLsb == 1 then
+            selectedSystemPreset.category = Category.Other1
+        else
+            selectedSystemPreset.category = currentPreset.bankMsb
+        end
+        selectedSystemPreset.bankLsb = currentPreset.bankLsb
+        selectedSystemPreset.presetNo = presetNo
+        selectedSystemPreset.name = currentPreset.name
+        -- Zero-based category control value, so System is 0, not 1.
+        setControlValue(46, selectedSystemPreset.category - 1)  
+        setControlValue(273, selectedSystemPreset.presetNo) -- Selected system preset index 
     end
+    -- Uncomment the following when and if we implement
+    --     "Default Store User Position to the user preset number of 
+    --     the current preset, if it's a user preset."
+    -- For further information, see the comment in formatUserPresetPos.
+    --
+    --updateUserPresetPos(presetNo)
+    --local selectUserPresetPosControlNo = 32
+    --if currentPreset.type == PresetType.User then
+    --    -- Show the preset number on the Select User Preset Pos control.
+    --    --print("    Setting user preset position to "..presetNo)
+    --    setControlValue(selectUserPresetPosControlNo, presetNo)
+    --else
+    --    setControlValue(selectUserPresetPosControlNo, 0)
+    --end
 end
 
 function onFirmwareVersionReceived() -- SOR
@@ -2919,17 +2940,9 @@ function replaceLongSystemPresetNamesWithShortNames() -- SOR
         local presetCount = #presets
         for presetNo = 1, presetCount do
             local presetName = presets[presetNo]
-            local nameLength = #presetName
-            if (nameLength > MAX_NAME_LENGTH) then
-                local shortName = shortPresetNames[presetName]
-                if shortName then
-                    systemPresetCategories[category][presetNo] = shortName
-                else
-                    -- Keep this print. We will need it for identifying new
-                    -- long names introduced in future firmware versions. SOR
-                    print("A short name has not been specified for system preset "
-                            ..presetName)
-                end
+            local shortName = findShortPresetName(presetName, true)
+            if shortName then
+                systemPresetCategories[category][presetNo] = shortName
             end
         end
     end
@@ -3135,10 +3148,10 @@ function updateUserPresetPos(slotNo) -- SOR
     --print("updateUserPresetPos: Unformatted value is now "..slotNo)
     userPresetPosSelect = slotNo  
     --print("updateUserPresetPos: userPresetPosSelect = "..userPresetPosSelect..
-    --    "; currentPreset.IsUserPreset = "..tostring(currentPreset.IsUserPreset))
+    --    "; currentPreset.type = "..currentPreset.type)
     local currentPresetGroup = groups.get(49)
     local currentPresetControl = controls.get(50)
-    if currentPreset.IsUserPreset and userPresetPosSelect > 0 then
+    if currentPreset.type == PresetType.System and userPresetPosSelect > 0 then
         currentPresetControl:setColor(RED)
         currentPresetGroup:setLabel("Store Preset")
         currentPresetGroup:setColor(RED)
