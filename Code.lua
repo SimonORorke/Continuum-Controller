@@ -1267,6 +1267,13 @@ function storeUserPreset (valueObject, value)
     midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- Send CC0/C32
     -- Send Program change - current preset to user position
     midi.sendProgramChange(DEVICE_PORT, 16, programNo) -- SOR    
+    -- Remove the following when and if we implement
+    --     "Default Store User Position to the user preset number of 
+    --     the current preset, if it's a user preset."
+    -- For further information, see the comment in formatUserPresetPos.
+    --
+    -- Reset so Store is no longer active
+    setControlValue(32, 0) -- Preset index
 end
 
 function preset.onLoad()
@@ -2646,6 +2653,24 @@ function setConvRight4 (valueObject, value)
 end
 
 function formatUserPresetPos(valueObject, value) -- SOR
+    -- This formatter is not used at present.
+    -- But it will be when and if we implement
+    --     "Default Store User Position to the user preset number of 
+    --     the current preset, if it's a user preset."
+    -- That feature is on hold, due to an Electra One bug, as I reported at
+    --     Fader formatter’s value can be incorrect if max value > 127
+    --     https://forum.electra.one/t/fader-formatters-value-can-be-incorrect-if-max-value-127/3930
+    -- In the E1 preset layout, I've backed out using a Fader for the
+    -- User Preset Position control, since formatting malfunctioned as per the bug report.
+    -- So the control has reverted to being a List control.
+    -- As a List control, the formatting defined in the layout works. 
+    -- However, updating the control's value programmatically from Lua has no effect.
+    -- I've mentioned that as a possibly related problem in the bug report.
+    --
+    -- If E1 bug fixes or a workaround make it feasible to implement the feature,
+    -- search the code for "Default Store User Position"
+    -- to find code that will need to be uncommented or removed.
+    --
     -- Remove the decimal part of value for the formatted display.
     local val = math.floor(value)
     local result = ""
@@ -2751,25 +2776,30 @@ function onCurrentPresetDataReceived() -- SOR
     -- Show the preset name on the Current Preset control.
     local currentPresetControl = controls.get(50)
     currentPresetControl:setName(receivedCurrentPresetName)
-    updateUserPresetPos(presetNo)
-    if currentPreset.loadState == PresetLoadState.AlreadyLoaded then
-        -- We must have just received the data for the preset that was
-        -- already loaded on the instrument when the E1 preset was loaded.
-        -- Unfortunately, there's no way to tell whether it is a user preset
-        -- or a system preset. This is because, in the current preset data, 
-        -- unlike the preset lists, Bank MSB (ch16 cc0) is always 126, 
-        -- regardless of whether it's a user preset or system preset.
-        -- So we cannot even get round the problem by reloading the preset.
-        return
-    end
-    local selectUserPresetPosControlNo = 32
-    if currentPreset.IsUserPreset then
-        -- Show the preset number on the Select User Preset Pos control.
-        --print("    Setting user preset position to "..presetNo)
-        setControlValue(selectUserPresetPosControlNo, presetNo)
-    else
-        setControlValue(selectUserPresetPosControlNo, 0)
-    end
+    -- Uncomment the following when and if we implement
+    --     "Default Store User Position to the user preset number of 
+    --     the current preset, if it's a user preset."
+    -- For further information, see the comment in formatUserPresetPos.
+    --
+    --updateUserPresetPos(presetNo)
+    --if currentPreset.loadState == PresetLoadState.AlreadyLoaded then
+    --    -- We must have just received the data for the preset that was
+    --    -- already loaded on the instrument when the E1 preset was loaded.
+    --    -- Unfortunately, there's no way to tell whether it is a user preset
+    --    -- or a system preset. This is because, in the current preset data, 
+    --    -- unlike the preset lists, Bank MSB (ch16 cc0) is always 126, 
+    --    -- regardless of whether it's a user preset or system preset.
+    --    -- So we cannot even get round the problem by reloading the preset.
+    --    return
+    --end
+    --local selectUserPresetPosControlNo = 32
+    --if currentPreset.IsUserPreset then
+    --    -- Show the preset number on the Select User Preset Pos control.
+    --    --print("    Setting user preset position to "..presetNo)
+    --    setControlValue(selectUserPresetPosControlNo, presetNo)
+    --else
+    --    setControlValue(selectUserPresetPosControlNo, 0)
+    --end
 end
 
 function onFirmwareVersionReceived() -- SOR
