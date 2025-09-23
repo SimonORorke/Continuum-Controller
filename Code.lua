@@ -41,6 +41,8 @@ local userNames = {"U1","U2","U3","U4","U5","U6","U7","U8","U9","U10","U11","U12
              "U121", "U122", "U123", "U124", "U125", "U126", "U127","U128"}
 
 -- Enums
+-- Pascal case (where names start with capitals) for enum names allows code like this:
+--     for category = Category.Strings, Category.Other1 do
 
 -- An enumeration (enum) of category numbers.
 local Category = {} -- SOR
@@ -74,6 +76,12 @@ local PresetLoadState = {} -- SOR
 PresetLoadState.AlreadyLoaded = 1
 PresetLoadState.Loading = 2 -- The preset is being loaded.
 PresetLoadState.Loaded = 3 -- The preset has been loaded by this E1 preset.
+
+-- An enumeration (enum) of preset types.
+local PresetType = {} -- SOR
+PresetType.Unknown = 0 -- See comment above currentPreset.Type.
+PresetType.User = 1
+PresetType.System = 2
 
 -- An enumeration (enum) of preset data stream types.
 local Stream = {} -- SOR
@@ -112,13 +120,22 @@ local versionText = ""
 
 -- Parameters used to load a preset.
 local currentPreset = {} -- SOR
-currentPreset.bankMsb = 0 -- 0 for user preset, otherwise category number.
+-- 0 for user preset, 126 for unknown preset type, 
+-- otherwise system preset category number.
+currentPreset.bankMsb = 0
 currentPreset.bankLsb = 0 -- Can be > 0 if more than 128 presets in a category.
 currentPreset.programNo = 0 -- 0-based index within bank.
+currentPreset.name = ""
 currentPreset.loadState = PresetLoadState.AlreadyLoaded
--- Needs to be updated when bankMsb changes.
--- Cannot be relied on if loadState = PresetLoadState.AlreadyLoaded.
-currentPreset.IsUserPreset = false
+-- type needs to be updated when bankMsb changes. It is
+-- unknown if the current preset data has just been received for the preset
+-- that was already loaded on the instrument when the E1 preset was loaded
+-- (loadState == PresetLoadState.AlreadyLoaded).
+-- This is because, in the current preset data, 
+-- unlike the preset lists, Bank MSB (ch16 cc0) is always 126, 
+-- regardless of whether it's a user preset or system preset.
+-- So we cannot even get round the problem by reloading the preset.
+currentPreset.type = PresetType.Unknown
 
 local macroControls = {} -- SOR
 for controlNo = MacroControlNo.I, MacroControlNo.VI do
@@ -2336,8 +2353,7 @@ end
 
 -- Get the preset name and index based on Category set
 function selectSystemPreset(valueObject, value)
-    -- Added by SOR: Get system presets.
-    if not haveSystemPresetsBeenReceived then
+    if not haveSystemPresetsBeenReceived then -- SOR
         -- This function will be called again, from the Lua code,
         -- once all the system presets have been received.
         return
@@ -2776,30 +2792,38 @@ function onCurrentPresetDataReceived() -- SOR
     -- Show the preset name on the Current Preset control.
     local currentPresetControl = controls.get(50)
     currentPresetControl:setName(receivedCurrentPresetName)
-    -- Uncomment the following when and if we implement
-    --     "Default Store User Position to the user preset number of 
-    --     the current preset, if it's a user preset."
-    -- For further information, see the comment in formatUserPresetPos.
-    --
-    --updateUserPresetPos(presetNo)
-    --if currentPreset.loadState == PresetLoadState.AlreadyLoaded then
-    --    -- We must have just received the data for the preset that was
-    --    -- already loaded on the instrument when the E1 preset was loaded.
-    --    -- Unfortunately, there's no way to tell whether it is a user preset
-    --    -- or a system preset. This is because, in the current preset data, 
-    --    -- unlike the preset lists, Bank MSB (ch16 cc0) is always 126, 
-    --    -- regardless of whether it's a user preset or system preset.
-    --    -- So we cannot even get round the problem by reloading the preset.
-    --    return
-    --end
-    --local selectUserPresetPosControlNo = 32
-    --if currentPreset.IsUserPreset then
-    --    -- Show the preset number on the Select User Preset Pos control.
-    --    --print("    Setting user preset position to "..presetNo)
-    --    setControlValue(selectUserPresetPosControlNo, presetNo)
-    --else
-    --    setControlValue(selectUserPresetPosControlNo, 0)
-    --end
+    if currentPreset.loadState == PresetLoadState.AlreadyLoaded then
+        -- We must have just received the data for the preset that was
+        -- already loaded on the instrument when the E1 preset was loaded.
+        -- Unfortunately, there's no way to tell whether it is a user preset
+        -- or a system preset. This is because, in the current preset data, 
+        -- unlike the preset lists, Bank MSB (ch16 cc0) is always 126, 
+        -- regardless of whether it's a user preset or system preset.
+        -- So we cannot even get round the problem by reloading the preset.
+        return
+    end
+    if currentPreset.IsUserPreset then
+        -- Uncomment the following when and if we implement
+        --     "Default Store User Position to the user preset number of 
+        --     the current preset, if it's a user preset."
+        -- For further information, see the comment in formatUserPresetPos.
+        --
+        --updateUserPresetPos(presetNo)
+        --local selectUserPresetPosControlNo = 32
+        --if currentPreset.IsUserPreset then
+        --    -- Show the preset number on the Select User Preset Pos control.
+        --    --print("    Setting user preset position to "..presetNo)
+        --    setControlValue(selectUserPresetPosControlNo, presetNo)
+        --else
+        --    setControlValue(selectUserPresetPosControlNo, 0)
+        --end
+    else -- System preset
+        selectedSystemPreset.Name = currentPreset.
+        selectedSystemPreset.category = currentPreset.bankMsb
+        
+        selectPresetCategory.
+        selectSystemPreset
+    end
 end
 
 function onFirmwareVersionReceived() -- SOR
