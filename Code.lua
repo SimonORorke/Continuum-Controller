@@ -135,6 +135,8 @@ currentPreset.loadState = PresetLoadState.AlreadyLoaded
 -- unlike the preset lists, Bank MSB (ch16 cc0) is always 126, 
 -- regardless of whether it's a user preset or system preset.
 -- So we cannot even get round the problem by reloading the preset.
+-- (In the preset lists, Bank MSB (ch16 cc0) is 
+-- 0 is for user presets and 127 for system presets.)
 currentPreset.type = PresetType.Unknown
 
 local macroControls = {} -- SOR
@@ -1144,7 +1146,7 @@ function midi.onProgramChange(midiInput, channel, programNumber) -- SOR
         --     or a system preset; 
         --     programNumber is 1-based, at least for user presets;
         -- I've not checked programNumber in the current preset data for system presets.
-        -- What could it even mean when the bank MSB does not specify the category? 
+        -- What could it even mean when the bank MSB does not indicate a system preset? 
         onCurrentPresetDataReceived()
     end    
 end
