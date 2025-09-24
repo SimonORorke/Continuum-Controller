@@ -2351,6 +2351,7 @@ function selectSystemPreset(valueObject, value)
         -- once all the system presets have been received.
         return
     end
+    local systemPresets = systemPresetCategories[selectedSystemPreset.category]
     --print("selectSystemPreset: valueObject:getMessage():getValue() = "
     --        ..valueObject:getMessage():getValue().."; value = "..value)
     -- I reported an Electra One bug where if a Fader control’s maximum value > 127 then 
@@ -2362,13 +2363,14 @@ function selectSystemPreset(valueObject, value)
     -- whose maximum value is 128.
     -- However, to be safe let's avoid using the value parameter here. SOR
     --selectedSystemPreset.presetNo = getMaxPresetIndex(math.floor(value)) -- SOR
+    local presetNoBeforeCorrection = valueObject:getMessage():getValue()
     selectedSystemPreset.presetNo = 
-        getMaxPresetIndex(valueObject:getMessage():getValue()) -- SOR
+        getMaxPresetIndex(systemPresets, presetNoBeforeCorrection) -- SOR
     local ctrl = controls.get(278)
     if (selectedSystemPreset.presetNo == 0) then
         ctrl:setName("SELECT PRESET")
     else
-        -- name has been set in getMaxPresetIndex.
+        selectedSystemPreset.name = systemPresets[selectedSystemPreset.presetNo]
         ctrl:setName(selectedSystemPreset.name) 
     end
 end
@@ -2380,17 +2382,17 @@ end
 -- DOES THE ABOVE COMMENT NEED TO BE MODIFIED OR REMOVED?  SOR
 -- Currently this should work for the Continuum and the EganMatrix module.
 -- Amended by SOR: Get system presets.
-function getMaxPresetIndex (pIndex) -- cap index at max range for each category
+-- systemPresets: The system presets table for the selected category.
+-- pIndex: The selected system preset index before we possibly correct it.
+function getMaxPresetIndex (systemPresets, pIndex) -- cap index at max range for each category
     local ctrl = controls.get(273)
     local controlValue = ctrl:getValue("value")
     local ctrlMsg = controlValue:getMessage()
-    local systemPresets = systemPresetCategories[selectedSystemPreset.category]
     local systemPresetCount = #systemPresets
     if (pIndex > systemPresetCount) then
         ctrlMsg:setValue(systemPresetCount)
         return pIndex - 1
     end
-    selectedSystemPreset.name = systemPresets[pIndex]
     return pIndex
 end
 
