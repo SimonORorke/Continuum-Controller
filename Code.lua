@@ -1212,10 +1212,6 @@ end
 function setUserPresetPos (valueObject, value)
     -- Get value without its decimal part.
     local slotNo = valueObject:getMessage():getValue()
-    -- If valueObject:getMessage():getValue() >= 64, the value parameter is 1 higher.
-    -- Looks like an E1 bug. See the discussion in 
-    -- https://forum.electra.one/t/fader-formatters-value-can-be-incorrect-if-max-value-127/3930
-    --print("setUserPresetPos: slotNo = "..slotNo.."; value = "..value)
     updateUserPresetPos(slotNo) -- SOR
 end
 
