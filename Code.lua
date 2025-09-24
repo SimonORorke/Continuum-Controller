@@ -2849,21 +2849,21 @@ function onSystemPresetReceived() -- SOR
                 ..receivedSystemPresetName.." in ".. receivedSystemPresetFilters)
         return
     end
-    local categoryNo = categoryNos[categoryCode]
-    if not categoryNo then
+    local category = categoryNos[categoryCode]
+    if not category then
          print("onSystemPresetReceived: Cannot find "..categoryCode..
                 " category number for "..receivedSystemPresetName)
         return
     end
     -- Now that we know the new system preset's name and category number,
     -- we can add the name to the category's system preset table.
-    local categoryPresetCount = #systemPresetCategories[categoryNo]
-    if categoryNo == Category.Other and categoryPresetCount == 128 then
-        categoryNo = Category.Other1
-        categoryPresetCount = #systemPresetCategories[categoryNo]
+    local categoryPresetCount = #systemPresetCategories[category]
+    if category == Category.Other and categoryPresetCount == 128 then
+        category = Category.Other1
+        categoryPresetCount = #systemPresetCategories[category]
     end
     local newPresetNo = categoryPresetCount + 1
-    systemPresetCategories[categoryNo][newPresetNo] = receivedSystemPresetName
+    systemPresetCategories[category][newPresetNo] = receivedSystemPresetName
 end
 
 function onSystemPresetsReceived(fromPersistedData) -- SOR
