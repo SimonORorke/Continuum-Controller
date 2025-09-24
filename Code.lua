@@ -1210,6 +1210,9 @@ end
 function setUserPresetPos (valueObject, value)
     -- Get value without its decimal part.
     local slotNo = valueObject:getMessage():getValue()
+    -- If valueObject:getMessage():getValue() >= 64, the value parameter is 1 higher.
+    -- Looks like an E1 bug. See the discussion in 
+    -- https://forum.electra.one/t/fader-formatters-value-can-be-incorrect-if-max-value-127/3930
     --print("setUserPresetPos: slotNo = "..slotNo.."; value = "..value)
     updateUserPresetPos(slotNo) -- SOR
 end
@@ -1284,13 +1287,6 @@ function storeUserPreset (valueObject, value)
     midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- Send CC0/C32
     -- Send Program change - current preset to user position
     midi.sendProgramChange(DEVICE_PORT, 16, programNo) -- SOR    
-    -- Remove the following when and if we implement
-    --     "Default Store User Position to the user preset number of 
-    --     the current preset, if it's a user preset."
-    -- For further information, see the comment in formatUserPresetPos.
-    --
-    -- Reset so Store is no longer active
-    setControlValue(32, 0) -- Preset index
 end
 
 function preset.onLoad()
@@ -2679,37 +2675,6 @@ function findShortPresetName(presetName, printWarning) -- SOR
     return result
 end
 
-function formatUserPresetPos(valueObject, value) -- SOR
-    -- This formatter is not used at present.
-    -- But it will be when and if we implement
-    --     "Default Store User Position to the user preset number of 
-    --     the current preset, if it's a user preset."
-    -- That feature is on hold, due to an Electra One bug, as I reported at
-    --     Fader formatter’s value can be incorrect if max value > 127
-    --     https://forum.electra.one/t/fader-formatters-value-can-be-incorrect-if-max-value-127/3930
-    -- In the E1 preset layout, I've backed out using a Fader for the
-    -- User Preset Position control, since formatting malfunctioned as per the bug report.
-    -- So the control has reverted to being a List control.
-    -- As a List control, the formatting defined in the layout works. 
-    -- However, updating the control's value programmatically from Lua has no effect.
-    -- I've mentioned that as a possibly related problem in the bug report.
-    --
-    -- If E1 bug fixes or a workaround make it feasible to implement the feature,
-    -- search the code for "Default Store User Position"
-    -- to find code that will need to be uncommented or removed.
-    --
-    -- Remove the decimal part of value for the formatted display.
-    local val = math.floor(value)
-    local result = ""
-    if val > 0 then
-        result = "User "..tostring(val)
-    else
-        result = "Pick Position"
-    end
-    --print("formatUserPresetPos: Formatting value = "..value.." to "..result)
-    return result
-end
-
 -- Returns the user value of the specified control.
 -- (The value parameter of control functions 
 -- only provides the untranslated zero-based value, so it won't always work.)
@@ -2834,20 +2799,15 @@ function onCurrentPresetDataReceived() -- SOR
         setControlValue(46, selectedSystemPreset.category - 1)  
         setControlValue(273, selectedSystemPreset.presetNo) -- Selected system preset index 
     end
-    -- Uncomment the following when and if we implement
-    --     "Default Store User Position to the user preset number of 
-    --     the current preset, if it's a user preset."
-    -- For further information, see the comment in formatUserPresetPos.
-    --
-    --updateUserPresetPos(presetNo)
-    --local selectUserPresetPosControlNo = 32
-    --if currentPreset.type == PresetType.User then
-    --    -- Show the preset number on the Select User Preset Pos control.
-    --    --print("    Setting user preset position to "..presetNo)
-    --    setControlValue(selectUserPresetPosControlNo, presetNo)
-    --else
-    --    setControlValue(selectUserPresetPosControlNo, 0)
-    --end
+    updateUserPresetPos(presetNo)
+    local selectUserPresetPosControlNo = 32
+    if currentPreset.type == PresetType.User then
+        -- Show the preset number on the Select User Preset Pos control.
+        --print("    Setting user preset position to "..presetNo)
+        setControlValue(selectUserPresetPosControlNo, presetNo)
+    else
+        setControlValue(selectUserPresetPosControlNo, 0)
+    end
 end
 
 function onFirmwareVersionReceived() -- SOR
@@ -3146,15 +3106,16 @@ function trimTrailingNullChar(text) -- SOR
 end
 
 -- Set the user preset position in which the current preset is to be stored.
+-- And set the current preset control colour and group caption to reflect whether
+-- a position has been specified.
 -- slotNo: The 1-based user preset slot number, or zero if none has been selected or set.
 function updateUserPresetPos(slotNo) -- SOR
-    --print("updateUserPresetPos: Unformatted value is now "..slotNo)
     userPresetPosSelect = slotNo  
     --print("updateUserPresetPos: userPresetPosSelect = "..userPresetPosSelect..
     --    "; currentPreset.type = "..currentPreset.type)
     local currentPresetGroup = groups.get(49)
     local currentPresetControl = controls.get(50)
-    if currentPreset.type == PresetType.System and userPresetPosSelect > 0 then
+    if userPresetPosSelect > 0 then
         currentPresetControl:setColor(RED)
         currentPresetGroup:setLabel("Store Preset")
         currentPresetGroup:setColor(RED)
