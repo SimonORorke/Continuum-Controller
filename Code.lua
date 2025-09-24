@@ -1636,7 +1636,7 @@ function setPresetsAt113()
 end
 
 function xposeMiddleC(valueObject, value)
-    if (math.floor(value) == 0) then -- Handle weird case wheret his is getting called by page changes 
+    if (math.floor(value) == 0) then -- Handle weird case where this is getting called by page changes 
         return
     end
     local xAmt = 0
@@ -2351,7 +2351,19 @@ function selectSystemPreset(valueObject, value)
         -- once all the system presets have been received.
         return
     end
-    selectedSystemPreset.presetNo = getMaxPresetIndex(math.floor(value))
+    --print("selectSystemPreset: valueObject:getMessage():getValue() = "
+    --        ..valueObject:getMessage():getValue().."; value = "..value)
+    -- I reported an Electra One bug where if a Fader control’s maximum value > 127 then 
+    -- for valueObject:getMessage():getValue() >= 64, 
+    -- value is 1 higher.
+    -- This is true of both the setter function and the formatter function.
+    -- https://forum.electra.one/t/fader-formatters-value-can-be-incorrect-if-max-value-127-fix/3930/3
+    -- I have not been able to reproduce the bug for this List control,
+    -- whose maximum value is 128.
+    -- However, to be safe let's avoid using the value parameter here. SOR
+    --selectedSystemPreset.presetNo = getMaxPresetIndex(math.floor(value)) -- SOR
+    selectedSystemPreset.presetNo = 
+        getMaxPresetIndex(valueObject:getMessage():getValue()) -- SOR
     local ctrl = controls.get(278)
     if (selectedSystemPreset.presetNo == 0) then
         ctrl:setName("SELECT PRESET")
@@ -2368,7 +2380,7 @@ end
 -- DOES THE ABOVE COMMENT NEED TO BE MODIFIED OR REMOVED?  SOR
 -- Currently this should work for the Continuum and the EganMatrix module.
 -- Amended by SOR: Get system presets.
-function getMaxPresetIndex (pIndex) -- cap inex at max range for each category
+function getMaxPresetIndex (pIndex) -- cap index at max range for each category
     local ctrl = controls.get(273)
     local controlValue = ctrl:getValue("value")
     local ctrlMsg = controlValue:getMessage()
