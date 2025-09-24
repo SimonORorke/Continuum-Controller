@@ -2771,10 +2771,17 @@ function onCurrentPresetDataReceived() -- SOR
     --print("onCurrentPresetDataReceived: currentPreset.programNo = "..currentPreset.programNo..
     --        "; currentPreset.loadState = "..tostring(currentPreset.loadState)..
     --"; currentPreset.type = "..currentPreset.type)
-    currentPreset.name = trimTrailingNullChar(currentPresetNameBuffer)
-    local shortName = findShortPresetName(currentPreset.name)
-    if shortName then
-        currentPreset.name = shortName
+    if currentPreset.type == PresetType.User then
+        local presetNo = currentPreset.programNo + 1
+        currentPreset.name = userNames[presetNo]
+    else -- System preset or unknown
+        local receivedPresetName = trimTrailingNullChar(currentPresetNameBuffer) 
+        local shortName = findShortPresetName(receivedPresetName)
+        if shortName then
+            currentPreset.name = shortName
+        else
+            currentPreset.name = receivedPresetName
+        end
     end
     -- Show the preset name on the Current Preset control.
     local currentPresetControl = controls.get(50)
