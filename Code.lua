@@ -1202,6 +1202,7 @@ function loadUserPreset(valueObject, value)
         local bankMsb = 0 -- 0 = User Presets
         local bankLsb = 0 -- Because there are a maximum of 128 user presets
         local presetName = userNames[presetNo]
+        --print("loadUserPreset: Set presetName to "..presetName)
         loadPreset(bankMsb, bankLsb, programNo, presetName)
     else
         --print("Unexpected Preset Index: "..programNo)
@@ -2367,6 +2368,7 @@ function selectSystemPreset(valueObject, value)
         ctrl:setName("SELECT PRESET")
     else
         selectedSystemPreset.name = systemPresets[selectedSystemPreset.presetNo]
+        --print("selectSystemPreset: Set selectedSystemPreset.name to "..selectedSystemPreset.name)
         ctrl:setName(selectedSystemPreset.name) 
     end
 end
@@ -2410,6 +2412,7 @@ function loadSystemPreset(valueObject, value)
     if (selectedSystemPreset.category == Category.Other1) then
         tmpCategory = Category.Other -- Really only one Other category but presented to the user as 2
     end
+    --print("loadSystemPreset: selectedSystemPreset.name = "..selectedSystemPreset.name)
     loadPreset(tmpCategory, selectedSystemPreset.bankLsb, 
             selectedSystemPreset.presetNo - 1, selectedSystemPreset.name) -- SOR
 end
@@ -2746,6 +2749,7 @@ function loadPreset(bankMsb, bankLsb, programNo, presetName) -- SOR
     currentPreset.bankLsb = bankLsb
     currentPreset.programNo = programNo
     currentPreset.name = presetName
+    --print("loadPreset: Set currentPreset.name to "..currentPreset.name )
     currentPreset.loadState = PresetLoadState.Loading
     if currentPreset.bankMsb == 0 then
         currentPreset.type = PresetType.User
@@ -2781,10 +2785,11 @@ function onCurrentPresetDataReceived() -- SOR
     --print("onCurrentPresetDataReceived: currentPreset.programNo = "..currentPreset.programNo..
     --        "; currentPreset.loadState = "..tostring(currentPreset.loadState)..
     --"; currentPreset.type = "..currentPreset.type)
-    if currentPreset.type == PresetType.User then
-        local presetNo = currentPreset.programNo + 1
-        currentPreset.name = userNames[presetNo]
-    else -- System preset or unknown
+    if currentPreset.type == PresetType.Unknown then
+        -- We must have just received the data for the preset that was
+        -- already loaded on the instrument when the E1 preset was loaded.
+        -- So we don't already have the preset name that is set when 
+        -- a preset load is requested.
         local receivedPresetName = trimTrailingNullChar(currentPresetNameBuffer) 
         local shortName = findShortPresetName(receivedPresetName)
         if shortName then
@@ -2805,17 +2810,8 @@ function onCurrentPresetDataReceived() -- SOR
     end
     local presetNo = currentPreset.programNo + 1
     if currentPreset.type == PresetType.System then
-        if currentPreset.bankMsb == Category.Other
-                and currentPreset.bankLsb == 1 then
-            selectedSystemPreset.category = Category.Other1
-        else
-            selectedSystemPreset.category = currentPreset.bankMsb
-        end
-        selectedSystemPreset.bankLsb = currentPreset.bankLsb
-        selectedSystemPreset.presetNo = presetNo
-        selectedSystemPreset.name = currentPreset.name
         -- Zero-based category control value, so System is 0, not 1.
-        setControlValue(46, selectedSystemPreset.category - 1)  
+        setControlValue(46, selectedSystemPreset.category - 1) 
         setControlValue(273, selectedSystemPreset.presetNo) -- Selected system preset index 
     end
     updateUserPresetPos(presetNo)
