@@ -2351,15 +2351,6 @@ function selectSystemPreset(valueObject, value)
     local systemPresets = systemPresetCategories[selectedSystemPreset.category]
     --print("selectSystemPreset: valueObject:getMessage():getValue() = "
     --        ..valueObject:getMessage():getValue().."; value = "..value)
-    -- I reported an Electra One bug where if a Fader control’s maximum value > 127 then 
-    -- for valueObject:getMessage():getValue() >= 64, 
-    -- value is 1 higher.
-    -- This is true of both the setter function and the formatter function.
-    -- https://forum.electra.one/t/fader-formatters-value-can-be-incorrect-if-max-value-127-fix/3930/3
-    -- I have not been able to reproduce the bug for this List control,
-    -- whose maximum value is 128.
-    -- However, to be safe let's avoid using the value parameter here. SOR
-    --selectedSystemPreset.presetNo = getMaxPresetIndex(math.floor(value)) -- SOR
     local presetNoBeforeCorrection = valueObject:getMessage():getValue()
     selectedSystemPreset.presetNo = 
         getMaxPresetIndex(systemPresets, presetNoBeforeCorrection) -- SOR
@@ -2692,7 +2683,9 @@ end
 
 -- Returns the user value of the specified control.
 -- (The value parameter of control functions 
--- only provides the untranslated zero-based value, so it won't always work.)
+-- only provides the untranslated zero-based value, so it won't always work.
+-- For example, for a Fader control, the value parameter is always 0-127,
+-- the MIDI range, even when a value range 0-128 has been defined for the control.)
 function getControlValue(controlNo) -- SOR
     local control = controls.get(controlNo)
     local controlValue = control:getValue("value")
