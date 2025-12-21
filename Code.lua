@@ -977,7 +977,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         return -- SOR
     end
     -- SplitPoint
-    if (stream == Stream.Matrix and channel==16 and noteNumber == 45) then -- Split Mode
+    if (stream == Stream.Matrix and channel==16 and noteNumber == 45) then -- Split Point
         local splitPoint = math.floor (pressure)
         local ctrl = controls.get(236)
         local controlValue = ctrl:getValue("value")
