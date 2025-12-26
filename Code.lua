@@ -1655,8 +1655,7 @@ function xposeMiddleC(valueObject, value)
     local xAmt = 0
     local newMiddleC = valueObject:getMessage():getValue()
     --print("Setting Middle C to "..newMiddleC)
-    matrixPoke (44,newMiddleC)
-    --print("newMiddleC = "..newMiddleC) 
+    setMiddleC(newMiddleC) -- SOR
     -- Change the transpose indicator
     control=controls.get(78)
     if (newMiddleC == 0) then
@@ -1686,7 +1685,7 @@ function xposeMiddleCx(valueObject, value)
     elseif (newMiddleC == 80) then
         newMiddleC = 64
     end
-    matrixPoke (44,newMiddleC)
+    setMiddleC(newMiddleC) -- SOR
     --print("newMiddleC = "..newMiddleC) 
     -- Change the transpose indicator
     control=controls.get(78)
@@ -2806,6 +2805,16 @@ function onCurrentPresetDataReceived() -- SOR
         else
             currentPreset.name = receivedPresetName
         end
+        -- Set middle C to the standard note.
+        -- This is an attempt, that does not work for me, to fix a problem where,
+        -- when presets have been automatically populated on starting this E1 preset,
+        -- the initially loaded preset sounds ultra slow when played.
+        -- Middle C is set via matrix poke 44, which works where middle C is set
+        -- elsewhere in the code.
+        setMiddleC(60)
+        -- I've also tried setting middle C by updating cc8, like this:
+        --midi.sendControlChange(DEVICE_PORT, 16, 8, 60)
+        -- But that does not fix the problem with playing the initial preset either.
     end
     -- Show the preset name on the Current Preset control.
     local currentPresetControl = controls.get(50)
@@ -3042,6 +3051,11 @@ function setMacroNames() -- SOR
     for i = 1, macroStringsCount do
         setMacroName(macroStrings[i])
     end
+end
+
+function setMiddleC(value) -- SOR
+    print("setMiddleC: Setting middle C to "..value)
+    matrixPoke(44, value)
 end
 
 function setPedal1Max(valueObject, value) -- SOR
