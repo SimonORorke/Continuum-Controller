@@ -102,10 +102,11 @@ local convolutionBuffer = ""
 local currentPresetNameBuffer = ""
 local firmwareVersion
 local hasFirmwareVersionAlreadyBeenReceived = false
-local hasJustLoaded = false
+local hasJustLoaded = true
 local haveSystemPresetsBeenReceived = false
 local isGettingCurrentPresetData = false
 local isGettingSystemPresets = false
+--local isGettingUserPresets = false
 local isInitializing = true
 local isSystemPresetsUpdateRequired = false
 local receivedSystemPresetFilters = ""
@@ -138,6 +139,7 @@ currentPreset.loadState = PresetLoadState.AlreadyLoaded
 -- (In the preset lists, Bank MSB (ch16 cc0) is 
 -- 0 is for user presets and 127 for system presets.)
 currentPreset.type = PresetType.Unknown
+--currentPreset.initialMiddleC = 0
 
 local macroControls = {} -- SOR
 for controlNo = MacroControlNo.I, MacroControlNo.VI do
@@ -669,6 +671,11 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         setControlValue(178, val) -- SOR
         return -- SOR
     end
+    --if (chan == 1 and cc == 8) then -- Middle C (Octave Shift) -- SOR
+    --    print("Initializing middle C to "..val)
+    --    currentPreset.initialMiddleC = val
+    --    return
+    --end
     -- Fine Tune
     if (chan == 1 and cc == 10) then -- Fine Tune +/- 60 cents
         setControlValue(227, val) -- SOR
@@ -696,7 +703,6 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         ctrlMsg:setValue(val)
         return -- SOR
     end
-
     -- Mono Switch
     if (chan == 1 and cc == 9) then -- Handle Mono Switch Button
         local ctrl = controls.get(252)
@@ -715,6 +721,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
             --print("Initializing Mono Switch to "..1)
             ctrlMsg:setValue(1)
         end
+        return -- SOR
     end
 end -- CC event processing
 
@@ -751,12 +758,14 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
 
     if (msg.controllerNumber==109 and msg.value==54) then -- Start User Names Found
         --print("Start getting user presets")
+        --isGettingUserPresets = true
         info.setText(GETTING_PRESETS)
         userNameIndex=0
         return -- SOR
     end
     if (msg.controllerNumber==109 and msg.value==55) then -- End User Names Found
         --print("Finished getting user presets")
+        --isGettingUserPresets = false
         onUserPresetsReceived() -- SOR
         return -- SOR
     end
@@ -1173,7 +1182,7 @@ end
 -- or requested from the instrument.
 -- Amended by SOR to prevent the boot sequence from getting stuck at the startup splash screen. 
 function getNames(valueObject, value)
-    --print("getNames: Getting user presets")
+    print("getNames: Getting user presets")
     isInitializing = false -- SOR
     userNameProcessing = true -- SOR
     resetMute() -- reset in case on from previous preset
@@ -1305,9 +1314,8 @@ function storeUserPreset (valueObject, value)
 end
 
 function preset.onLoad()
-    --print("preset.onLoad()")
+    print("preset.onLoad()")
     -- Redundant initializations removed by SOR
-    hasJustLoaded = true -- SOR
 end
 
 -- Set User Preset names - they are controls 1-16
@@ -2709,7 +2717,7 @@ function getControlValue(controlNo) -- SOR
 end
 
 function getCurrentPresetData() -- SOR
-    --print("getCurrentPresetData: Loaded preset. Getting preset data.")
+    print("getCurrentPresetData")
     stream = Stream.ControlText
     isGettingCurrentPresetData = true
     -- Send get Current Preset Msg to get Macro labels and control values
@@ -2717,7 +2725,7 @@ function getCurrentPresetData() -- SOR
 end
 
 function getSystemPresets() -- SOR
-    --print("getSystemPresets")
+    print("getSystemPresets")
     if isSystemPresetsUpdateRequired then
         -- Request system preset names (sysToMidi).
         midi.sendControlChange(DEVICE_PORT, 16, 109, 39)
@@ -2811,7 +2819,7 @@ function onCurrentPresetDataReceived() -- SOR
         -- the initially loaded preset sounds ultra slow when played.
         -- Middle C is set via matrix poke 44, which works where middle C is set
         -- elsewhere in the code.
-        setMiddleC(60)
+        --setMiddleC(60)
         -- I've also tried setting middle C by updating cc8, like this:
         --midi.sendControlChange(DEVICE_PORT, 16, 8, 60)
         -- But that does not fix the problem with playing the initial preset either.
@@ -3054,6 +3062,13 @@ function setMacroNames() -- SOR
 end
 
 function setMiddleC(value) -- SOR
+    if value == 0 then
+        -- Ignore junk initialisation to 0.
+        -- This affected the initially loaded preset, 
+        -- making it sound ultra low and effectively unplayable.
+        print("setMiddleC: Ignoring junk initialization to 0")
+        return
+    end
     print("setMiddleC: Setting middle C to "..value)
     matrixPoke(44, value)
 end
