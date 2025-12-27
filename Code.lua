@@ -1127,10 +1127,8 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     -- Process Middle C - Transpose
     if (stream == Stream.Matrix and channel==16 and noteNumber == 44) then -- MiddleC/Transpose
         local xposeAssign = math.floor (pressure)
+        print("Matrix stream: Received MiddleC "..xposeAssign)
         local ctrl = controls.get(78)
-        local controlValue = ctrl:getValue("value")
-        --local ctrlMsg = controlValue:getMessage()
-        --print("Transpose Val = "..xposeAssign)
         if (xposeAssign == 0) then
             -- nothing
         elseif (xposeAssign == 60) then
