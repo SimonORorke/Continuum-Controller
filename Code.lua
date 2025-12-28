@@ -1312,7 +1312,7 @@ function storeUserPreset (valueObject, value)
 end
 
 function preset.onLoad()
-    print("preset.onLoad()")
+    print("preset.onLoad")
     --info.setText(GETTING_PRESETS) // Does not work here, presumably due to the delay below.
     -- This Electra One preset is being loaded at boot up.
     -- Starting to receive the user presets immediately is likely 
@@ -1325,8 +1325,10 @@ function preset.onLoad()
     -- I found that 400 milliseconds is just enough on my E1, regardless of
     -- whether system presets also need to be loaded.
     -- So 2 seconds should provide an ample safety margin.
-    helpers.delay(2000)
+    --helpers.delay(2000)
+    helpers.delay(10000)
     isWaitingForE1PresetLoadToComplete = false
+    print("preset.onLoad: Calling getNames")
     getNames()
 end
 
