@@ -20,7 +20,6 @@ local pedal1Init = false
 local pedal2Init = false
 
 -- Other Globals
-local userNameProcessing = false
 local macrosLoaded = false
 local userNameIndex = 0
 local presetOffset = 0 -- Offset to change user preset on Continuum as only 16 are shown, need to track bank 
@@ -60,6 +59,13 @@ Category.Midi = 11
 Category.Cvc = 12
 Category.Utility = 13
 Category.Other1 = 14
+
+-- An enumeration (enum) indicating which type of preset list, if any,
+-- is being received from the instrument.
+local GettingPresets = {} -- SOR
+GettingPresets.None = 0
+GettingPresets.User = 1
+GettingPresets.System = 2
 
 -- An enumeration (enum) of macro control numbers.
 local MacroControlNo = {} -- SOR
@@ -101,11 +107,11 @@ local controlTextBuffer = ""
 local convolutionBuffer = ""
 local currentPresetNameBuffer = ""
 local firmwareVersion
+local gettingPresets = GettingPresets.None
 local hasFirmwareVersionAlreadyBeenReceived = false
 local hasJustLoaded = true
 local haveSystemPresetsBeenReceived = false
 local isGettingCurrentPresetData = false
-local isGettingSystemPresets = false
 local isInitializing = true
 local isSystemPresetsUpdateRequired = false
 local receivedSystemPresetFilters = ""
@@ -736,14 +742,14 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         return
     end
     if ( msg.controllerNumber==109 and msg.value==49) then -- SOR
-        -- Start of system preset list (beginSysNames)    
-        isGettingSystemPresets = true
+        -- Start of system preset list (beginSysNames)
+        gettingPresets = GettingPresets.System
         --print("Start of system preset list")
         return
     end
     if (msg.controllerNumber==109 and msg.value==40) then -- SOR
         -- End of system preset list (endSysNames)    
-        isGettingSystemPresets = false
+        gettingPresets = GettingPresets.None
         --print("End of system preset list")
         onSystemPresetsReceived(false)
         return
@@ -771,14 +777,14 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
 
     if (msg.controllerNumber==56 and msg.value==0) then -- SOR
         -- Start of system or user or loaded preset name stream
-        if isGettingSystemPresets then
+        if gettingPresets == GettingPresets.System then
             stream = Stream.SystemPresetName
             systemPresetNameBuffer = ""
         elseif isGettingCurrentPresetData then
             stream = Stream.CurrentPresetName
             currentPresetNameBuffer = ""
         else
-            -- Processing user presets  
+            -- Processing user presets (gettingPresets == GettingPresets.User)
             userNameIndex = userNameIndex + 1 -- Index Lua arrays from 1
             stream = Stream.UserPresetName
         end
@@ -792,7 +798,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
 
     if (msg.controllerNumber==56 and msg.value==1) then -- SOR
         -- Start of Control Text or system preset filters context stream 
-        if isGettingSystemPresets then
+        if gettingPresets == GettingPresets.System then
             -- System preset filters context data, which will include 
             -- the 2-letter category code.
             stream = Stream.SystemPresetFilters
@@ -825,7 +831,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
 
     if (stream == Stream.UserPresetName and msg.controllerNumber==56 and msg.value==127) then -- Stream Ends
         stream = Stream.None -- SOR
-        if (userNameProcessing) then
+        if gettingPresets == GettingPresets.User then
             if (userPresetNameBuffer == "" or userPresetNameBuffer == "-") then
                 userPresetNameBuffer = "Empty"
             end
@@ -1173,7 +1179,7 @@ end
 function getNames(valueObject, value)
     --print("getNames: Getting user presets")
     isInitializing = false -- SOR
-    userNameProcessing = true -- SOR
+    gettingPresets = GettingPresets.User -- SOR
     resetMute() -- reset in case on from previous preset
     -- Ideally we would like to show the GETTING_PRESETS status bar message immediately.
     -- But it is not feasible.  The GETTING_PRESETS message would become stuck on
@@ -2737,10 +2743,6 @@ function isGettingData() -- SOR
     -- received from the instrument.  And we can't distinguish a control update
     -- with instrument data from a control when the user changes the control value.
     return isInitializing
-    -- The following are always false
-    --print("    userNameProcessing = "..tostring(userNameProcessing))
-    --print("    isGettingSystemPresets = "..tostring(isGettingSystemPresets))
-    --print("    isGettingCurrentPresetData = "..tostring(isGettingCurrentPresetData))
 end
 
 -- Loads a system or user preset.
@@ -2905,7 +2907,7 @@ end
 
 function onUserPresetsReceived() -- SOR
     setUserPresetNames()
-    userNameProcessing = false
+    gettingPresets = GettingPresets.None
     userNameIndex = 0
     if not haveSystemPresetsBeenReceived then
         getSystemPresets()
