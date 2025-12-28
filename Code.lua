@@ -109,11 +109,11 @@ local currentPresetNameBuffer = ""
 local firmwareVersion
 local gettingPresets = GettingPresets.None
 local hasFirmwareVersionAlreadyBeenReceived = false
-local hasJustLoaded = true
+--local hasJustLoaded = true
 local haveSystemPresetsBeenReceived = false
 local isGettingCurrentPresetData = false
-local isInitializing = true
 local isSystemPresetsUpdateRequired = false
+local isWaitingForE1PresetLoadToComplete = true
 local receivedSystemPresetFilters = ""
 local receivedSystemPresetName = ""
 local stream = Stream.None
@@ -1177,35 +1177,38 @@ end
 -- or requested from the instrument.
 -- Amended by SOR to prevent the boot sequence from getting stuck at the startup splash screen. 
 function getNames(valueObject, value)
-    --print("getNames: Getting user presets")
-    isInitializing = false -- SOR
-    gettingPresets = GettingPresets.User -- SOR
-    resetMute() -- reset in case on from previous preset
-    -- Ideally we would like to show the GETTING_PRESETS status bar message immediately.
-    -- But it is not feasible.  The GETTING_PRESETS message would become stuck on
-    -- if the instrument was not on when the E1 preset is loaded.
-    -- And we can't time out if data is not received,
-    -- as the E1 timer does not run on on a separate thread and so would block
-    -- MIDI messages from being received.
-    -- So GETTING_PRESETS will be shown once data starts to be received.
-    if not hasJustLoaded then
-        requestUserPresetNames()
+    if isWaitingForE1PresetLoadToComplete then
+        -- For unknown reason, getNames has been automatically called 
+        -- on loading the E1 preset.
+        -- But that can cause the E1 preset's boot up to freeze at the splash screen.
+        -- So cancel out of this.
+        -- preset.load will call getNames again after a wait that will hopefully
+        -- prevent the freeze.
+        print("getNames: Waiting for E1 preset load to complete")
         return
     end
-    hasJustLoaded = false
-    -- This Electra One preset is being loaded at boot up.
-    -- Starting to receive the user presets immediately is likely 
-    -- to cause the boot sequence to get stuck at the startup splash screen
-    -- and fail to complete.
-    -- See https://docs.electra.one/troubleshooting/defaultpreset.html.
-    --
-    -- So, to give the boot sequence time to get past the point where
-    -- it can get stuck, pause before requesting the user preset names.
-    -- I found that 400 milliseconds is just enough on my E1, regardless of
-    -- whether system presets also need to be loaded.
-    -- So 2 seconds should provide an ample safety margin.
-    helpers.delay(2000)
+    print("getNames: Getting user presets")
+    gettingPresets = GettingPresets.User -- SOR
+    resetMute() -- reset in case on from previous preset
     requestUserPresetNames()
+    --if not hasJustLoaded then
+    --    requestUserPresetNames()
+    --    return
+    --end
+    --hasJustLoaded = false
+    ---- This Electra One preset is being loaded at boot up.
+    ---- Starting to receive the user presets immediately is likely 
+    ---- to cause the boot sequence to get stuck at the startup splash screen
+    ---- and fail to complete.
+    ---- See https://docs.electra.one/troubleshooting/defaultpreset.html.
+    ----
+    ---- So, to give the boot sequence time to get past the point where
+    ---- it can get stuck, pause before requesting the user preset names.
+    ---- I found that 400 milliseconds is just enough on my E1, regardless of
+    ---- whether system presets also need to be loaded.
+    ---- So 2 seconds should provide an ample safety margin.
+    --helpers.delay(2000)
+    --requestUserPresetNames()
 end
 
 -- Load up a user preset on pressing button 1-16 offset for bank
@@ -1309,8 +1312,22 @@ function storeUserPreset (valueObject, value)
 end
 
 function preset.onLoad()
-    --print("preset.onLoad()")
-    -- Redundant initializations removed by SOR
+    print("preset.onLoad()")
+    --info.setText(GETTING_PRESETS) // Does not work here, presumably due to the delay below.
+    -- This Electra One preset is being loaded at boot up.
+    -- Starting to receive the user presets immediately is likely 
+    -- to cause the boot sequence to get stuck at the startup splash screen
+    -- and fail to complete.
+    -- See https://docs.electra.one/troubleshooting/defaultpreset.html.
+    --
+    -- So, to give the boot sequence time to get past the point where
+    -- it can get stuck, pause before requesting the user preset names.
+    -- I found that 400 milliseconds is just enough on my E1, regardless of
+    -- whether system presets also need to be loaded.
+    -- So 2 seconds should provide an ample safety margin.
+    helpers.delay(2000)
+    isWaitingForE1PresetLoadToComplete = false
+    getNames()
 end
 
 -- Set User Preset names - they are controls 1-16
@@ -1710,10 +1727,6 @@ end
 
 function matrixPoke(pokeID, pokeVal)
     --print("matrixPoke: "..pokeID.." "..pokeVal)
-    if isGettingData() then
-        --print("    Getting data, so not poking!")
-        return
-    end
     midi.sendControlChange(DEVICE_PORT, 16, 56, 20) -- Matrix Poke command 
     midi.sendAfterTouchPoly(DEVICE_PORT, 16, pokeID , pokeVal) -- Perform the Poke  
 end
@@ -1727,10 +1740,6 @@ end
 
 function convolutionPoke(pokeID, pokeVal)
     --print("convolutionPoke: "..pokeID.." "..pokeVal)
-    if isGettingData() then
-        --print("    Getting data, so not poking!")
-        return
-    end
     midi.sendControlChange(DEVICE_PORT, 16, 56, 26) -- Convolution command 
     midi.sendAfterTouchPoly(DEVICE_PORT, 16, pokeID , pokeVal) -- Perform the Poke  
 end
@@ -2729,20 +2738,6 @@ function getSystemPresets() -- SOR
         systemPresetCategories = persistableData.systemPresetCategories
         onSystemPresetsReceived(true)
     end
-end
-
-function isGettingData() -- SOR
-    -- The idea here is that checking the result should allow
-    -- poke functions to refrain from updating the instrument
-    -- while the controls are being populated with data received from the instrument.
-    -- Unfortunately, this does not work.
-    -- We can stop the few updates that were happening when some controls
-    -- are being initialised before any presets have been requested.
-    -- Apart from that, instrument updates are only triggered when control 
-    -- values are updated, which does not happen till after data has been 
-    -- received from the instrument.  And we can't distinguish a control update
-    -- with instrument data from a control when the user changes the control value.
-    return isInitializing
 end
 
 -- Loads a system or user preset.
