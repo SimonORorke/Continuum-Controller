@@ -1175,38 +1175,6 @@ function midi.onProgramChange(midiInput, channel, programNumber) -- SOR
     end    
 end
 
--- Requests the list of user presets.
--- Once the whole list has been received, 
--- system presets will be either restored from persisted data 
--- or requested from the instrument.
--- Amended by SOR to prevent the boot sequence from getting stuck at the startup splash screen. 
-function getNames(valueObject, value)
-    if hasJustLoaded then
-        -- As the E1 preset has just been loaded,
-        -- this getNames function has been called automatically.
-        -- I don't know how to stop that from happening.
-        -- If the E1 preset has been loaded when the instrument was already connected,
-        -- attempting to get the user preset list automatically sometimes causes the
-        -- E1 boot sequence to get stuck at the startup splash screen and fail to complete.
-        -- See https://docs.electra.one/troubleshooting/defaultpreset.html.
-        -- So do not proceed to request the preset list.
-        -- The player must instead push the Load Presets button to get the preset lists
-        -- manually.
-        print("getNames: Automatic getting presets on startup is disabled.")
-        hasJustLoaded = false
-        return
-    end
-    -- I've tried putting a wait in preset.Onload. But the wait did not work.
-    --if isWaitingForE1PresetLoadToComplete then
-    --    print("getNames: Waiting for E1 preset load to complete")
-    --    return
-    --end
-    print("getNames: Getting user presets")
-    gettingPresets = GettingPresets.User -- SOR
-    resetMute() -- reset in case on from previous preset
-    requestUserPresetNames()
-end
-
 -- Load up a user preset on pressing button 1-16 offset for bank
 -- Renamed and now calls loadPreset. SOR 
 function loadUserPreset(valueObject, value)
@@ -1263,8 +1231,8 @@ function storeUserPreset (valueObject, value)
     end
     local userControl = controls.get(whichUserButton) -- Don't ever change control numbers of user presets
     userControl:setName(tStr)
-    print("storeUserPreset: getNames")
-    getNames(valueObject, value) -- Reset the names to have correct preset displayed
+    print("storeUserPreset: getPresets")
+    getPresets(valueObject, value) -- Reset the names to have correct preset displayed
 
     if (tStr == "CURRENT PRESET") then -- No preset position was selected to store in - return
         info.setText("Select User Preset")
@@ -1333,8 +1301,8 @@ function preset.onLoad()
     ---- So 2 seconds should provide an ample safety margin.
     --helpers.delay(2000)
     --isWaitingForE1PresetLoadToComplete = false
-    --print("preset.onLoad: Calling getNames")
-    --getNames()
+    --print("preset.onLoad: Calling getPresets")
+    --getPresets()
 end
 
 -- Set User Preset names - they are controls 1-16
@@ -2733,6 +2701,45 @@ function getCurrentPresetData() -- SOR
     isGettingCurrentPresetData = true
     -- Send get Current Preset Msg to get Macro labels and control values
     midi.sendControlChange(DEVICE_PORT, 16, 109, 16)
+end
+
+-- Requests the list of user presets.
+-- Once the whole list has been received, 
+-- system presets will be either restored from persisted data 
+-- or requested from the instrument.
+-- Amended by SOR to prevent the boot sequence from getting stuck at the startup splash screen. 
+function getPresets(valueObject, value)
+    if hasJustLoaded then
+        -- As the E1 preset has just been loaded,
+        -- this getPresets function has been called automatically.
+        -- I don't know how to stop that from happening.
+        -- If the E1 preset has been loaded when the instrument was already connected,
+        -- attempting to get the user preset list automatically sometimes causes the
+        -- E1 boot sequence to get stuck at the startup splash screen and fail to complete.
+        -- See https://docs.electra.one/troubleshooting/defaultpreset.html.
+        -- So do not proceed to request the preset list.
+        -- The player must instead push the Load Presets button to get the preset lists
+        -- manually.
+        print("getPresets: Automatic getting presets on startup is disabled.")
+        hasJustLoaded = false
+        return
+    end
+    -- I've tried putting a wait in preset.Onload. But the wait did not work.
+    --if isWaitingForE1PresetLoadToComplete then
+    --    print("getPresets: Waiting for E1 preset load to complete")
+    --    return
+    --end
+    --
+    -- For unknown reason, getPresets gets called twice
+    -- when the Load Presets button is pressed.
+    if gettingPresets == GettingPresets.User then
+        print("getPresets: Ignoring phantom re-entry")
+        return
+    end 
+    print("getPresets: Getting user presets")
+    gettingPresets = GettingPresets.User
+    resetMute() -- reset in case on from previous preset
+    requestUserPresetNames()
 end
 
 function getSystemPresets() -- SOR
