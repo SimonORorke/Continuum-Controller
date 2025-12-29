@@ -61,21 +61,22 @@ Category.Cvc = 12
 Category.Utility = 13
 Category.Other1 = 14
 
+-- An enumeration (enum) of control numbers.
+local ControlNo = {} -- SOR
+ControlNo.LoadPresets = 35
+ControlNo.MacroI = 25
+ControlNo.MacroII = 26
+ControlNo.MacroIII = 27
+ControlNo.MacroIV = 28
+ControlNo.MacroV = 29
+ControlNo.MacroVI = 30
+
 -- An enumeration (enum) indicating which type of preset list, if any,
 -- is being received from the instrument.
 local GettingPresets = {} -- SOR
 GettingPresets.None = 0
 GettingPresets.User = 1
 GettingPresets.System = 2
-
--- An enumeration (enum) of macro control numbers.
-local MacroControlNo = {} -- SOR
-MacroControlNo.I = 25
-MacroControlNo.II = 26
-MacroControlNo.III = 27
-MacroControlNo.IV = 28
-MacroControlNo.V = 29
-MacroControlNo.VI = 30
 
 -- An enumeration (enum) of preset load states.
 local PresetLoadState = {} -- SOR
@@ -147,19 +148,19 @@ currentPreset.loadState = PresetLoadState.AlreadyLoaded
 currentPreset.type = PresetType.Unknown
 
 local macroControls = {} -- SOR
-for controlNo = MacroControlNo.I, MacroControlNo.VI do
+for controlNo = ControlNo.MacroI, ControlNo.MacroVI do
     macroControls[controlNo] = controls.get(controlNo)
 end
 
 -- A dictionary for looking up the macro control number 
 -- corresponding to the macro id provided by the instrument.
 local macroControlNos = {} -- SOR
-macroControlNos["i"] = MacroControlNo.I
-macroControlNos["ii"] = MacroControlNo.II
-macroControlNos["iii"] = MacroControlNo.III
-macroControlNos["iv"] = MacroControlNo.IV
-macroControlNos["v"] = MacroControlNo.V
-macroControlNos["vi"] = MacroControlNo.VI
+macroControlNos["i"] = ControlNo.MacroI
+macroControlNos["ii"] = ControlNo.MacroII
+macroControlNos["iii"] = ControlNo.MacroIII
+macroControlNos["iv"] = ControlNo.MacroIV
+macroControlNos["v"] = ControlNo.MacroV
+macroControlNos["vi"] = ControlNo.MacroVI
 
 -- Added by SOR: Get system presets.
 local persistableData = {}
@@ -527,27 +528,27 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
 
     -- End Read Only Controls
     if (chan == 1 and cc == 12) then -- Set i
-        setControlValue(MacroControlNo.I, val) -- SOR
+        setControlValue(ControlNo.MacroI, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 13) then -- Set ii
-        setControlValue(MacroControlNo.II, val) -- SOR
+        setControlValue(ControlNo.MacroII, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 14) then -- Set iii
-        setControlValue(MacroControlNo.III, val) -- SOR
+        setControlValue(ControlNo.MacroIII, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 15) then -- Set iv
-        setControlValue(MacroControlNo.IV, val) -- SOR
+        setControlValue(ControlNo.MacroIV, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 16) then -- Set v
-        setControlValue(MacroControlNo.V, val) -- SOR
+        setControlValue(ControlNo.MacroV, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 17) then -- Set vi
-        setControlValue(MacroControlNo.VI, val) -- SOR
+        setControlValue(ControlNo.MacroVI, val) -- SOR
         -- Set all macro names here as this will always be the last macro output SOR
         setMacroNames()
         return -- SOR
@@ -757,13 +758,15 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     end
 
     if (msg.controllerNumber==109 and msg.value==54) then -- Start User Names Found
-        --print("Start getting user presets")
+        print("Start getting user presets")
         info.setText(GETTING_PRESETS)
+        local loadPresetControl = controls.get(ControlNo.LoadPresets)
+        loadPresetControl:setColor(ORANGE)
         userNameIndex=0
         return -- SOR
     end
     if (msg.controllerNumber==109 and msg.value==55) then -- End User Names Found
-        --print("Finished getting user presets")
+        print("Finished getting user presets")
         onUserPresetsReceived() -- SOR
         return -- SOR
     end
@@ -1260,6 +1263,7 @@ function storeUserPreset (valueObject, value)
     end
     local userControl = controls.get(whichUserButton) -- Don't ever change control numbers of user presets
     userControl:setName(tStr)
+    print("storeUserPreset: getNames")
     getNames(valueObject, value) -- Reset the names to have correct preset displayed
 
     if (tStr == "CURRENT PRESET") then -- No preset position was selected to store in - return
@@ -1306,7 +1310,12 @@ end
 
 function preset.onLoad()
     -- print("preset.onLoad")
+    -- We do not currently support automatic loading of presets on startup.
+    -- So let's do what we can to encourage the player to press Load Presets
+    -- once the instrument is connected.
     info.setText(PRESS_LOAD_PRESETS)
+    local loadPresetControl = controls.get(ControlNo.LoadPresets)
+    loadPresetControl:setColor(RED)
     -- 
     -- If helpers.delay is called here, the requested wait does not happen.
     -- So this commented out code does not work to prevent startup freezes.
@@ -2987,7 +2996,7 @@ function setMacroNames() -- SOR
     --print("setMacroNames")
     stream = Stream.None
     -- Blank out macro names.
-    for controlNo = MacroControlNo.I, MacroControlNo.VI do
+    for controlNo = ControlNo.MacroI, ControlNo.MacroVI do
         macroControls[controlNo]:setName("")
     end
     -- The Control Text string consists of two or three lines in this order:
