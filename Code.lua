@@ -10,6 +10,7 @@ local GETTING_PRESETS = "Getting presets..." -- SOR
 local E1_PRESET_VERSION = "2.0" -- SOR
 -- Names longer than this will be truncated when shown on controls. SOR
 local MAX_NAME_LENGTH = 14
+local PRESS_LOAD_PRESETS = "Press Load Presets" -- SOR
 
 -- Global Initialization flags
 local storeInitialized = false -- Don't call certain things on Electra One startup procedure
@@ -109,11 +110,11 @@ local currentPresetNameBuffer = ""
 local firmwareVersion
 local gettingPresets = GettingPresets.None
 local hasFirmwareVersionAlreadyBeenReceived = false
---local hasJustLoaded = true
+local hasJustLoaded = true
 local haveSystemPresetsBeenReceived = false
 local isGettingCurrentPresetData = false
 local isSystemPresetsUpdateRequired = false
-local isWaitingForE1PresetLoadToComplete = true
+--local isWaitingForE1PresetLoadToComplete = true
 local receivedSystemPresetFilters = ""
 local receivedSystemPresetName = ""
 local stream = Stream.None
@@ -1133,7 +1134,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
     -- Process Middle C - Transpose
     if (stream == Stream.Matrix and channel==16 and noteNumber == 44) then -- MiddleC/Transpose
         local xposeAssign = math.floor (pressure)
-        print("Matrix stream: Received MiddleC "..xposeAssign)
+        --print("Matrix stream: Received MiddleC "..xposeAssign)
         local ctrl = controls.get(78)
         if (xposeAssign == 0) then
             -- nothing
@@ -1177,38 +1178,30 @@ end
 -- or requested from the instrument.
 -- Amended by SOR to prevent the boot sequence from getting stuck at the startup splash screen. 
 function getNames(valueObject, value)
-    if isWaitingForE1PresetLoadToComplete then
-        -- For unknown reason, getNames has been automatically called 
-        -- on loading the E1 preset.
-        -- But that can cause the E1 preset's boot up to freeze at the splash screen.
-        -- So cancel out of this.
-        -- preset.load will call getNames again after a wait that will hopefully
-        -- prevent the freeze.
-        print("getNames: Waiting for E1 preset load to complete")
+    if hasJustLoaded then
+        -- As the E1 preset has just been loaded,
+        -- this getNames function has been called automatically.
+        -- I don't know how to stop that from happening.
+        -- If the E1 preset has been loaded when the instrument was already connected,
+        -- attempting to get the user preset list automatically sometimes causes the
+        -- E1 boot sequence to get stuck at the startup splash screen and fail to complete.
+        -- See https://docs.electra.one/troubleshooting/defaultpreset.html.
+        -- So do not proceed to request the preset list.
+        -- The player must instead push the Load Presets button to get the preset lists
+        -- manually.
+        print("getNames: Automatic getting presets on startup is disabled.")
+        hasJustLoaded = false
         return
     end
+    -- I've tried putting a wait in preset.Onload. But the wait did not work.
+    --if isWaitingForE1PresetLoadToComplete then
+    --    print("getNames: Waiting for E1 preset load to complete")
+    --    return
+    --end
     print("getNames: Getting user presets")
     gettingPresets = GettingPresets.User -- SOR
     resetMute() -- reset in case on from previous preset
     requestUserPresetNames()
-    --if not hasJustLoaded then
-    --    requestUserPresetNames()
-    --    return
-    --end
-    --hasJustLoaded = false
-    ---- This Electra One preset is being loaded at boot up.
-    ---- Starting to receive the user presets immediately is likely 
-    ---- to cause the boot sequence to get stuck at the startup splash screen
-    ---- and fail to complete.
-    ---- See https://docs.electra.one/troubleshooting/defaultpreset.html.
-    ----
-    ---- So, to give the boot sequence time to get past the point where
-    ---- it can get stuck, pause before requesting the user preset names.
-    ---- I found that 400 milliseconds is just enough on my E1, regardless of
-    ---- whether system presets also need to be loaded.
-    ---- So 2 seconds should provide an ample safety margin.
-    --helpers.delay(2000)
-    --requestUserPresetNames()
 end
 
 -- Load up a user preset on pressing button 1-16 offset for bank
@@ -1312,24 +1305,27 @@ function storeUserPreset (valueObject, value)
 end
 
 function preset.onLoad()
-    print("preset.onLoad")
-    --info.setText(GETTING_PRESETS) // Does not work here, presumably due to the delay below.
-    -- This Electra One preset is being loaded at boot up.
-    -- Starting to receive the user presets immediately is likely 
-    -- to cause the boot sequence to get stuck at the startup splash screen
-    -- and fail to complete.
-    -- See https://docs.electra.one/troubleshooting/defaultpreset.html.
+    -- print("preset.onLoad")
+    info.setText(PRESS_LOAD_PRESETS)
+    -- 
+    -- If helpers.delay is called here, the requested wait does not happen.
+    -- So this commented out code does not work to prevent startup freezes.
     --
-    -- So, to give the boot sequence time to get past the point where
-    -- it can get stuck, pause before requesting the user preset names.
-    -- I found that 400 milliseconds is just enough on my E1, regardless of
-    -- whether system presets also need to be loaded.
-    -- So 2 seconds should provide an ample safety margin.
+    ---- This Electra One preset is being loaded at boot up.
+    ---- Starting to receive the user presets immediately is likely 
+    ---- to cause the boot sequence to get stuck at the startup splash screen
+    ---- and fail to complete.
+    ---- See https://docs.electra.one/troubleshooting/defaultpreset.html.
+    ----
+    ---- So, to give the boot sequence time to get past the point where
+    ---- it can get stuck, pause before requesting the user preset names.
+    ---- I found that 400 milliseconds is just enough on my E1, regardless of
+    ---- whether system presets also need to be loaded.
+    ---- So 2 seconds should provide an ample safety margin.
     --helpers.delay(2000)
-    helpers.delay(10000)
-    isWaitingForE1PresetLoadToComplete = false
-    print("preset.onLoad: Calling getNames")
-    getNames()
+    --isWaitingForE1PresetLoadToComplete = false
+    --print("preset.onLoad: Calling getNames")
+    --getNames()
 end
 
 -- Set User Preset names - they are controls 1-16
@@ -3044,10 +3040,10 @@ function setMiddleC(value) -- SOR
         -- Ignore junk initialisation to 0.
         -- This affected the initially loaded preset, 
         -- making it sound ultra low and effectively unplayable.
-        print("setMiddleC: Ignoring junk initialization to 0")
+        --print("setMiddleC: Ignoring junk initialization to 0")
         return
     end
-    print("setMiddleC: Setting middle C to "..value)
+    --print("setMiddleC: Setting middle C to "..value)
     matrixPoke(44, value)
 end
 
