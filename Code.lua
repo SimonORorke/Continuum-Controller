@@ -758,7 +758,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
     end
 
     if (msg.controllerNumber==109 and msg.value==54) then -- Start User Names Found
-        print("Start getting user presets")
+        --print("Start getting user presets")
         info.setText(GETTING_PRESETS)
         local loadPresetControl = controls.get(ControlNo.LoadPresets)
         loadPresetControl:setColor(ORANGE)
@@ -766,7 +766,7 @@ function midi.onMessage(midiInput, midiMessage) -- Process incoming Midi Message
         return -- SOR
     end
     if (msg.controllerNumber==109 and msg.value==55) then -- End User Names Found
-        print("Finished getting user presets")
+        --print("Finished getting user presets")
         onUserPresetsReceived() -- SOR
         return -- SOR
     end
@@ -1231,7 +1231,7 @@ function storeUserPreset (valueObject, value)
     end
     local userControl = controls.get(whichUserButton) -- Don't ever change control numbers of user presets
     userControl:setName(tStr)
-    print("storeUserPreset: getPresets")
+    --print("storeUserPreset: getPresets")
     getPresets(valueObject, value) -- Reset the names to have correct preset displayed
 
     if (tStr == "CURRENT PRESET") then -- No preset position was selected to store in - return
@@ -2720,7 +2720,7 @@ function getPresets(valueObject, value)
         -- So do not proceed to request the preset list.
         -- The player must instead push the Load Presets button to get the preset lists
         -- manually.
-        print("getPresets: Automatic getting presets on startup is disabled.")
+        --print("getPresets: Automatic getting presets on startup is disabled.")
         hasJustLoaded = false
         return
     end
@@ -2733,10 +2733,10 @@ function getPresets(valueObject, value)
     -- For unknown reason, getPresets gets called twice
     -- when the Load Presets button is pressed.
     if gettingPresets == GettingPresets.User then
-        print("getPresets: Ignoring phantom re-entry")
+        --print("getPresets: Ignoring phantom re-entry")
         return
     end 
-    print("getPresets: Getting user presets")
+    --print("getPresets: Getting user presets")
     gettingPresets = GettingPresets.User
     resetMute() -- reset in case on from previous preset
     requestUserPresetNames()
