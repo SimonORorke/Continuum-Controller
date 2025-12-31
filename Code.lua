@@ -509,6 +509,10 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         end
         return
     end
+    if (chan == 16 and cc == 104) then -- ccCVCHigh
+        print("Hardware identifier test = "..value)
+        return
+    end
     if (chan == 16 and cc == 71) then -- Polyphony
         if (val < 16) then
             setControlValue(183, val) -- SOR
