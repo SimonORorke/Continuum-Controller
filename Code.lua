@@ -126,7 +126,6 @@ local currentPresetNameBuffer = ""
 local firmwareVersion
 local gettingPresets = GettingPresets.None
 local hardwareType = HardwareType.Unknown
-local hasFirmwareVersionAlreadyBeenReceived = false
 local hasJustLoaded = true
 local haveSystemPresetsBeenReceived = false
 local isGettingCurrentPresetData = false
@@ -162,24 +161,21 @@ currentPreset.loadState = PresetLoadState.AlreadyLoaded
 -- 0 is for user presets and 127 for system presets.)
 currentPreset.type = PresetType.Unknown
 
--- A dictionary for looking up the instrument hardware type/version 
+-- A dictionary for looking up the name of the instrument hardware type/version 
 -- corresponding to the numeric HardwareType provided by the instrument. SOR
-local hardwareTypes = {}
--- Index 0 is normally not recommended in Lua.
--- But in this case I think it's OK, 
--- as it will be used only for lookup, not iteration.
-hardwareTypes[0] = "Unknown"
-hardwareTypes[1] = "Light-Action Full-Size Continuum"
-hardwareTypes[2] = "Light-Action Half-Size Continuum"
-hardwareTypes[3] = "Classic-Action Full-Size Continuum"
-hardwareTypes[4] = "Classic-Action Half-Size Continuum"
-hardwareTypes[5] = "ContinuuMini"
-hardwareTypes[6] = "Osmose"
-hardwareTypes[7] = "Slim22 Continuum"
-hardwareTypes[8] = "Slim46 Continuum"
-hardwareTypes[9] = "Slim70 Continuum"
-hardwareTypes[10] = "EaganMatrix Module"
-hardwareTypes[11] = "EaganMatrix Micro"
+local hardwareTypeNames = {}
+hardwareTypeNames[HardwareType.Unknown] = "Unknown"
+hardwareTypeNames[HardwareType.LightActionFullSize] = "Light-Action Full-Size Continuum"
+hardwareTypeNames[HardwareType.LightActionHalfSize] = "Light-Action Half-Size Continuum"
+hardwareTypeNames[HardwareType.ClassicActionFullSize] = "Classic-Action Full-Size Continuum"
+hardwareTypeNames[HardwareType.ClassicActionHalfSize] = "Classic-Action Half-Size Continuum"
+hardwareTypeNames[HardwareType.ContinuuMini] = "ContinuuMini"
+hardwareTypeNames[HardwareType.Osmose] = "Osmose"
+hardwareTypeNames[HardwareType.Slim22] = "Slim22 Continuum"
+hardwareTypeNames[HardwareType.Slim46] = "Slim46 Continuum"
+hardwareTypeNames[HardwareType.Slim70] = "Slim70 Continuum"
+hardwareTypeNames[HardwareType.EaganMatrixModule] = "EaganMatrix Module"
+hardwareTypeNames[HardwareType.EaganMatrixMicro] = "EaganMatrix Micro"
 
 local macroControls = {} -- SOR
 for controlNo = ControlNo.MacroI, ControlNo.MacroVI do
@@ -540,11 +536,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     if (chan == 16 and cc == 103) then
         -- Firmware Low Address
         lowVersion = value
-        -- Amended by SOR: Get system presets.
-        if not hasFirmwareVersionAlreadyBeenReceived then
-            hasFirmwareVersionAlreadyBeenReceived = true
-            onFirmwareVersionReceived()
-        end
+        onFirmwareVersionReceived()
         return
     end
     if (chan == 16 and cc == 104) then
@@ -2894,7 +2886,7 @@ function getPresets(valueObject, value)
         --print("getPresets: Ignoring phantom re-entry")
         return
     end
-    --print("getPresets: Getting user presets")
+    --print("getPresets: Requesting user presets")
     gettingPresets = GettingPresets.User
     resetMute() -- reset in case on from previous preset
     requestUserPresetNames()
@@ -2980,7 +2972,7 @@ end
 function onAllPresetsReceived()
     -- Replace the "Getting presets..." notification 
     -- on the status bar with the version info.
-    info.setText(versionText)
+    info.setText(versionText)--
     -- Get the data for the preset that is loaded on the instrument.
     getCurrentPresetData()
 end
@@ -3031,22 +3023,32 @@ end
 
 function onFirmwareVersionReceived()
     --print("onFirmwareVersionReceived")
-    -- There's no specific command to request the firmware version.
-    -- The instrument sends it more than once: on connecting to E1;
-    -- when sending user presets; when sending system presets, etc.
-    -- We don't want to show the firmware version every time it is received,
-    -- as there may be a progress message in the info text while
-    -- preset data is being received.  
-    -- So save the version info to a variable to be shown again
-    -- when all the preset data has been received.
+    -- There's no command to request the firmware version.
+    -- The instrument sends it when sending user presets, 
+    -- system presets, current preset details etc.
+    -- We only really need to check it when user presets are being received.
+    -- However, perhaps due to lack of multithreading,
+    -- checking whether user presets are being received does not work here.
+    --if GettingPresets ~= GettingPresets.User then
+    --    return
+    --end
     firmwareVersion = ((128 * highVersion) + lowVersion) / 100
     versionText = "Ver: " .. E1_PRESET_VERSION .. "/" .. firmwareVersion
-    info.setText(versionText) -- Versions to Info Text
 end
 
 function onHardwareTypeReceived(cvcHigh)
+    --print("onHardwareTypeReceived")
+    -- There's no command to request the hardware type.
+    -- The instrument sends it when sending user presets, 
+    -- system presets, current preset details etc.
+    -- We only really need to check it when user presets are being received.
+    -- However, perhaps due to lack of multithreading,
+    -- checking whether user presets are being received does not work here.
+    --if GettingPresets ~= GettingPresets.User then
+    --    return
+    --end
     hardwareType = cvcHigh >> 2
-    local hardwareTypeName = hardwareTypes[hardwareType]
+    local hardwareTypeName = hardwareTypeNames[hardwareType]
     print("onHardwareTypeReceived: Hardware type = " .. hardwareTypeName)
     if hardwareType >= 7 and hardwareType <= 10 then
         -- Supported hardware types: Slim22 (if there any of those actually exist),
