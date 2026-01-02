@@ -3051,6 +3051,7 @@ function onHardwareTypeReceived(cvcHigh)
     --    return
     --end
     hardwareType = cvcHigh >> 2
+    --hardwareType = HardwareType.ContinuuMini -- For testing unsupported hardware type.
     local hardwareTypeName = hardwareTypeNames[hardwareType]
     print("onHardwareTypeReceived: New hardware type = " .. hardwareTypeName
         .. "; old hardware type = " .. hardwareTypeNames[persistableData.hardwareType])
@@ -3070,6 +3071,13 @@ function onHardwareTypeReceived(cvcHigh)
         -- Slim46, Slim70, EaganMatrixModule.
         return
     end
+    -- Raising an error will not terminate the E1 script. It can only be seen
+    -- in the debug page of the Electra One Preset Editor.
+    -- An E1 script can only be terminated by an E1 hardware and firmware check
+    -- like the one at the top of this file.
+    -- So raising this error will not stop the preset list from being received.
+    -- That's OK for now. A player can try connecting an unsupported instrument,
+    -- at their own risk, and see what happens.
     error("Hardware type " .. hardwareTypeName .. " is not supported.")
 end
 
