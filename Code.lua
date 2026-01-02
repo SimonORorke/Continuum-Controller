@@ -98,9 +98,9 @@ HardwareType.EaganMatrixMicro = 11
 -- An enumeration (enum) of preset load states.
 local PresetLoadState = {} -- SOR
 -- The preset was already loaded on the instrument when the E1 preset was loaded.
-PresetLoadState.AlreadyLoaded = 1
-PresetLoadState.Loading = 2 -- The preset is being loaded.
-PresetLoadState.Loaded = 3 -- The preset has been loaded by this E1 preset.
+PresetLoadState.AlreadyLoaded = 0
+PresetLoadState.Loading = 1 -- The preset is being loaded.
+PresetLoadState.Loaded = 2 -- The preset has been loaded by this E1 preset.
 
 -- An enumeration (enum) of preset types.
 local PresetType = {} -- SOR
@@ -128,7 +128,6 @@ local currentPresetNameBuffer = ""
 local firmwareVersion
 local gettingPresets = GettingPresets.None
 local hardwareType = HardwareType.Unknown
-local hasHardwareTypeChanged = true
 local hasJustLoaded = true
 local haveSystemPresetsBeenReceived = false
 local isGettingCurrentPresetData = false
@@ -2850,19 +2849,8 @@ end
 
 function getCurrentPresetData()
     --print("getCurrentPresetData")
-    print("getCurrentPresetData: hasHardwareTypeChanged = " .. tostring(hasHardwareTypeChanged))
     stream = Stream.ControlText
     isGettingCurrentPresetData = true
-    if hasHardwareTypeChanged then
-        currentPreset.bankMsb = 0
-        currentPreset.bankLsb = 0
-        currentPreset.programNo = 0
-        currentPreset.name = ""
-        currentPreset.loadState = PresetLoadState.AlreadyLoaded
-        currentPreset.type = PresetType.Unknown
-        userPresetPosSelect = 0
-        updateUserPresetPos(0)
-    end
     -- Send get Current Preset Msg to get Macro labels and control values
     midi.sendControlChange(DEVICE_PORT, 16, 109, 16)
 end
@@ -2903,7 +2891,8 @@ function getPresets(valueObject, value)
     --print("getPresets: Requesting user presets")
     gettingPresets = GettingPresets.User
     resetMute() -- reset in case on from previous preset
-    requestUserPresetNames()
+    -- Request user presets
+    midi.sendControlChange(DEVICE_PORT, 16, 109, 32)
 end
 
 function getSystemPresets()
@@ -3063,13 +3052,19 @@ function onHardwareTypeReceived(cvcHigh)
     --end
     hardwareType = cvcHigh >> 2
     local hardwareTypeName = hardwareTypeNames[hardwareType]
-    print("onHardwareTypeReceived: Hardware type = " .. hardwareTypeName)
-    if hardwareType == persistableData.hardwareType then
-        hasHardwareTypeChanged = false
-    else
-        hasHardwareTypeChanged = true
+    print("onHardwareTypeReceived: New hardware type = " .. hardwareTypeName
+        .. "; old hardware type = " .. hardwareTypeNames[persistableData.hardwareType])
+    if hardwareType ~= persistableData.hardwareType then
+        print("    Initialising currentPreset")
+        currentPreset.bankMsb = 0
+        currentPreset.bankLsb = 0
+        currentPreset.programNo = 0
+        currentPreset.name = ""
+        currentPreset.loadState = PresetLoadState.AlreadyLoaded
+        currentPreset.type = PresetType.Unknown
+        userPresetPosSelect = 0
+        updateUserPresetPos(0)
     end
-    print("    Set hasHardwareTypeChanged to " .. tostring(hasHardwareTypeChanged))
     if hardwareType >= 7 and hardwareType <= 10 then
         -- Supported hardware types: Slim22 (if there any of those actually exist),
         -- Slim46, Slim70, EaganMatrixModule.
@@ -3149,10 +3144,6 @@ function replaceLongSystemPresetNamesWithShortNames()
             end
         end
     end
-end
-
-function requestUserPresetNames()
-    midi.sendControlChange(DEVICE_PORT, 16, 109, 32)
 end
 
 function savePersistableData()
