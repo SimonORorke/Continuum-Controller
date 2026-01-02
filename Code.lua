@@ -29,16 +29,16 @@ local muteVal = 60 -- Default pre-gain (but will be set from reading presets)
 local lowVersion = 8.0 -- Default to 10.35
 local highVersion = 12.0 -- Default to 10.35
 -- Dummies to reserve some memory up front
-local userNames = { "U1", "U2", "U3", "U4", "U5", "U6", "U7", "U8", "U9", "U10", "U11", "U12", "U13", "U14", "U15", "U16",
-                    "U17", "U18", "U19", "U20", "U21", "U22", "U23", "U24", "U25", "U26", "U27", "U28", "U29", "U30", "U31", "U32",
-                    "U33", "U34", "U35", "U36", "U37", "U38", "U39", "U40", "U41", "U42", "U43", "U44", "U45", "U46", "U47", "U48",
-                    "U49", "U50", "U51", "U52", "U53", "U54", "U55", "U56", "U57", "U58", "U59", "U60", "U61", "U62", "U63", "U64",
-                    "U65", "U66", "U67", "U68", "U69", "U70", "U71", "U72", "U73", "U74", "U75", "U76", "U77", "U78", "U79", "U80",
-                    "U81", "U82", "U83", "U84", "U85", "U86", "U87", "U88", "U89", "U90", "U91", "U92", "U93", "U94", "U95", "U96",
-                    "U97", "U98", "U99", "U100", "U101", "U102", "U103", "U104",
-                    "U105", "U106", "U107", "U108", "U109", "U110", "U111", "U112",
-                    "U113", "U114", "U115", "U116", "U117", "U118", "U119", "120",
-                    "U121", "U122", "U123", "U124", "U125", "U126", "U127", "U128" }
+local userPresetNames = { "U1", "U2", "U3", "U4", "U5", "U6", "U7", "U8", "U9", "U10", "U11", "U12", "U13", "U14", "U15", "U16",
+                          "U17", "U18", "U19", "U20", "U21", "U22", "U23", "U24", "U25", "U26", "U27", "U28", "U29", "U30", "U31", "U32",
+                          "U33", "U34", "U35", "U36", "U37", "U38", "U39", "U40", "U41", "U42", "U43", "U44", "U45", "U46", "U47", "U48",
+                          "U49", "U50", "U51", "U52", "U53", "U54", "U55", "U56", "U57", "U58", "U59", "U60", "U61", "U62", "U63", "U64",
+                          "U65", "U66", "U67", "U68", "U69", "U70", "U71", "U72", "U73", "U74", "U75", "U76", "U77", "U78", "U79", "U80",
+                          "U81", "U82", "U83", "U84", "U85", "U86", "U87", "U88", "U89", "U90", "U91", "U92", "U93", "U94", "U95", "U96",
+                          "U97", "U98", "U99", "U100", "U101", "U102", "U103", "U104",
+                          "U105", "U106", "U107", "U108", "U109", "U110", "U111", "U112",
+                          "U113", "U114", "U115", "U116", "U117", "U118", "U119", "120",
+                          "U121", "U122", "U123", "U124", "U125", "U126", "U127", "U128" }
 
 -- Enums
 -- Pascal case (where names start with capitals) for enum names allows code like this:
@@ -63,13 +63,15 @@ Category.Other1 = 14
 
 -- An enumeration (enum) of control numbers.
 local ControlNo = {} -- SOR
-ControlNo.LoadPresets = 35
-ControlNo.MacroI = 25
-ControlNo.MacroII = 26
-ControlNo.MacroIII = 27
-ControlNo.MacroIV = 28
-ControlNo.MacroV = 29
-ControlNo.MacroVI = 30
+ControlNo.CurrentPresetButton = 50
+ControlNo.CurrentPresetGroup = 49
+ControlNo.LoadPresetsButton = 35
+ControlNo.MacroI_Value = 25
+ControlNo.MacroII_Value = 26
+ControlNo.MacroIII_Value = 27
+ControlNo.MacroIV_Value = 28
+ControlNo.MacroV_Value = 29
+ControlNo.MacroVI_Value = 30
 
 -- An enumeration (enum) indicating which type of preset list, if any,
 -- is being received from the instrument.
@@ -126,6 +128,7 @@ local currentPresetNameBuffer = ""
 local firmwareVersion
 local gettingPresets = GettingPresets.None
 local hardwareType = HardwareType.Unknown
+local hasHardwareTypeChanged = true
 local hasJustLoaded = true
 local haveSystemPresetsBeenReceived = false
 local isGettingCurrentPresetData = false
@@ -178,19 +181,19 @@ hardwareTypeNames[HardwareType.EaganMatrixModule] = "EaganMatrix Module"
 hardwareTypeNames[HardwareType.EaganMatrixMicro] = "EaganMatrix Micro"
 
 local macroControls = {} -- SOR
-for controlNo = ControlNo.MacroI, ControlNo.MacroVI do
+for controlNo = ControlNo.MacroI_Value, ControlNo.MacroVI_Value do
     macroControls[controlNo] = controls.get(controlNo)
 end
 
 -- A dictionary for looking up the macro control number 
 -- corresponding to the macro id provided by the instrument.
 local macroControlNos = {} -- SOR
-macroControlNos["i"] = ControlNo.MacroI
-macroControlNos["ii"] = ControlNo.MacroII
-macroControlNos["iii"] = ControlNo.MacroIII
-macroControlNos["iv"] = ControlNo.MacroIV
-macroControlNos["v"] = ControlNo.MacroV
-macroControlNos["vi"] = ControlNo.MacroVI
+macroControlNos["i"] = ControlNo.MacroI_Value
+macroControlNos["ii"] = ControlNo.MacroII_Value
+macroControlNos["iii"] = ControlNo.MacroIII_Value
+macroControlNos["iv"] = ControlNo.MacroIV_Value
+macroControlNos["v"] = ControlNo.MacroV_Value
+macroControlNos["vi"] = ControlNo.MacroVI_Value
 
 -- Added by SOR: Get system presets.
 local persistableData = {}
@@ -207,7 +210,7 @@ if not persistableData.isSaved then
     -- Not strictly necessary,
     --  provided isSaved is always checked before accessing these items.
     persistableData.firmwareVersion = ""
-    persistableData.HardwareType = HardwareType.Unknown
+    persistableData.hardwareType = HardwareType.Unknown
     persistableData.systemPresetCategories = {}
 else
     --print("persistableData.firmwareVersion = "..persistableData.firmwareVersion)
@@ -567,32 +570,32 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     -- End Read Only Controls
     if (chan == 1 and cc == 12) then
         -- Set i
-        setControlValue(ControlNo.MacroI, val) -- SOR
+        setControlValue(ControlNo.MacroI_Value, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 13) then
         -- Set ii
-        setControlValue(ControlNo.MacroII, val) -- SOR
+        setControlValue(ControlNo.MacroII_Value, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 14) then
         -- Set iii
-        setControlValue(ControlNo.MacroIII, val) -- SOR
+        setControlValue(ControlNo.MacroIII_Value, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 15) then
         -- Set iv
-        setControlValue(ControlNo.MacroIV, val) -- SOR
+        setControlValue(ControlNo.MacroIV_Value, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 16) then
         -- Set v
-        setControlValue(ControlNo.MacroV, val) -- SOR
+        setControlValue(ControlNo.MacroV_Value, val) -- SOR
         return -- SOR
     end
     if (chan == 1 and cc == 17) then
         -- Set vi
-        setControlValue(ControlNo.MacroVI, val) -- SOR
+        setControlValue(ControlNo.MacroVI_Value, val) -- SOR
         -- Set all macro names here as this will always be the last macro output SOR
         setMacroNames()
         return -- SOR
@@ -840,7 +843,7 @@ function midi.onMessage(midiInput, midiMessage)
         -- Start User Names Found
         --print("Start getting user presets")
         info.setText(GETTING_PRESETS)
-        local loadPresetControl = controls.get(ControlNo.LoadPresets)
+        local loadPresetControl = controls.get(ControlNo.LoadPresetsButton)
         loadPresetControl:setColor(ORANGE)
         userNameIndex = 0
         return -- SOR
@@ -934,7 +937,7 @@ function midi.onMessage(midiInput, midiMessage)
                 userPresetNameBuffer = string.sub(tmpstr, 1, 14)
             end
             -- Store Preset name in array 
-            userNames[userNameIndex] = userPresetNameBuffer -- SOR
+            userPresetNames[userNameIndex] = userPresetNameBuffer -- SOR
         end
         userPresetNameBuffer = "" -- Reset userPresetNameBuffer to accumulate the next name
     elseif (stream == Stream.Convolution and msg.controllerNumber == 56 and msg.value == 127) then
@@ -1299,12 +1302,12 @@ function loadUserPreset(valueObject, value)
         --  -- Changing pages triggers Control #1 with 0 value (not sure why) return
         return
     end
-    local presetNo = presetPos + presetOffset -- 1-based for userNames table index.
+    local presetNo = presetPos + presetOffset -- 1-based for userPresetNames table index.
     local programNo = presetNo - 1 -- 0-based for Program change 0..127
     if (presetNo >= 1 and presetNo <= 128) then
         local bankMsb = 0 -- 0 = User Presets
         local bankLsb = 0 -- Because there are a maximum of 128 user presets
-        local presetName = userNames[presetNo]
+        local presetName = userPresetNames[presetNo]
         --print("loadUserPreset: Set presetName to "..presetName)
         loadPreset(bankMsb, bankLsb, programNo, presetName)
     else
@@ -1328,7 +1331,7 @@ function storeUserPreset (valueObject, value)
     local s1 = 0
     local s2 = 0
     local whichUserButton = 0
-    local control = controls.get(50)
+    local control = controls.get(ControlNo.CurrentPresetButton)
     local tStr = control:getName()
 
     if (userPresetPosSelect == 0) then
@@ -1403,7 +1406,7 @@ function preset.onLoad()
     -- So let's do what we can to encourage the player to press Load Presets
     -- once the instrument is connected.
     info.setText(PRESS_LOAD_PRESETS)
-    local loadPresetControl = controls.get(ControlNo.LoadPresets)
+    local loadPresetControl = controls.get(ControlNo.LoadPresetsButton)
     loadPresetControl:setColor(RED)
     -- 
     -- If helpers.delay is called here, the requested wait does not happen.
@@ -1433,8 +1436,8 @@ function setUserPresetNames()
     for i = 1, 16
     do
         control = controls.get(i)
-        control:setName(userNames[i])
-        --print(userNames[i]) -- debugit
+        control:setName(userPresetNames[i])
+        --print(userPresetNames[i]) -- debugit
     end
     -- Set the preset tags
     group = groups.get(51)
@@ -1475,7 +1478,7 @@ function setPresetsAt17()
     for i = 17, 32
     do
         control = controls.get(i - presetOffset)
-        control:setName(userNames[i])
+        control:setName(userPresetNames[i])
     end
 
     -- Set the preset tags  
@@ -1517,7 +1520,7 @@ function setPresetsAt33()
     for i = 33, 48
     do
         control = controls.get(i - presetOffset)
-        control:setName(userNames[i])
+        control:setName(userPresetNames[i])
     end
 
     -- Set the preset tags
@@ -1560,7 +1563,7 @@ function setPresetsAt49()
     for i = 49, 64
     do
         control = controls.get(i - presetOffset)
-        control:setName(userNames[i])
+        control:setName(userPresetNames[i])
     end
     -- Set the preset tags
     group = groups.get(51)
@@ -1602,7 +1605,7 @@ function setPresetsAt65()
     for i = 65, 80
     do
         control = controls.get(i - presetOffset)
-        control:setName(userNames[i])
+        control:setName(userPresetNames[i])
     end
     -- Set the preset tags
     group = groups.get(51)
@@ -1644,7 +1647,7 @@ function setPresetsAt81()
     for i = 81, 96
     do
         control = controls.get(i - presetOffset)
-        control:setName(userNames[i])
+        control:setName(userPresetNames[i])
     end
     -- Set the preset tags
     group = groups.get(51)
@@ -1686,7 +1689,7 @@ function setPresetsAt97()
     for i = 97, 112
     do
         control = controls.get(i - presetOffset)
-        control:setName(userNames[i])
+        control:setName(userPresetNames[i])
     end
     -- Set the preset tags
     group = groups.get(51)
@@ -1727,7 +1730,7 @@ function setPresetsAt113()
     for i = 113, 128
     do
         control = controls.get(i - presetOffset)
-        control:setName(userNames[i])
+        control:setName(userPresetNames[i])
     end
     -- Set the preset tags
     group = groups.get(51)
@@ -2847,8 +2850,19 @@ end
 
 function getCurrentPresetData()
     --print("getCurrentPresetData")
+    print("getCurrentPresetData: hasHardwareTypeChanged = " .. tostring(hasHardwareTypeChanged))
     stream = Stream.ControlText
     isGettingCurrentPresetData = true
+    if hasHardwareTypeChanged then
+        currentPreset.bankMsb = 0
+        currentPreset.bankLsb = 0
+        currentPreset.programNo = 0
+        currentPreset.name = ""
+        currentPreset.loadState = PresetLoadState.AlreadyLoaded
+        currentPreset.type = PresetType.Unknown
+        userPresetPosSelect = 0
+        updateUserPresetPos(0)
+    end
     -- Send get Current Preset Msg to get Macro labels and control values
     midi.sendControlChange(DEVICE_PORT, 16, 109, 16)
 end
@@ -2978,9 +2992,9 @@ function onAllPresetsReceived()
 end
 
 function onCurrentPresetDataReceived()
-    --print("onCurrentPresetDataReceived: currentPreset.programNo = "..currentPreset.programNo..
-    --        "; currentPreset.loadState = "..tostring(currentPreset.loadState)..
-    --"; currentPreset.type = "..currentPreset.type)
+    print("onCurrentPresetDataReceived: currentPreset.programNo = "..currentPreset.programNo..
+            "; currentPreset.loadState = "..tostring(currentPreset.loadState)..
+    "; currentPreset.type = "..currentPreset.type)
     if currentPreset.type == PresetType.Unknown then
         -- We must have just received the data for the preset that was
         -- already loaded on the instrument when the E1 preset was loaded.
@@ -2995,7 +3009,7 @@ function onCurrentPresetDataReceived()
         end
     end
     -- Show the preset name on the Current Preset control.
-    local currentPresetControl = controls.get(50)
+    local currentPresetControl = controls.get(ControlNo.CurrentPresetButton)
     currentPresetControl:setName(currentPreset.name)
     if currentPreset.type == PresetType.Unknown then
         -- We must have just received the data for the preset that was
@@ -3050,6 +3064,12 @@ function onHardwareTypeReceived(cvcHigh)
     hardwareType = cvcHigh >> 2
     local hardwareTypeName = hardwareTypeNames[hardwareType]
     print("onHardwareTypeReceived: Hardware type = " .. hardwareTypeName)
+    if hardwareType == persistableData.hardwareType then
+        hasHardwareTypeChanged = false
+    else
+        hasHardwareTypeChanged = true
+    end
+    print("    Set hasHardwareTypeChanged to " .. tostring(hasHardwareTypeChanged))
     if hardwareType >= 7 and hardwareType <= 10 then
         -- Supported hardware types: Slim22 (if there any of those actually exist),
         -- Slim46, Slim70, EaganMatrixModule.
@@ -3193,7 +3213,7 @@ function setMacroNames()
     --print("setMacroNames")
     stream = Stream.None
     -- Blank out macro names.
-    for controlNo = ControlNo.MacroI, ControlNo.MacroVI do
+    for controlNo = ControlNo.MacroI_Value, ControlNo.MacroVI_Value do
         macroControls[controlNo]:setName("")
     end
     -- The Control Text string consists of two or three lines in this order:
@@ -3344,10 +3364,10 @@ end
 -- slotNo: The 1-based user preset slot number, or zero if none has been selected or set.
 function updateUserPresetPos(slotNo)
     userPresetPosSelect = slotNo
-    --print("updateUserPresetPos: userPresetPosSelect = "..userPresetPosSelect..
-    --    "; currentPreset.type = "..currentPreset.type)
-    local currentPresetGroup = groups.get(49)
-    local currentPresetControl = controls.get(50)
+    print("updateUserPresetPos: userPresetPosSelect = "..userPresetPosSelect..
+        "; currentPreset.type = "..currentPreset.type)
+    local currentPresetGroup = groups.get(ControlNo.CurrentPresetGroup)
+    local currentPresetControl = controls.get(ControlNo.CurrentPresetButton)
     if userPresetPosSelect > 0 then
         currentPresetControl:setColor(RED)
         currentPresetGroup:setLabel("Store Preset")
