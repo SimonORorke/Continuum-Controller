@@ -197,7 +197,7 @@ macroControlNos["vi"] = ControlNo.MacroVI_Value
 -- Added by SOR: Get system presets.
 local persistableData = {}
 -- Do initial recall
-print("Recalling persistableData")
+--print("Recalling persistableData")
 recall(persistableData)
 -- Uncomment any of these to force system presets to be got from the instrument.
 -- persistableData.isSaved = false
@@ -3088,13 +3088,13 @@ function onSystemPresetReceived()
     -- where CC is the category code.  We currently don't use the filter codes.
     local categoryCode = string.sub(receivedSystemPresetFilters, 3, 4)
     if not categoryCode then
-        print("onSystemPresetReceived: Cannot find category for "
+        error("onSystemPresetReceived: Cannot find category for "
                 .. receivedSystemPresetName .. " in " .. receivedSystemPresetFilters)
         return
     end
     local category = categoryNos[categoryCode]
     if not category then
-        print("onSystemPresetReceived: Cannot find " .. categoryCode ..
+        error("onSystemPresetReceived: Cannot find " .. categoryCode ..
                 " category number for " .. receivedSystemPresetName)
         return
     end
