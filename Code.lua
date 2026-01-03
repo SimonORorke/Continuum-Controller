@@ -2896,12 +2896,13 @@ function getPresets(valueObject, value)
 end
 
 function getSystemPresets()
-    --print("getSystemPresets")
+    print("getSystemPresets") -- TEMP
     if isSystemPresetsUpdateRequired() then
+        print("    Requesting system presets.") -- TEMP
         -- Request system preset names (sysToMidi).
         midi.sendControlChange(DEVICE_PORT, 16, 109, 39)
     else
-        --print("    Getting system presets from persisted data.")
+        print("    Getting system presets from persisted data.") -- TEMP
         systemPresetCategories = persistableData.systemPresetCategories
         onSystemPresetsReceived(true)
     end
@@ -2917,16 +2918,20 @@ end
 -- Returns whether system presets must be updated from the instrument.
 -- When false, system presets may be populated from data persisted on the E1.
 function isSystemPresetsUpdateRequired()
+    print("isSystemPresetsUpdateRequired") -- TEMP
     if not persistableData.isSaved
             or persistableData.firmwareVersion ~= firmwareVersion
             or #persistableData.systemPresetCategories == 0 then
+        print("    True: Firmware version has changed") -- TEMP
         return true
     end
     if persistableData.hardwareType == hardwareType then
+        print("    False: Hardware type has not changed") -- TEMP
         return false
     end
-    -- Only hardware type has changed, not the software version.
+    -- Only hardware type has changed, not the firmware version.
     if not isHardWareTypeContinuum(hardwareType) then
+        print("    True: New hardware type is EMM") -- TEMP
         return true
     end
     -- The connected instrument is some type of Continuum.
@@ -2934,6 +2939,13 @@ function isSystemPresetsUpdateRequired()
     -- instrument was also a Continuum.
     -- This might not work if an old (i.e. classic or light) Continuum were involved.
     -- But we don't support those.
+    local isEmm = isHardWareTypeContinuum(persistableData.hardwareType) -- TEMP
+    -- TEMP
+    if isEmm then
+        print("    True: Changed from EMM to Continuum") -- TEMP
+    else
+        print("    False: Changed Continuum model") -- TEMP
+    end
     return not isHardWareTypeContinuum(persistableData.hardwareType)
 end
 
@@ -2983,7 +2995,7 @@ end
 function onCurrentPresetDataReceived()
     print("onCurrentPresetDataReceived: currentPreset.programNo = "..currentPreset.programNo..
             "; currentPreset.loadState = "..tostring(currentPreset.loadState)..
-    "; currentPreset.type = "..currentPreset.type)
+    "; currentPreset.type = "..currentPreset.type) -- TEMP
     if currentPreset.type == PresetType.Unknown then
         -- We must have just received the data for the preset that was
         -- already loaded on the instrument when the E1 preset was loaded.
@@ -3054,7 +3066,7 @@ function onHardwareTypeReceived(cvcHigh)
     --hardwareType = HardwareType.ContinuuMini -- For testing unsupported hardware type.
     local hardwareTypeName = hardwareTypeNames[hardwareType]
     print("onHardwareTypeReceived: New hardware type = " .. hardwareTypeName
-        .. "; old hardware type = " .. hardwareTypeNames[persistableData.hardwareType])
+        .. "; old hardware type = " .. hardwareTypeNames[persistableData.hardwareType]) -- TEMP
     if hardwareType ~= persistableData.hardwareType then
         print("    Initialising currentPreset")
         currentPreset.bankMsb = 0
@@ -3113,15 +3125,10 @@ function onSystemPresetsReceived(fromPersistedData)
     haveSystemPresetsBeenReceived = true
     if not fromPersistedData then
         replaceLongSystemPresetNamesWithShortNames()
+        print("onSystemPresetsReceived: Saving persistabe data") -- TEMP
         savePersistableData()
     end
     onAllPresetsReceived()
-    --local categoryCount = #systemPresetCategories
-    --for category = 1, categoryCount do
-    --    local presetNames = systemPresetCategories[category]
-    --    local presetCount = #presetNames
-    --    print("Category "..category.." has "..presetCount.." system presets.")
-    --end
     selectPresetCategory(nil, nil)
     selectSystemPreset()
 end
@@ -3155,7 +3162,7 @@ function replaceLongSystemPresetNamesWithShortNames()
 end
 
 function savePersistableData()
-    --print("Saving persistableData")
+    print("Saving persistableData") -- TEMP
     persistableData.isSaved = true
     persistableData.firmwareVersion = firmwareVersion
     persistableData.hardwareType = hardwareType
@@ -3364,7 +3371,7 @@ end
 function updateUserPresetPos(slotNo)
     userPresetPosSelect = slotNo
     print("updateUserPresetPos: userPresetPosSelect = "..userPresetPosSelect..
-        "; currentPreset.type = "..currentPreset.type)
+        "; currentPreset.type = "..currentPreset.type) -- TEMP
     local currentPresetGroup = groups.get(ControlNo.CurrentPresetGroup)
     local currentPresetControl = controls.get(ControlNo.CurrentPresetButton)
     if userPresetPosSelect > 0 then
