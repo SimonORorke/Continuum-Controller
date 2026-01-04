@@ -108,6 +108,12 @@ PresetType.Unknown = 0 -- See comment above currentPreset.Type.
 PresetType.User = 1
 PresetType.System = 2
 
+-- An enumeration (enum) for a hardware type change test strategy.
+local HardwareSimulationStrategy = {}
+HardwareSimulationStrategy.None = 0
+HardwareSimulationStrategy.OnStart = 1
+HardwareSimulationStrategy.OnHotSwitch = 2
+
 -- An enumeration (enum) of preset data stream types.
 local Stream = {} -- SOR
 Stream.None = 0
@@ -126,7 +132,10 @@ local controlTextBuffer = ""
 local convolutionBuffer = ""
 local currentPresetNameBuffer = ""
 local firmwareVersion
+local getPresetsCount = 0
 local gettingPresets = GettingPresets.None
+local hardwareSimulation = false
+local hardwareSimulationStrategy = HardwareSimulationStrategy.OnHotSwitch
 local hardwareType = HardwareType.Unknown
 local hasJustLoaded = true
 local haveSystemPresetsBeenReceived = false
@@ -2872,7 +2881,12 @@ function getPresets(valueObject, value)
         -- So do not proceed to request the preset list.
         -- The player must instead push the Load Presets button to get the preset lists
         -- manually.
-        --print("getPresets: Automatic getting presets on startup is disabled.")
+        print("getPresets: Automatic getting presets on startup is disabled.") -- TEMP
+        if hardwareSimulationStrategy == HardwareSimulationStrategy.OnStart
+                and persistableData.hardwareType ~= HardwareType.Unknown then
+            print("  Simulating hardware type change on start") -- TEMP
+            hardwareSimulation = true
+        end
         hasJustLoaded = false
         return
     end
@@ -2888,7 +2902,17 @@ function getPresets(valueObject, value)
         --print("getPresets: Ignoring phantom re-entry")
         return
     end
-    --print("getPresets: Requesting user presets")
+    print("getPresets: Requesting user presets") -- TEMP
+    getPresetsCount = getPresetsCount + 1
+    if getPresetsCount > 1 then
+        if hardwareSimulationStrategy == HardwareSimulationStrategy.OnHotSwitch
+                and persistableData.hardwareType ~= HardwareType.Unknown then
+            print("  Simulating hardware type change on hot switch") -- TEMP
+            hardwareSimulation = true
+        else
+            hardwareSimulation = false
+        end
+    end
     gettingPresets = GettingPresets.User
     resetMute() -- reset in case on from previous preset
     -- Request user presets
@@ -3041,32 +3065,42 @@ function onFirmwareVersionReceived()
     -- There's no command to request the firmware version.
     -- The instrument sends it when sending user presets, 
     -- system presets, current preset details etc.
-    -- We only really need to check it when user presets are being received.
-    -- However, perhaps due to lack of multithreading,
-    -- checking whether user presets are being received does not work here.
-    --if GettingPresets ~= GettingPresets.User then
-    --    return
-    --end
+    -- We only need to check it when user presets are being received.
+    if gettingPresets ~= GettingPresets.User then
+        return
+    end
     firmwareVersion = ((128 * highVersion) + lowVersion) / 100
     versionText = "Ver: " .. E1_PRESET_VERSION .. "/" .. firmwareVersion
 end
 
 function onHardwareTypeReceived(cvcHigh)
-    --print("onHardwareTypeReceived")
     -- There's no command to request the hardware type.
     -- The instrument sends it when sending user presets, 
     -- system presets, current preset details etc.
-    -- We only really need to check it when user presets are being received.
-    -- However, perhaps due to lack of multithreading,
-    -- checking whether user presets are being received does not work here.
-    --if GettingPresets ~= GettingPresets.User then
-    --    return
-    --end
+    -- We only need to check it when user presets are being received.
+    if gettingPresets ~= GettingPresets.User then
+        print("onHardwareTypeReceived: Bypassing, as not getting user presets.") -- TEMP
+        return
+    end
     hardwareType = cvcHigh >> 2
-    --hardwareType = HardwareType.ContinuuMini -- For testing unsupported hardware type.
+    ----hardwareType = HardwareType.ContinuuMini -- For testing unsupported hardware type.
+    if hardwareSimulation then
+        if persistableData.hardwareType == HardwareType.Slim46 then
+            hardwareType = HardwareType.EaganMatrixModule
+        else
+            hardwareType = HardwareType.Slim46
+        end
+    end
     local hardwareTypeName = hardwareTypeNames[hardwareType]
     print("onHardwareTypeReceived: New hardware type = " .. hardwareTypeName
         .. "; old hardware type = " .. hardwareTypeNames[persistableData.hardwareType]) -- TEMP
+    if hardwareSimulation then
+        print("    Simulated new hardware type")
+    end
+    print("    gettingPresets = " .. gettingPresets)
+    if gettingPresets ~= GettingPresets.User then
+        return
+    end
     if hardwareType ~= persistableData.hardwareType then
         print("    Initialising currentPreset")
         currentPreset.bankMsb = 0
