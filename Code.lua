@@ -135,7 +135,7 @@ local firmwareVersion
 local getPresetsCount = 0
 local gettingPresets = GettingPresets.None
 local hardwareSimulation = false
-local hardwareSimulationStrategy = HardwareSimulationStrategy.OnHotSwitch
+local hardwareSimulationStrategy = HardwareSimulationStrategy.None
 local hardwareType = HardwareType.Unknown
 local hasJustLoaded = true
 local haveSystemPresetsBeenReceived = false
@@ -2963,14 +2963,18 @@ function isSystemPresetsUpdateRequired()
     -- instrument was also a Continuum.
     -- This might not work if an old (i.e. classic or light) Continuum were involved.
     -- But we don't support those.
-    local isEmm = isHardWareTypeContinuum(persistableData.hardwareType) -- TEMP
-    -- TEMP
-    if isEmm then
-        print("    True: Changed from EMM to Continuum") -- TEMP
-    else
-        print("    False: Changed Continuum model") -- TEMP
-    end
-    return not isHardWareTypeContinuum(persistableData.hardwareType)
+    --
+    -- This diagnostic's not right, yet the correct result is changed.
+    --local isEmm = isHardWareTypeContinuum(persistableData.hardwareType) -- TEMP
+    ---- TEMP
+    --if isEmm then
+    --    print("    True: Changed from EMM to Continuum") -- TEMP
+    --else
+    --    print("    False: Changed Continuum model") -- TEMP
+    --end
+    local result = not isHardWareTypeContinuum(persistableData.hardwareType)
+    print("    " .. tostring(result)) -- TEMP
+    return result
 end
 
 -- Loads a system or user preset.
@@ -3102,13 +3106,14 @@ function onHardwareTypeReceived(cvcHigh)
         return
     end
     if hardwareType ~= persistableData.hardwareType then
-        print("    Initialising currentPreset")
+        print("    Initialising currentPreset etc.")
         currentPreset.bankMsb = 0
         currentPreset.bankLsb = 0
         currentPreset.programNo = 0
         currentPreset.name = ""
         currentPreset.loadState = PresetLoadState.AlreadyLoaded
         currentPreset.type = PresetType.Unknown
+        haveSystemPresetsBeenReceived = false
         userPresetPosSelect = 0
         updateUserPresetPos(0)
     end
