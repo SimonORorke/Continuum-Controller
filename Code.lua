@@ -63,6 +63,7 @@ Category.Other1 = 14
 
 -- An enumeration (enum) of control numbers.
 local ControlNo = {} -- SOR
+ControlNo.Category = 46
 ControlNo.CurrentPresetButton = 50
 ControlNo.CurrentPresetGroup = 49
 ControlNo.LoadPresetsButton = 35
@@ -72,6 +73,8 @@ ControlNo.MacroIII_Value = 27
 ControlNo.MacroIV_Value = 28
 ControlNo.MacroV_Value = 29
 ControlNo.MacroVI_Value = 30
+ControlNo.SystemPreset = 273
+ControlNo.UserPresetPos = 32
 
 -- An enumeration (enum) indicating which type of preset list, if any,
 -- is being received from the instrument.
@@ -533,7 +536,10 @@ shortPresetNames["Windtube Single Reed"] = "Wtube Sin Reed"
 shortPresetNames["Winter Skipping Pond"] = "WinterSkipPond"
 shortPresetNames["Zwei Baende with Noise"] = "ZweiBaendNoise"
 
--- Test getting just CCs
+function events.onPageChange(newPageId, oldPageId)
+    refreshInfoText()
+end
+
 function midi.onControlChange(midiInput, channel, controllerNumber, value)
     local chan = math.floor(channel)
     local cc = math.floor(controllerNumber)
@@ -1301,6 +1307,36 @@ function midi.onProgramChange(midiInput, channel, programNumber)
     end
 end
 
+function preset.onLoad()
+    -- print("preset.onLoad")
+    -- We do not currently support automatic loading of presets on startup.
+    -- So let's do what we can to encourage the player to press Load Presets
+    -- once the instrument is connected.
+    info.setText(PRESS_LOAD_PRESETS)
+    local loadPresetControl = controls.get(ControlNo.LoadPresetsButton)
+    loadPresetControl:setColor(RED)
+    events.subscribe(PAGES) -- Subscribe to events.onPageChange.
+    -- 
+    -- If helpers.delay is called here, the requested wait does not happen.
+    -- So this commented out code does not work to prevent startup freezes.
+    --
+    ---- This Electra One preset is being loaded at boot up.
+    ---- Starting to receive the user presets immediately is likely 
+    ---- to cause the boot sequence to get stuck at the startup splash screen
+    ---- and fail to complete.
+    ---- See https://docs.electra.one/troubleshooting/defaultpreset.html.
+    ----
+    ---- So, to give the boot sequence time to get past the point where
+    ---- it can get stuck, pause before requesting the user preset names.
+    ---- I found that 400 milliseconds is just enough on my E1, regardless of
+    ---- whether system presets also need to be loaded.
+    ---- So 2 seconds should provide an ample safety margin.
+    --helpers.delay(2000)
+    --isWaitingForE1PresetLoadToComplete = false
+    --print("preset.onLoad: Calling getPresets")
+    --getPresets()
+end
+
 -- Load up a user preset on pressing button 1-16 offset for bank
 -- Renamed and now calls loadPreset. SOR 
 function loadUserPreset(valueObject, value)
@@ -1324,18 +1360,19 @@ function loadUserPreset(valueObject, value)
 end
 
 -- Set the selected user preset position in which the current preset is to be stored.
-function setUserPresetPos (valueObject, value)
+function setUserPresetPos(valueObject, value)
     -- Get value without its decimal part.
     local slotNo = valueObject:getMessage():getValue()
+    --print("setUserPresetPos: slotNo = " .. slotNo)
     updateUserPresetPos(slotNo) -- SOR
 end
 
-function storeUserPreset (valueObject, value)
+function storeUserPreset(valueObject, value)
+    --print("storeUserPreset: userPresetPosSelect = " .. userPresetPosSelect)
     local strIndex = 1
     local slen = 0
     local ascii1 = ""
     local ascii2 = ""
-    --local presetPos
     local s1 = 0
     local s2 = 0
     local whichUserButton = 0
@@ -1349,9 +1386,13 @@ function storeUserPreset (valueObject, value)
             storeInitialized = true
             return
         end
-        info.setText("Select Preset Pos")
+        local infoText = info.getText()
+        if infoText ~= PRESS_LOAD_PRESETS and infoText ~= GETTING_PRESETS then
+            info.setText("Select Preset Pos")
+        end
         return
     end
+    refreshInfoText()
     --print("storeUserPreset: userPresetPosSelect = "..userPresetPosSelect)
     -- Don't initialize this function
     whichUserButton = (userPresetPosSelect) % 16
@@ -1406,35 +1447,6 @@ function storeUserPreset (valueObject, value)
     midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- Send CC0/C32
     -- Send Program change - current preset to user position
     midi.sendProgramChange(DEVICE_PORT, 16, programNo) -- SOR    
-end
-
-function preset.onLoad()
-    -- print("preset.onLoad")
-    -- We do not currently support automatic loading of presets on startup.
-    -- So let's do what we can to encourage the player to press Load Presets
-    -- once the instrument is connected.
-    info.setText(PRESS_LOAD_PRESETS)
-    local loadPresetControl = controls.get(ControlNo.LoadPresetsButton)
-    loadPresetControl:setColor(RED)
-    -- 
-    -- If helpers.delay is called here, the requested wait does not happen.
-    -- So this commented out code does not work to prevent startup freezes.
-    --
-    ---- This Electra One preset is being loaded at boot up.
-    ---- Starting to receive the user presets immediately is likely 
-    ---- to cause the boot sequence to get stuck at the startup splash screen
-    ---- and fail to complete.
-    ---- See https://docs.electra.one/troubleshooting/defaultpreset.html.
-    ----
-    ---- So, to give the boot sequence time to get past the point where
-    ---- it can get stuck, pause before requesting the user preset names.
-    ---- I found that 400 milliseconds is just enough on my E1, regardless of
-    ---- whether system presets also need to be loaded.
-    ---- So 2 seconds should provide an ample safety margin.
-    --helpers.delay(2000)
-    --isWaitingForE1PresetLoadToComplete = false
-    --print("preset.onLoad: Calling getPresets")
-    --getPresets()
 end
 
 -- Set User Preset names - they are controls 1-16
@@ -2483,6 +2495,7 @@ end
 
 -- Store the current Preset category selected
 function selectPresetCategory(valueObject, value)
+    refreshInfoText()
     -- Added by SOR: Get system presets.
     if not haveSystemPresetsBeenReceived then
         -- This function will be called again, from the Lua code,
@@ -2490,7 +2503,7 @@ function selectPresetCategory(valueObject, value)
         return
     end
     -- Zero-based category control value, so System is 0, not 1.
-    local val = getControlValue(46)
+    local val = getControlValue(ControlNo.Category)
     selectedSystemPreset.category = val + 1
     if (selectedSystemPreset.category == Category.Other1) then
         selectedSystemPreset.bankLsb = 1
@@ -2499,11 +2512,12 @@ function selectPresetCategory(valueObject, value)
     end
     -- As the category has changed, reset the Preset index to the beginning.
     selectedSystemPreset.presetNo = 0
-    setControlValue(273, 0) -- System preset index 
+    setControlValue(ControlNo.SystemPreset, 0) -- System preset index 
 end
 
 -- Get the preset name and index based on Category set
 function selectSystemPreset(valueObject, value)
+    refreshInfoText()
     if not haveSystemPresetsBeenReceived then
         -- SOR
         -- This function will be called again, from the Lua code,
@@ -2536,7 +2550,7 @@ end
 -- pIndex: The selected system preset index before we possibly correct it.
 function getMaxPresetIndex (systemPresets, pIndex)
     -- cap index at max range for each category
-    local ctrl = controls.get(273)
+    local ctrl = controls.get(ControlNo.SystemPreset)
     local controlValue = ctrl:getValue("value")
     local ctrlMsg = controlValue:getMessage()
     local systemPresetCount = #systemPresets
@@ -2922,6 +2936,10 @@ end
 function getSystemPresets()
     print("getSystemPresets") -- TEMP
     if isSystemPresetsUpdateRequired() then
+        selectedSystemPreset.category = 0
+        selectedSystemPreset.presetNo = 0
+        setControlValue(ControlNo.Category, 0)
+        setControlValue(ControlNo.SystemPreset, 0) 
         print("    Requesting system presets.") -- TEMP
         -- Request system preset names (sysToMidi).
         midi.sendControlChange(DEVICE_PORT, 16, 109, 39)
@@ -2984,6 +3002,7 @@ end
 -- programNo: zero-based program number.
 -- presetName:  preset name for display on the Current Preset control.
 function loadPreset(bankMsb, bankLsb, programNo, presetName)
+    refreshInfoText()
     currentPreset.bankMsb = bankMsb
     currentPreset.bankLsb = bankLsb
     currentPreset.programNo = programNo
@@ -3015,7 +3034,7 @@ end
 function onAllPresetsReceived()
     -- Replace the "Getting presets..." notification 
     -- on the status bar with the version info.
-    info.setText(versionText)--
+    info.setText(versionText)
     -- Get the data for the preset that is loaded on the instrument.
     getCurrentPresetData()
 end
@@ -3050,17 +3069,16 @@ function onCurrentPresetDataReceived()
     local presetNo = currentPreset.programNo + 1
     if currentPreset.type == PresetType.System then
         -- Zero-based category control value, so System is 0, not 1.
-        setControlValue(46, selectedSystemPreset.category - 1)
-        setControlValue(273, selectedSystemPreset.presetNo) -- Selected system preset index 
+        setControlValue(ControlNo.Category, selectedSystemPreset.category - 1)
+        setControlValue(ControlNo.SystemPreset, selectedSystemPreset.presetNo) -- Selected system preset index 
     end
-    updateUserPresetPos(presetNo)
-    local selectUserPresetPosControlNo = 32
     if currentPreset.type == PresetType.User then
         -- Show the preset number on the Select User Preset Pos control.
         --print("    Setting user preset position to "..presetNo)
-        setControlValue(selectUserPresetPosControlNo, presetNo)
+        updateUserPresetPos(presetNo)
+        setControlValue(ControlNo.UserPresetPos, presetNo)
     else
-        setControlValue(selectUserPresetPosControlNo, 0)
+        setControlValue(ControlNo.UserPresetPos, 0)
     end
 end
 
@@ -3180,6 +3198,13 @@ function onUserPresetsReceived()
         getSystemPresets()
     else
         onAllPresetsReceived()
+    end
+end
+
+function refreshInfoText()
+    local infoText = info.getText() 
+    if infoText ~= PRESS_LOAD_PRESETS and infoText ~= GETTING_PRESETS then
+        info.setText(versionText) -- Removes "Select Preset Pos" if shown. 
     end
 end
 
