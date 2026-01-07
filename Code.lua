@@ -139,6 +139,8 @@ local getPresetsCount = 0
 local gettingPresets = GettingPresets.None
 local hardwareSimulation = false
 local hardwareSimulationStrategy = HardwareSimulationStrategy.None
+--local hardwareSimulationStrategy = HardwareSimulationStrategy.OnStart
+--local hardwareSimulationStrategy = HardwareSimulationStrategy.OnHotSwitch
 local hardwareType = HardwareType.Unknown
 local hasJustLoaded = true
 local haveSystemPresetsBeenReceived = false
@@ -2843,6 +2845,16 @@ function setConvRight4 (valueObject, value)
     convolutionPoke(27, val)
 end
 
+-- For debugging.
+function countSystemPresets()
+    local totalSystemPresetCount = 0
+    for category = 1, #systemPresetCategories do
+        local presets = systemPresetCategories[category]
+        totalSystemPresetCount = totalSystemPresetCount + #presets
+    end
+    print("countSystemPresets: totalSystemPresetCount = " .. totalSystemPresetCount)
+end
+
 function findShortPresetName(presetName, printWarning)
     local nameLength = #presetName
     if (nameLength <= MAX_NAME_LENGTH) then
@@ -2939,7 +2951,10 @@ function getSystemPresets()
         selectedSystemPreset.category = 0
         selectedSystemPreset.presetNo = 0
         setControlValue(ControlNo.Category, 0)
-        setControlValue(ControlNo.SystemPreset, 0) 
+        setControlValue(ControlNo.SystemPreset, 0)
+        for category = 1, #systemPresetCategories do
+            systemPresetCategories[category] = {}
+        end
         print("    Requesting system presets.") -- TEMP
         -- Request system preset names (sysToMidi).
         midi.sendControlChange(DEVICE_PORT, 16, 109, 39)
@@ -2973,7 +2988,7 @@ function isSystemPresetsUpdateRequired()
     end
     -- Only hardware type has changed, not the firmware version.
     if not isHardWareTypeContinuum(hardwareType) then
-        print("    True: New hardware type is EMM") -- TEMP
+        print("    True: New hardware type is " .. hardwareTypeNames[hardwareType]) -- TEMP
         return true
     end
     -- The connected instrument is some type of Continuum.
@@ -3227,6 +3242,7 @@ end
 
 function savePersistableData()
     print("Saving persistableData") -- TEMP
+    countSystemPresets() -- TEMP
     persistableData.isSaved = true
     persistableData.firmwareVersion = firmwareVersion
     persistableData.hardwareType = hardwareType
