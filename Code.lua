@@ -82,6 +82,7 @@ local GettingPresets = {} -- SOR
 GettingPresets.None = 0
 GettingPresets.User = 1
 GettingPresets.System = 2
+GettingPresets.Requested = 3
 
 -- An enumeration (enum) of instrument hardware types/versions.
 local HardwareType = {} -- SOR
@@ -857,11 +858,7 @@ function midi.onMessage(midiInput, midiMessage)
 
     if (msg.controllerNumber == 109 and msg.value == 54) then
         -- Start User Names Found
-        --print("Start getting user presets")
-        info.setText(GETTING_PRESETS)
-        local loadPresetControl = controls.get(ControlNo.LoadPresetsButton)
-        loadPresetControl:setColor(ORANGE)
-        userNameIndex = 0
+        onStartedReceivingUserPresets()
         return -- SOR
     end
     if (msg.controllerNumber == 109 and msg.value == 55) then
@@ -2925,7 +2922,7 @@ function getPresets(valueObject, value)
     -- For unknown reason, getPresets gets called twice
     -- when the Load Presets button is pressed.
     if gettingPresets == GettingPresets.User then
-        --print("getPresets: Ignoring phantom re-entry")
+        print("getPresets: Ignoring phantom re-entry") -- TEMP
         return
     end
     print("getPresets: Requesting user presets") -- TEMP
@@ -2939,8 +2936,7 @@ function getPresets(valueObject, value)
             hardwareSimulation = false
         end
     end
-    gettingPresets = GettingPresets.User
-    resetMute() -- reset in case on from previous preset
+    gettingPresets = GettingPresets.Requested
     -- Request user presets
     midi.sendControlChange(DEVICE_PORT, 16, 109, 32)
 end
@@ -3058,6 +3054,7 @@ function onCurrentPresetDataReceived()
     print("onCurrentPresetDataReceived: currentPreset.programNo = "..currentPreset.programNo..
             "; currentPreset.loadState = "..tostring(currentPreset.loadState)..
     "; currentPreset.type = "..currentPreset.type) -- TEMP
+    resetMute() -- Reset in case on from previous preset
     if currentPreset.type == PresetType.Unknown then
         -- We must have just received the data for the preset that was
         -- already loaded on the instrument when the E1 preset was loaded.
@@ -3100,10 +3097,11 @@ end
 function onFirmwareVersionReceived()
     --print("onFirmwareVersionReceived")
     -- There's no command to request the firmware version.
-    -- The instrument sends it when sending user presets, 
-    -- system presets, current preset details etc.
-    -- We only need to check it when user presets are being received.
-    if gettingPresets ~= GettingPresets.User then
+    -- The instrument sends it when user presets, 
+    -- system presets, current preset details etc. have been requested.
+    -- The data arrives before presets start being received.
+    -- We only need to check it when user presets have just been requested. 
+    if gettingPresets ~= GettingPresets.Requested then
         return
     end
     firmwareVersion = ((128 * highVersion) + lowVersion) / 100
@@ -3112,11 +3110,12 @@ end
 
 function onHardwareTypeReceived(cvcHigh)
     -- There's no command to request the hardware type.
-    -- The instrument sends it when sending user presets, 
-    -- system presets, current preset details etc.
-    -- We only need to check it when user presets are being received.
-    if gettingPresets ~= GettingPresets.User then
-        print("onHardwareTypeReceived: Bypassing, as not getting user presets.") -- TEMP
+    -- The instrument sends it when user presets, 
+    -- system presets, current preset details etc. have been requested.
+    -- The data arrives before presets start being received.
+    -- We only need to check it when user presets have just been requested. 
+    if gettingPresets ~= GettingPresets.Requested then
+        print("onHardwareTypeReceived: Bypassing, as not awaiting user presets.") -- TEMP
         return
     end
     hardwareType = cvcHigh >> 2
@@ -3135,9 +3134,6 @@ function onHardwareTypeReceived(cvcHigh)
         print("    Simulated new hardware type")
     end
     print("    gettingPresets = " .. gettingPresets)
-    if gettingPresets ~= GettingPresets.User then
-        return
-    end
     if hardwareType ~= persistableData.hardwareType then
         print("    Initialising currentPreset etc.")
         currentPreset.bankMsb = 0
@@ -3164,6 +3160,15 @@ function onHardwareTypeReceived(cvcHigh)
     -- at their own risk, and see what happens.
     error("Hardware type " .. hardwareTypeName .. " is not supported.")
 end
+
+function onStartedReceivingUserPresets()
+    print("onStartedReceivingUserPresets") -- TEMP
+    gettingPresets = GettingPresets.User
+    info.setText(GETTING_PRESETS)
+    local loadPresetControl = controls.get(ControlNo.LoadPresetsButton)
+    loadPresetControl:setColor(ORANGE)
+    userNameIndex = 0
+end    
 
 function onSystemPresetReceived()
     -- The system preset's two-letter category code has been received.
