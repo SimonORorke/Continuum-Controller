@@ -67,6 +67,7 @@ ControlNo.Category = 46
 ControlNo.CurrentPresetButton = 50
 ControlNo.CurrentPresetGroup = 49
 ControlNo.LoadPresetsButton = 35
+ControlNo.LoadSystemPresetButton = 278
 ControlNo.MacroI_Value = 25
 ControlNo.MacroII_Value = 26
 ControlNo.MacroIII_Value = 27
@@ -2528,13 +2529,13 @@ function selectSystemPreset(valueObject, value)
     --        ..valueObject:getMessage():getValue().."; value = "..value)
     local presetNoBeforeCorrection = valueObject:getMessage():getValue()
     selectedSystemPreset.presetNo = getMaxPresetIndex(systemPresets, presetNoBeforeCorrection) -- SOR
-    local ctrl = controls.get(278)
+    local loadSystemPresetButton = controls.get(ControlNo.LoadSystemPresetButton)
     if (selectedSystemPreset.presetNo == 0) then
-        ctrl:setName("SELECT PRESET")
+        loadSystemPresetButton:setName("SELECT PRESET")
     else
         selectedSystemPreset.name = systemPresets[selectedSystemPreset.presetNo]
         --print("selectSystemPreset: Set selectedSystemPreset.name to "..selectedSystemPreset.name)
-        ctrl:setName(selectedSystemPreset.name)
+        loadSystemPresetButton:setName(selectedSystemPreset.name)
     end
 end
 
@@ -2944,10 +2945,6 @@ end
 function getSystemPresets()
     print("getSystemPresets") -- TEMP
     if isSystemPresetsUpdateRequired() then
-        selectedSystemPreset.category = 0
-        selectedSystemPreset.presetNo = 0
-        setControlValue(ControlNo.Category, 0)
-        setControlValue(ControlNo.SystemPreset, 0)
         for category = 1, #systemPresetCategories do
             systemPresetCategories[category] = {}
         end
@@ -3134,18 +3131,6 @@ function onHardwareTypeReceived(cvcHigh)
         print("    Simulated new hardware type")
     end
     print("    gettingPresets = " .. gettingPresets)
-    if hardwareType ~= persistableData.hardwareType then
-        print("    Initialising currentPreset etc.")
-        currentPreset.bankMsb = 0
-        currentPreset.bankLsb = 0
-        currentPreset.programNo = 0
-        currentPreset.name = ""
-        currentPreset.loadState = PresetLoadState.AlreadyLoaded
-        currentPreset.type = PresetType.Unknown
-        haveSystemPresetsBeenReceived = false
-        userPresetPosSelect = 0
-        updateUserPresetPos(0)
-    end
     if hardwareType >= 7 and hardwareType <= 10 then
         -- Supported hardware types: Slim22 (if there any of those actually exist),
         -- Slim46, Slim70, EaganMatrixModule.
@@ -3165,9 +3150,27 @@ function onStartedReceivingUserPresets()
     print("onStartedReceivingUserPresets") -- TEMP
     gettingPresets = GettingPresets.User
     info.setText(GETTING_PRESETS)
-    local loadPresetControl = controls.get(ControlNo.LoadPresetsButton)
-    loadPresetControl:setColor(ORANGE)
+    local loadPresetsButton = controls.get(ControlNo.LoadPresetsButton)
+    loadPresetsButton:setColor(ORANGE)
     userNameIndex = 0
+    currentPreset.bankMsb = 0
+    currentPreset.bankLsb = 0
+    currentPreset.programNo = 0
+    currentPreset.name = ""
+    currentPreset.loadState = PresetLoadState.AlreadyLoaded
+    currentPreset.type = PresetType.Unknown
+    haveSystemPresetsBeenReceived = false
+    userPresetPosSelect = 0
+    setControlValue(ControlNo.UserPresetPos, 0)
+    updateUserPresetPos(0)
+    selectedSystemPreset.category = Category.Strings
+    selectedSystemPreset.bankLsb = 0
+    selectedSystemPreset.presetNo = 0
+    selectedSystemPreset.name = ""
+    setControlValue(ControlNo.Category, 0)
+    setControlValue(ControlNo.SystemPreset, 0)
+    local loadSystemPresetButton = controls.get(ControlNo.LoadSystemPresetButton)
+    loadSystemPresetButton:setName("SELECT PRESET")
 end    
 
 function onSystemPresetReceived()
@@ -3207,7 +3210,7 @@ function onSystemPresetsReceived(fromPersistedData)
     end
     onAllPresetsReceived()
     selectPresetCategory(nil, nil)
-    selectSystemPreset()
+    selectSystemPreset(nil, nil)
 end
 
 function onUserPresetsReceived()
