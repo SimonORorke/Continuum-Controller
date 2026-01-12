@@ -3163,14 +3163,16 @@ function onStartedReceivingUserPresets()
     userPresetPosSelect = 0
     setControlValue(ControlNo.UserPresetPos, 0)
     updateUserPresetPos(0)
-    selectedSystemPreset.category = Category.Strings
-    selectedSystemPreset.bankLsb = 0
-    selectedSystemPreset.presetNo = 0
-    selectedSystemPreset.name = ""
-    setControlValue(ControlNo.Category, 0)
-    setControlValue(ControlNo.SystemPreset, 0)
-    local loadSystemPresetButton = controls.get(ControlNo.LoadSystemPresetButton)
-    loadSystemPresetButton:setName("SELECT PRESET")
+    if isSystemPresetsUpdateRequired() then
+        selectedSystemPreset.category = Category.Strings
+        selectedSystemPreset.bankLsb = 0
+        selectedSystemPreset.presetNo = 0
+        selectedSystemPreset.name = ""
+        setControlValue(ControlNo.Category, 0)
+        setControlValue(ControlNo.SystemPreset, 0)
+        local loadSystemPresetButton = controls.get(ControlNo.LoadSystemPresetButton)
+        loadSystemPresetButton:setName("SELECT PRESET")
+    end
 end    
 
 function onSystemPresetReceived()
