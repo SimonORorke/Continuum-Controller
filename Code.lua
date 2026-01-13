@@ -150,6 +150,8 @@ local isGettingCurrentPresetData = false
 --local isWaitingForE1PresetLoadToComplete = true
 local receivedSystemPresetFilters = ""
 local receivedSystemPresetName = ""
+local simulateFirmwareVersionChange = false
+--local simulateFirmwareVersionChange = true
 local stream = Stream.None
 local systemPresetFiltersBuffer = ""
 local systemPresetNameBuffer = ""
@@ -2976,7 +2978,7 @@ function isSystemPresetsUpdateRequired()
         return true
     end
     if persistableData.hardwareType == hardwareType then
-        print("    False: Hardware type has not changed") -- TEMP
+        print("    False: Neither hardware type not firmware version has changed") -- TEMP
         return false
     end
     -- Only hardware type has changed, not the firmware version.
@@ -3092,7 +3094,7 @@ function onCurrentPresetDataReceived()
 end
 
 function onFirmwareVersionReceived()
-    --print("onFirmwareVersionReceived")
+    print("onFirmwareVersionReceived") -- TEMP
     -- There's no command to request the firmware version.
     -- The instrument sends it when user presets, 
     -- system presets, current preset details etc. have been requested.
@@ -3102,6 +3104,15 @@ function onFirmwareVersionReceived()
         return
     end
     firmwareVersion = ((128 * highVersion) + lowVersion) / 100
+    if simulateFirmwareVersionChange then
+        print("    Simulating firmware version change") -- TEMP
+        if hardwareType == HardwareType.Slim46 then
+            firmwareVersion = "10.65"            
+        else -- EaganMatrixModule
+            firmwareVersion = "10.62"
+        end
+    end
+    print("    Firmware version = " .. firmwareVersion) -- TEMP
     versionText = "Ver: " .. E1_PRESET_VERSION .. "/" .. firmwareVersion
 end
 
@@ -3163,16 +3174,17 @@ function onStartedReceivingUserPresets()
     userPresetPosSelect = 0
     setControlValue(ControlNo.UserPresetPos, 0)
     updateUserPresetPos(0)
-    if isSystemPresetsUpdateRequired() then
-        selectedSystemPreset.category = Category.Strings
-        selectedSystemPreset.bankLsb = 0
-        selectedSystemPreset.presetNo = 0
-        selectedSystemPreset.name = ""
-        setControlValue(ControlNo.Category, 0)
-        setControlValue(ControlNo.SystemPreset, 0)
-        local loadSystemPresetButton = controls.get(ControlNo.LoadSystemPresetButton)
-        loadSystemPresetButton:setName("SELECT PRESET")
-    end
+    -- Keep it simple, for now at least.
+    -- if isSystemPresetsUpdateRequired() then
+    selectedSystemPreset.category = Category.Strings
+    selectedSystemPreset.bankLsb = 0
+    selectedSystemPreset.presetNo = 0
+    selectedSystemPreset.name = ""
+    setControlValue(ControlNo.Category, 0)
+    setControlValue(ControlNo.SystemPreset, 0)
+    local loadSystemPresetButton = controls.get(ControlNo.LoadSystemPresetButton)
+    loadSystemPresetButton:setName("SELECT PRESET")
+    -- end
 end    
 
 function onSystemPresetReceived()
