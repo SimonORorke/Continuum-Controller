@@ -3094,15 +3094,16 @@ function onCurrentPresetDataReceived()
 end
 
 function onFirmwareVersionReceived()
-    print("onFirmwareVersionReceived") -- TEMP
     -- There's no command to request the firmware version.
     -- The instrument sends it when user presets, 
     -- system presets, current preset details etc. have been requested.
     -- The data arrives before presets start being received.
     -- We only need to check it when user presets have just been requested. 
     if gettingPresets ~= GettingPresets.Requested then
+        print("onFirmwareVersionReceived: Bypassing, as not awaiting user presets.") -- TEMP
         return
     end
+    print("onFirmwareVersionReceived") -- TEMP
     firmwareVersion = ((128 * highVersion) + lowVersion) / 100
     if simulateFirmwareVersionChange then
         print("    Simulating firmware version change") -- TEMP
