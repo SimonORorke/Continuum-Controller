@@ -136,7 +136,7 @@ Stream.CurrentPresetName = 7
 local controlTextBuffer = ""
 local convolutionBuffer = ""
 local currentPresetNameBuffer = ""
-local firmwareVersion
+local firmwareVersion = ""
 local getPresetsCount = 0
 local gettingPresets = GettingPresets.None
 local hardwareSimulation = false
@@ -550,20 +550,22 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     local chan = math.floor(channel)
     local cc = math.floor(controllerNumber)
     local val = math.floor(value)
-
     if (chan == 16 and cc == 102) then
         -- Firmware High Address
+        print("midi.onControlChange: ch" .. chan .. " cc" .. cc .. " " .. val .. " Firmware High Address") -- TEMP
         highVersion = value
         return -- SOR
     end
     if (chan == 16 and cc == 103) then
         -- Firmware Low Address
+        print("midi.onControlChange: ch" .. chan .. " cc" .. cc .. " " .. val .. " Firmware Low Address") -- TEMP
         lowVersion = value
         onFirmwareVersionReceived()
         return
     end
     if (chan == 16 and cc == 104) then
         -- ccCVCHigh
+        print("midi.onControlChange: ch" .. chan .. " cc" .. cc .. " " .. val .. " Hardare type (ccCVCHigh)") -- TEMP
         onHardwareTypeReceived(value)
         return
     end
@@ -844,8 +846,8 @@ function midi.onMessage(midiInput, midiMessage)
         return
     end
     if (msg.controllerNumber == 109 and msg.value == 49) then
-        -- SOR
         -- Start of system preset list (beginSysNames)
+        print("midi.onMessage: ch" .. msg.channel .. " cc" .. msg.controllerNumber .. " " .. msg.value .. " Start of system presets (beginSysNames)") -- TEMP
         gettingPresets = GettingPresets.System
         --print("Start of system preset list")
         return
@@ -861,6 +863,7 @@ function midi.onMessage(midiInput, midiMessage)
 
     if (msg.controllerNumber == 109 and msg.value == 54) then
         -- Start User Names Found
+        print("midi.onMessage: ch" .. msg.channel .. " cc" .. msg.controllerNumber .. " " .. msg.value .. " Start of user presets") -- TEMP
         onStartedReceivingUserPresets()
         return -- SOR
     end
@@ -2847,12 +2850,12 @@ end
 
 -- For debugging.
 function countSystemPresets()
-    local totalSystemPresetCount = 0
+    local result = 0
     for category = 1, #systemPresetCategories do
         local presets = systemPresetCategories[category]
-        totalSystemPresetCount = totalSystemPresetCount + #presets
+        result = result + #presets
     end
-    print("countSystemPresets: totalSystemPresetCount = " .. totalSystemPresetCount)
+    return result
 end
 
 function findShortPresetName(presetName, printWarning)
@@ -2883,7 +2886,7 @@ function getControlValue(controlNo)
 end
 
 function getCurrentPresetData()
-    --print("getCurrentPresetData")
+    print("getCurrentPresetData") -- TEMP
     stream = Stream.ControlText
     isGettingCurrentPresetData = true
     -- Send get Current Preset Msg to get Macro labels and control values
@@ -2939,6 +2942,7 @@ function getPresets(valueObject, value)
             hardwareSimulation = false
         end
     end
+    firmwareVersion = ""
     gettingPresets = GettingPresets.Requested
     -- Request user presets
     midi.sendControlChange(DEVICE_PORT, 16, 109, 32)
@@ -3264,8 +3268,15 @@ function replaceLongSystemPresetNamesWithShortNames()
 end
 
 function savePersistableData()
-    print("Saving persistableData") -- TEMP
-    countSystemPresets() -- TEMP
+    print("Saving persistableData:") -- TEMP
+    print("    Hardware type = " .. hardwareTypeNames[hardwareType]) -- TEMP
+    if firmwareVersion ~= "" then
+        print("    Firmware version = " .. firmwareVersion) -- TEMP
+    else    
+        print("    Firmware version is empty!") -- TEMP
+    end
+    local totalSystemPresetCount = countSystemPresets() -- TEMP
+    print("    Total system preset count = " .. tostring(totalSystemPresetCount)) -- TEMP
     persistableData.isSaved = true
     persistableData.firmwareVersion = firmwareVersion
     persistableData.hardwareType = hardwareType
