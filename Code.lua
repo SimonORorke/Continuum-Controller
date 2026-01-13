@@ -3066,8 +3066,8 @@ function onCurrentPresetDataReceived()
         end
     end
     -- Show the preset name on the Current Preset control.
-    local currentPresetControl = controls.get(ControlNo.CurrentPresetButton)
-    currentPresetControl:setName(currentPreset.name)
+    local currentPresetButton = controls.get(ControlNo.CurrentPresetButton)
+    currentPresetButton:setName(currentPreset.name)
     if currentPreset.type == PresetType.Unknown then
         -- We must have just received the data for the preset that was
         -- already loaded on the instrument when the E1 preset was loaded.
@@ -3463,13 +3463,13 @@ function updateUserPresetPos(slotNo)
     print("updateUserPresetPos: userPresetPosSelect = "..userPresetPosSelect..
         "; currentPreset.type = "..currentPreset.type) -- TEMP
     local currentPresetGroup = groups.get(ControlNo.CurrentPresetGroup)
-    local currentPresetControl = controls.get(ControlNo.CurrentPresetButton)
+    local currentPresetButton = controls.get(ControlNo.CurrentPresetButton)
     if userPresetPosSelect > 0 then
-        currentPresetControl:setColor(RED)
+        currentPresetButton:setColor(RED)
         currentPresetGroup:setLabel("Store Preset")
         currentPresetGroup:setColor(RED)
     else
-        currentPresetControl:setColor(ORANGE)
+        currentPresetButton:setColor(ORANGE)
         currentPresetGroup:setLabel("CURRENT PRESET")
         currentPresetGroup:setColor(ORANGE)
     end
