@@ -2942,7 +2942,6 @@ function getPresets(valueObject, value)
             hardwareSimulation = false
         end
     end
-    firmwareVersion = ""
     gettingPresets = GettingPresets.Requested
     -- Request user presets
     midi.sendControlChange(DEVICE_PORT, 16, 109, 32)
@@ -2976,8 +2975,11 @@ end
 function isSystemPresetsUpdateRequired()
     print("isSystemPresetsUpdateRequired") -- TEMP
     if not persistableData.isSaved
-            or persistableData.firmwareVersion ~= firmwareVersion
             or #persistableData.systemPresetCategories == 0 then
+        print("    True: There is no persisted data") -- TEMP
+        return true
+    end
+    if persistableData.firmwareVersion ~= firmwareVersion then
         print("    True: Firmware version has changed") -- TEMP
         return true
     end
@@ -3268,7 +3270,7 @@ function replaceLongSystemPresetNamesWithShortNames()
 end
 
 function savePersistableData()
-    print("Saving persistableData:") -- TEMP
+    print("savePersistableData: Saving persistableData:") -- TEMP
     print("    Hardware type = " .. hardwareTypeNames[hardwareType]) -- TEMP
     if firmwareVersion ~= "" then
         print("    Firmware version = " .. firmwareVersion) -- TEMP
