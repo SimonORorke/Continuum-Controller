@@ -552,7 +552,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     local val = math.floor(value)
     if (chan == 16 and cc == 102) then
         -- Firmware High Address
-        printMidiReceived(
+        printCcReceived(
                 "midi.onControlChange", chan, cc, val, 
                 "Firmware High Address")
         highVersion = value
@@ -560,7 +560,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     end
     if (chan == 16 and cc == 103) then
         -- Firmware Low Address
-        printMidiReceived(
+        printCcReceived(
                 "midi.onControlChange", chan, cc, val, 
                 "Firmware Low Address")
         lowVersion = value
@@ -569,7 +569,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     end
     if (chan == 16 and cc == 104) then
         -- ccCVCHigh
-        printMidiReceived(
+        printCcReceived(
                 "midi.onControlChange", chan, cc, val, 
                 "Hardare type (ccCVCHigh)")
         onHardwareTypeReceived(value)
@@ -853,7 +853,7 @@ function midi.onMessage(midiInput, midiMessage)
     end
     if (msg.controllerNumber == 109 and msg.value == 49) then
         -- Start of system preset list (beginSysNames)
-        printMidiReceived(
+        printCcReceived(
                 "midi.onMessage", msg.channel, msg.controllerNumber, msg.value,
                 "Start of system presets (beginSysNames)")
         gettingPresets = GettingPresets.System
@@ -871,7 +871,7 @@ function midi.onMessage(midiInput, midiMessage)
 
     if (msg.controllerNumber == 109 and msg.value == 54) then
         -- Start User Names Found
-        printMidiReceived(
+        printCcReceived(
                 "midi.onMessage", msg.channel, msg.controllerNumber, msg.value,
                 "Start of user presets")
         onStartedReceivingUserPresets()
@@ -2900,10 +2900,9 @@ function getCurrentPresetData()
     stream = Stream.ControlText
     isGettingCurrentPresetData = true
     -- Send get Current Preset Msg to get Macro labels and control values
-    midi.sendControlChange(DEVICE_PORT, 16, 109, 16)
-    printMidiSent(
+    sendCc(
             "getCurrentPresetData", 16, 109, 16,
-            "Request current preset")
+            "Request current preset", true)
 end
 
 -- Requests the list of user presets.
@@ -2957,10 +2956,9 @@ function getPresets(valueObject, value)
     end
     gettingPresets = GettingPresets.Requested
     -- Request user presets
-    midi.sendControlChange(DEVICE_PORT, 16, 109, 32)
-    printMidiSent(
+    sendCc(
             "getPresets", 16, 109, 32,
-            "Request user presets")
+            "Request user presets", true)
 end
 
 function getSystemPresets()
@@ -2971,10 +2969,9 @@ function getSystemPresets()
         end
         print("    Requesting system presets.") -- TEMP
         -- Request system preset names (sysToMidi).
-        midi.sendControlChange(DEVICE_PORT, 16, 109, 39)
-        printMidiSent(
+        sendCc(
                 "getSystemPresets", 16, 109, 39,
-                "Request system preset names (sysToMidi)")
+                "Request system preset names (sysToMidi)", true)
     else
         print("    Getting system presets from persisted data.") -- TEMP
         systemPresetCategories = persistableData.systemPresetCategories
@@ -3268,17 +3265,13 @@ end
 -- so back to front from the perspective of the E1 preset.
 -- rx: Receive Message (Send message to DSP)
 -- tx: Transmit Message (Read message from DSP) 
-function printMidi(inFunction, rxOrTx, channel, cc, value, description)
-    print(rxOrTx .. " ch " .. channel .. " cc" .. cc .. " "
+function printCc(inFunction, rxOrTx, channel, cc, value, description)
+    print(rxOrTx .. ": ch" .. channel .. " cc" .. cc .. " "
             .. value .. " (" .. description .. " - in " .. inFunction .. ")")
 end
 
-function printMidiReceived(inFunction, channel, cc, value, description)
-    printMidi(inFunction, "tx", channel, cc, value, description)
-end
-
-function printMidiSent(inFunction, channel, cc, value, description)
-    printMidi(inFunction, "rx", channel, cc, value, description)
+function printCcReceived(inFunction, channel, cc, value, description)
+    printCc(inFunction, "tx", channel, cc, value, description)
 end
 
 function refreshInfoText()
@@ -3320,6 +3313,13 @@ function savePersistableData()
     persistableData.hardwareType = hardwareType
     persistableData.systemPresetCategories = systemPresetCategories
     persist(persistableData)
+end
+
+function sendCc(inFunction, channel, cc, value, description, print)
+    midi.sendControlChange(DEVICE_PORT, channel, cc, value)
+    if print then
+        printCc(inFunction, "rx", channel, cc, value, description)
+    end
 end
 
 function setControlValue(controlNo, value)
