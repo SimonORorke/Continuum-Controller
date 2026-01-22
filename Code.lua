@@ -83,7 +83,7 @@ local GettingPresets = {} -- SOR
 GettingPresets.None = 0
 GettingPresets.User = 1
 GettingPresets.System = 2
-GettingPresets.Requested = 3
+--GettingPresets.Requested = 3
 
 -- An enumeration (enum) of instrument hardware types/versions.
 local HardwareType = {} -- SOR
@@ -2954,7 +2954,7 @@ function getPresets(valueObject, value)
             hardwareSimulation = false
         end
     end
-    gettingPresets = GettingPresets.Requested
+    --gettingPresets = GettingPresets.Requested
     -- Request user presets
     sendCc(
             "getPresets", 16, 109, 32,
@@ -3120,11 +3120,14 @@ function onFirmwareVersionReceived()
     -- The instrument sends it when user presets, 
     -- system presets, current preset details etc. have been requested.
     -- The data arrives before presets start being received.
-    -- We only need to check it when user presets have just been requested. 
-    if gettingPresets ~= GettingPresets.Requested then
-        print("onFirmwareVersionReceived: Bypassing, as not awaiting user presets.") -- TEMP
-        return
-    end
+    -- Normally we would only need to check it when user presets have just been
+    -- requested. However, a bug in firmware 10.65 and not expected to be
+    -- fixed till 10.69 has caused it not to be sent with user presets.
+    -- So, to be safe, we will process it every time.
+    --if gettingPresets ~= GettingPresets.Requested then
+    --    print("onFirmwareVersionReceived: Bypassing, as not awaiting user presets.") -- TEMP
+    --    return
+    --end
     print("onFirmwareVersionReceived") -- TEMP
     firmwareVersion = ((128 * highVersion) + lowVersion) / 100
     if simulateFirmwareVersionChange then
@@ -3144,11 +3147,14 @@ function onHardwareTypeReceived(cvcHigh)
     -- The instrument sends it when user presets, 
     -- system presets, current preset details etc. have been requested.
     -- The data arrives before presets start being received.
-    -- We only need to check it when user presets have just been requested. 
-    if gettingPresets ~= GettingPresets.Requested then
-        print("onHardwareTypeReceived: Bypassing, as not awaiting user presets.") -- TEMP
-        return
-    end
+    -- Normally we would only need to check it when user presets have just been
+    -- requested. However, a bug in firmware 10.65 and not expected to be
+    -- fixed till 10.69 has caused it not to be sent with user presets.
+    -- So, to be safe, we will process it every time.
+    --if gettingPresets ~= GettingPresets.Requested then
+    --    print("onHardwareTypeReceived: Bypassing, as not awaiting user presets.") -- TEMP
+    --    return
+    --end
     hardwareType = cvcHigh >> 2
     ----hardwareType = HardwareType.ContinuuMini -- For testing unsupported hardware type.
     if hardwareSimulation then
