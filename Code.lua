@@ -129,7 +129,7 @@ local systemInfoBuffer = {}
 local systemPresetFiltersBuffer = ""
 local systemPresetNameBuffer = ""
 local userPresetNameBuffer = ""
-local systemPresetsChecksum
+local systemPresetsChecksum = ""
 local versionText = ""
 
 -- Tables
@@ -177,13 +177,13 @@ local persistableData = {}
 recall(persistableData)
 -- Uncomment any of these to force system presets to be got from the instrument.
 -- persistableData.isSaved = false
--- persistableData.systemPresetsChecksum = nil
+-- persistableData.systemPresetsChecksum = ""
 -- persistableData.systemPresetCategories = {}
 if not persistableData.isSaved then
     --print("persistableData not available")
     -- Not strictly necessary,
     --  provided isSaved is always checked before accessing these items.
-    persistableData.systemPresetsChecksum = nil
+    persistableData.systemPresetsChecksum = ""
     persistableData.systemPresetCategories = {}
 end
 
@@ -2457,8 +2457,8 @@ function selectPresetCategory(valueObject, value)
     refreshInfoText()
     -- Added by SOR: Get system presets.
     if not haveSystemPresetsBeenReceived then
-        -- This function will be called again, from the Lua code,
-        -- once all the system presets have been received.
+        -- The selected category and system preset will be initialised
+        -- to none before receiving presets.
         return
     end
     -- Zero-based category control value, so System is 0, not 1.
@@ -2478,8 +2478,8 @@ end
 function selectSystemPreset(valueObject, value)
     refreshInfoText()
     if not haveSystemPresetsBeenReceived then
-        -- This function will be called again, from the Lua code,
-        -- once all the system presets have been received.
+        -- The selected category and system preset will be initialised
+        -- to none before receiving presets.
         return
     end
     local systemPresets = systemPresetCategories[selectedSystemPreset.category]
@@ -2547,7 +2547,7 @@ function accumulateSystemInfoBuffer(byte1, byte2)
     local byte1Index = #systemInfoBuffer + 1
     local byte2Index = byte1Index + 1
     print("accumulateSystemInfoBuffer, bytes " .. byte1Index .. " and " .. byte2Index ..
-            ": " .. tostring(math.floor(byte1)) .. " " .. tostring(math.floor(byte2)))
+            ": " .. tostring(math.floor(byte1)) .. " " .. tostring(math.floor(byte2))) -- TEMP
     systemInfoBuffer[byte1Index] = byte1
     systemInfoBuffer[byte2Index] = byte2
     if #systemInfoBuffer == totalByteCount then
@@ -2926,8 +2926,8 @@ end
 function isSystemPresetsUpdateRequired()
     print("isSystemPresetsUpdateRequired") -- TEMP
     if not persistableData.isSaved
-            or #persistableData.systemPresetCategories == 0 
-            or not systemPresetsChecksum then
+            or #persistableData.systemPresetCategories == 0
+            or systemPresetsChecksum == "" then
         print("    True: There is no persisted data") -- TEMP
         return true
     end
@@ -2935,8 +2935,8 @@ function isSystemPresetsUpdateRequired()
         print("    True: systemPresetsChecksum has changed") -- TEMP
         return true
     end
-        print("    False: systemPresetsChecksum has not changed") -- TEMP
-        return false
+    print("    False: systemPresetsChecksum has not changed") -- TEMP
+    return false
 end
 
 -- Loads a system or user preset.
@@ -3112,8 +3112,8 @@ function onSystemPresetsReceived(fromPersistedData)
         savePersistableData()
     end
     onAllPresetsReceived()
-    selectPresetCategory(nil, nil)
-    selectSystemPreset(nil, nil)
+    --selectPresetCategory(nil, nil)
+    --selectSystemPreset(nil, nil)
 end
 
 function onUserPresetsReceived()
@@ -3122,7 +3122,6 @@ function onUserPresetsReceived()
     userNameIndex = 0
     if not haveSystemPresetsBeenReceived then
         requestSystemInfo()
-        --getSystemPresets()
     else
         onAllPresetsReceived()
     end
@@ -3169,7 +3168,7 @@ function requestSystemInfo()
     print("requestSystemInfo") -- TEMP
     stream = Stream.SystemInfo
     systemInfoBuffer = {}
-    systemPresetsChecksum = nil
+    systemPresetsChecksum = ""
     sendCc(
             "requestSystemInfo", 16, 109, 13,
             "Request System Info (s_Sys)", true)
@@ -3347,11 +3346,20 @@ function setSos2(valueObject, value)
     midi.sendControlChange(DEVICE_PORT, 1, 69, value)
 end
 
+-- Stores the variable for the received system presets checksum,
+-- which is used to determine whether we need to get 
+-- the system preset list from the instrument.
 function setSystemPresetsChecksum()
-    systemPresetsChecksum = systemInfoBuffer[6]
-            + systemInfoBuffer[5] * 128
-            + systemInfoBuffer[4] * 128 * 128
-            + systemInfoBuffer[3] * 128 * 128 * 128
+    --systemPresetsChecksum = systemInfoBuffer[6]
+    --        + systemInfoBuffer[5] * 128
+    --        + systemInfoBuffer[4] * 128 * 128
+    --        + systemInfoBuffer[3] * 128 * 128 * 128
+    -- It's liable to be a huge number, which prints would show in floating point format.
+    -- So, for readability, let's format it as byte3-byte4-byte5-byte6.
+    systemPresetsChecksum = tostring(math.floor(systemInfoBuffer[3]))
+            .. "-" .. tostring(math.floor(systemInfoBuffer[4]))
+            .. "-" .. tostring(math.floor(systemInfoBuffer[5]))
+            .. "-" .. tostring(math.floor(systemInfoBuffer[6]))
     print("setSystemPresetsChecksum: Set systemPresetsChecksum to " ..
             tostring(systemPresetsChecksum)) --TEMP
 end
