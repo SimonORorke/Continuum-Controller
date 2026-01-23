@@ -85,21 +85,6 @@ GettingPresets.User = 1
 GettingPresets.System = 2
 --GettingPresets.Requested = 3
 
--- An enumeration (enum) of instrument hardware types/versions.
-local HardwareType = {} -- SOR
-HardwareType.Unknown = 0
-HardwareType.LightActionFullSize = 1
-HardwareType.LightActionHalfSize = 2
-HardwareType.ClassicActionFullSize = 3
-HardwareType.ClassicActionHalfSize = 4
-HardwareType.ContinuuMini = 5
-HardwareType.Osmose = 6
-HardwareType.Slim22 = 7 -- Was this ever a production instrument?
-HardwareType.Slim46 = 8
-HardwareType.Slim70 = 9
-HardwareType.EaganMatrixModule = 10
-HardwareType.EaganMatrixMicro = 11
-
 -- An enumeration (enum) of preset load states.
 local PresetLoadState = {} -- SOR
 -- The preset was already loaded on the instrument when the E1 preset was loaded.
@@ -113,12 +98,6 @@ PresetType.Unknown = 0 -- See comment above currentPreset.Type.
 PresetType.User = 1
 PresetType.System = 2
 
--- An enumeration (enum) for a hardware type change test strategy.
-local HardwareSimulationStrategy = {}
-HardwareSimulationStrategy.None = 0
-HardwareSimulationStrategy.OnStart = 1
-HardwareSimulationStrategy.OnHotSwitch = 2
-
 -- An enumeration (enum) of preset data stream types.
 local Stream = {} -- SOR
 Stream.None = 0
@@ -129,6 +108,7 @@ Stream.ControlText = 4
 Stream.Convolution = 5
 Stream.Matrix = 6
 Stream.CurrentPresetName = 7
+Stream.SystemInfo = 8
 
 -- Macro names/category/filters/author data 
 -- that we can get from the Control Text context stream 
@@ -137,25 +117,19 @@ local controlTextBuffer = ""
 local convolutionBuffer = ""
 local currentPresetNameBuffer = ""
 local firmwareVersion = ""
-local getPresetsCount = 0
 local gettingPresets = GettingPresets.None
-local hardwareSimulation = false
-local hardwareSimulationStrategy = HardwareSimulationStrategy.None
---local hardwareSimulationStrategy = HardwareSimulationStrategy.OnStart
---local hardwareSimulationStrategy = HardwareSimulationStrategy.OnHotSwitch
-local hardwareType = HardwareType.Unknown
 local hasJustLoaded = true
 local haveSystemPresetsBeenReceived = false
 local isGettingCurrentPresetData = false
 --local isWaitingForE1PresetLoadToComplete = true
 local receivedSystemPresetFilters = ""
 local receivedSystemPresetName = ""
-local simulateFirmwareVersionChange = false
---local simulateFirmwareVersionChange = true
 local stream = Stream.None
+local systemInfoBuffer = {}
 local systemPresetFiltersBuffer = ""
 local systemPresetNameBuffer = ""
 local userPresetNameBuffer = ""
+local systemPresetsChecksum
 local versionText = ""
 
 -- Tables
@@ -181,22 +155,6 @@ currentPreset.loadState = PresetLoadState.AlreadyLoaded
 -- 0 is for user presets and 127 for system presets.)
 currentPreset.type = PresetType.Unknown
 
--- A dictionary for looking up the name of the instrument hardware type/version 
--- corresponding to the numeric HardwareType provided by the instrument. SOR
-local hardwareTypeNames = {}
-hardwareTypeNames[HardwareType.Unknown] = "Unknown"
-hardwareTypeNames[HardwareType.LightActionFullSize] = "Light-Action Full-Size Continuum"
-hardwareTypeNames[HardwareType.LightActionHalfSize] = "Light-Action Half-Size Continuum"
-hardwareTypeNames[HardwareType.ClassicActionFullSize] = "Classic-Action Full-Size Continuum"
-hardwareTypeNames[HardwareType.ClassicActionHalfSize] = "Classic-Action Half-Size Continuum"
-hardwareTypeNames[HardwareType.ContinuuMini] = "ContinuuMini"
-hardwareTypeNames[HardwareType.Osmose] = "Osmose"
-hardwareTypeNames[HardwareType.Slim22] = "Slim22 Continuum"
-hardwareTypeNames[HardwareType.Slim46] = "Slim46 Continuum"
-hardwareTypeNames[HardwareType.Slim70] = "Slim70 Continuum"
-hardwareTypeNames[HardwareType.EaganMatrixModule] = "EaganMatrix Module"
-hardwareTypeNames[HardwareType.EaganMatrixMicro] = "EaganMatrix Micro"
-
 local macroControls = {} -- SOR
 for controlNo = ControlNo.MacroI_Value, ControlNo.MacroVI_Value do
     macroControls[controlNo] = controls.get(controlNo)
@@ -219,18 +177,14 @@ local persistableData = {}
 recall(persistableData)
 -- Uncomment any of these to force system presets to be got from the instrument.
 -- persistableData.isSaved = false
--- persistableData.firmwareVersion = "9.0"
--- persistableData.hardwareType = HardwareType.Unknown
+-- persistableData.systemPresetsChecksum = nil
 -- persistableData.systemPresetCategories = {}
 if not persistableData.isSaved then
     --print("persistableData not available")
     -- Not strictly necessary,
     --  provided isSaved is always checked before accessing these items.
-    persistableData.firmwareVersion = ""
-    persistableData.hardwareType = HardwareType.Unknown
+    persistableData.systemPresetsChecksum = nil
     persistableData.systemPresetCategories = {}
-else
-    --print("persistableData.firmwareVersion = "..persistableData.firmwareVersion)
 end
 
 -- For selecting and loading a system preset.
@@ -553,7 +507,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     if (chan == 16 and cc == 102) then
         -- Firmware High Address
         printCcReceived(
-                "midi.onControlChange", chan, cc, val, 
+                "midi.onControlChange", chan, cc, val,
                 "Firmware High Address")
         highVersion = value
         return -- SOR
@@ -561,18 +515,10 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     if (chan == 16 and cc == 103) then
         -- Firmware Low Address
         printCcReceived(
-                "midi.onControlChange", chan, cc, val, 
+                "midi.onControlChange", chan, cc, val,
                 "Firmware Low Address")
         lowVersion = value
         onFirmwareVersionReceived()
-        return
-    end
-    if (chan == 16 and cc == 104) then
-        -- ccCVCHigh
-        printCcReceived(
-                "midi.onControlChange", chan, cc, val, 
-                "Hardare type (ccCVCHigh)")
-        onHardwareTypeReceived(value)
         return
     end
     if (chan == 16 and cc == 71) then
@@ -974,32 +920,31 @@ function midi.onMessage(midiInput, midiMessage)
         stream = Stream.None -- SOR
         processConvolution() -- Process the Convolution stream                    
     elseif (stream == Stream.Matrix and msg.controllerNumber == 56 and msg.value == 127) then
-        -- SOR
         stream = Stream.None  -- Won't hurt anything but 127 is not signal of matrix stream end
     end
 end
 
 function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
+    if (stream == Stream.SystemInfo) then
+        accumulateSystemInfoBuffer(noteNumber, pressure)
+        return
+    end
     if (stream == Stream.CurrentPresetName) then
-        -- SOR
         -- Accumulate loaded preset name buffer
         currentPresetNameBuffer = currentPresetNameBuffer .. string.char(noteNumber) .. string.char(pressure)
         return
     end
     if (stream == Stream.SystemPresetName) then
-        -- SOR
         -- Accumulate system preset name buffer
         systemPresetNameBuffer = systemPresetNameBuffer .. string.char(noteNumber) .. string.char(pressure)
         return
     end
     if (stream == Stream.SystemPresetFilters) then
-        -- SOR
         -- Accumulate system preset context buffer
         systemPresetFiltersBuffer = systemPresetFiltersBuffer .. string.char(noteNumber) .. string.char(pressure)
         return
     end
     if (stream == Stream.Convolution) then
-        -- SOR
         convolutionBuffer = convolutionBuffer .. math.floor(noteNumber) .. "|" .. math.floor(pressure) .. "|" -- SOR
         --print("CS=|"..convolutionBuffer.."|")--debugit       
         return
@@ -1009,7 +954,6 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         userPresetNameBuffer = userPresetNameBuffer .. string.char(noteNumber) .. string.char(pressure) -- SOR
     end
     if (stream == Stream.ControlText) then
-        -- SOR
         -- Accumulate Control Text, which includes macro names.
         controlTextBuffer = controlTextBuffer .. string.char(noteNumber) .. string.char(pressure)
         return
@@ -2534,7 +2478,6 @@ end
 function selectSystemPreset(valueObject, value)
     refreshInfoText()
     if not haveSystemPresetsBeenReceived then
-        -- SOR
         -- This function will be called again, from the Lua code,
         -- once all the system presets have been received.
         return
@@ -2597,6 +2540,21 @@ function loadSystemPreset(valueObject, value)
     --print("loadSystemPreset: selectedSystemPreset.name = "..selectedSystemPreset.name)
     loadPreset(tmpCategory, selectedSystemPreset.bankLsb,
             selectedSystemPreset.presetNo - 1, selectedSystemPreset.name) -- SOR
+end
+
+function accumulateSystemInfoBuffer(byte1, byte2)
+    local totalByteCount = 20
+    local byte1Index = #systemInfoBuffer + 1
+    local byte2Index = byte1Index + 1
+    print("accumulateSystemInfoBuffer, bytes " .. byte1Index .. " and " .. byte2Index ..
+            ": " .. tostring(math.floor(byte1)) .. " " .. tostring(math.floor(byte2)))
+    systemInfoBuffer[byte1Index] = byte1
+    systemInfoBuffer[byte2Index] = byte2
+    if #systemInfoBuffer == totalByteCount then
+        stream = Stream.None
+        setSystemPresetsChecksum()
+        getSystemPresets()
+    end
 end
 
 -- Set Pedal 1 Assignment
@@ -2923,11 +2881,6 @@ function getPresets(valueObject, value)
         -- The player must instead push the Load Presets button to get the preset lists
         -- manually.
         print("getPresets: Automatic getting presets on startup is disabled.") -- TEMP
-        if hardwareSimulationStrategy == HardwareSimulationStrategy.OnStart
-                and persistableData.hardwareType ~= HardwareType.Unknown then
-            print("  Simulating hardware type change on start") -- TEMP
-            hardwareSimulation = true
-        end
         hasJustLoaded = false
         return
     end
@@ -2944,17 +2897,6 @@ function getPresets(valueObject, value)
         return
     end
     print("getPresets: Requesting user presets") -- TEMP
-    getPresetsCount = getPresetsCount + 1
-    if getPresetsCount > 1 then
-        if hardwareSimulationStrategy == HardwareSimulationStrategy.OnHotSwitch
-                and persistableData.hardwareType ~= HardwareType.Unknown then
-            print("  Simulating hardware type change on hot switch") -- TEMP
-            hardwareSimulation = true
-        else
-            hardwareSimulation = false
-        end
-    end
-    --gettingPresets = GettingPresets.Requested
     -- Request user presets
     sendCc(
             "getPresets", 16, 109, 32,
@@ -2979,52 +2921,22 @@ function getSystemPresets()
     end
 end
 
-function isHardWareTypeContinuum(hardwareTypeToCheck)
-    -- ContinuuMini and EaganMatrixMicro are not (yet?) supported.
-    return hardwareTypeToCheck ~= HardwareType.EaganMatrixModule
-            and hardwareTypeToCheck ~= HardwareType.ContinuuMini
-            and hardwareTypeToCheck ~= HardwareType.EaganMatrixMicro
-end
-
 -- Returns whether system presets must be updated from the instrument.
 -- When false, system presets may be populated from data persisted on the E1.
 function isSystemPresetsUpdateRequired()
     print("isSystemPresetsUpdateRequired") -- TEMP
     if not persistableData.isSaved
-            or #persistableData.systemPresetCategories == 0 then
+            or #persistableData.systemPresetCategories == 0 
+            or not systemPresetsChecksum then
         print("    True: There is no persisted data") -- TEMP
         return true
     end
-    if persistableData.firmwareVersion ~= firmwareVersion then
-        print("    True: Firmware version has changed") -- TEMP
+    if persistableData.systemPresetsChecksum ~= systemPresetsChecksum then
+        print("    True: systemPresetsChecksum has changed") -- TEMP
         return true
     end
-    if persistableData.hardwareType == hardwareType then
-        print("    False: Neither hardware type not firmware version has changed") -- TEMP
+        print("    False: systemPresetsChecksum has not changed") -- TEMP
         return false
-    end
-    -- Only hardware type has changed, not the firmware version.
-    if not isHardWareTypeContinuum(hardwareType) then
-        print("    True: New hardware type is " .. hardwareTypeNames[hardwareType]) -- TEMP
-        return true
-    end
-    -- The connected instrument is some type of Continuum.
-    -- So we don't need to refresh system presets if the previously connected 
-    -- instrument was also a Continuum.
-    -- This might not work if an old (i.e. classic or light) Continuum were involved.
-    -- But we don't support those.
-    --
-    -- This diagnostic's not right, yet the correct result is changed.
-    --local isEmm = isHardWareTypeContinuum(persistableData.hardwareType) -- TEMP
-    ---- TEMP
-    --if isEmm then
-    --    print("    True: Changed from EMM to Continuum") -- TEMP
-    --else
-    --    print("    False: Changed Continuum model") -- TEMP
-    --end
-    local result = not isHardWareTypeContinuum(persistableData.hardwareType)
-    print("    " .. tostring(result)) -- TEMP
-    return result
 end
 
 -- Loads a system or user preset.
@@ -3072,9 +2984,9 @@ function onAllPresetsReceived()
 end
 
 function onCurrentPresetDataReceived()
-    print("onCurrentPresetDataReceived: currentPreset.programNo = "..currentPreset.programNo..
-            "; currentPreset.loadState = "..tostring(currentPreset.loadState)..
-    "; currentPreset.type = "..currentPreset.type) -- TEMP
+    print("onCurrentPresetDataReceived: currentPreset.programNo = " .. currentPreset.programNo ..
+            "; currentPreset.loadState = " .. tostring(currentPreset.loadState) ..
+            "; currentPreset.type = " .. currentPreset.type) -- TEMP
     resetMute() -- Reset in case on from previous preset
     if currentPreset.type == PresetType.Unknown then
         -- We must have just received the data for the preset that was
@@ -3130,60 +3042,8 @@ function onFirmwareVersionReceived()
     --end
     print("onFirmwareVersionReceived") -- TEMP
     firmwareVersion = ((128 * highVersion) + lowVersion) / 100
-    if simulateFirmwareVersionChange then
-        print("    Simulating firmware version change") -- TEMP
-        if hardwareType == HardwareType.Slim46 then
-            firmwareVersion = "10.65"            
-        else -- EaganMatrixModule
-            firmwareVersion = "10.62"
-        end
-    end
     print("    Firmware version = " .. firmwareVersion) -- TEMP
     versionText = "Ver: " .. E1_PRESET_VERSION .. "/" .. firmwareVersion
-end
-
-function onHardwareTypeReceived(cvcHigh)
-    -- There's no command to request the hardware type.
-    -- The instrument sends it when user presets, 
-    -- system presets, current preset details etc. have been requested.
-    -- The data arrives before presets start being received.
-    -- Normally we would only need to check it when user presets have just been
-    -- requested. However, a bug in firmware 10.65 and not expected to be
-    -- fixed till 10.69 has caused it not to be sent with user presets.
-    -- So, to be safe, we will process it every time.
-    --if gettingPresets ~= GettingPresets.Requested then
-    --    print("onHardwareTypeReceived: Bypassing, as not awaiting user presets.") -- TEMP
-    --    return
-    --end
-    hardwareType = cvcHigh >> 2
-    ----hardwareType = HardwareType.ContinuuMini -- For testing unsupported hardware type.
-    if hardwareSimulation then
-        if persistableData.hardwareType == HardwareType.Slim46 then
-            hardwareType = HardwareType.EaganMatrixModule
-        else
-            hardwareType = HardwareType.Slim46
-        end
-    end
-    local hardwareTypeName = hardwareTypeNames[hardwareType]
-    print("onHardwareTypeReceived: New hardware type = " .. hardwareTypeName
-        .. "; old hardware type = " .. hardwareTypeNames[persistableData.hardwareType]) -- TEMP
-    if hardwareSimulation then
-        print("    Simulated new hardware type")
-    end
-    print("    gettingPresets = " .. gettingPresets)
-    if hardwareType >= 7 and hardwareType <= 10 then
-        -- Supported hardware types: Slim22 (if there any of those actually exist),
-        -- Slim46, Slim70, EaganMatrixModule.
-        return
-    end
-    -- Raising an error will not terminate the E1 script. It can only be seen
-    -- in the debug page of the Electra One Preset Editor.
-    -- An E1 script can only be terminated by an E1 hardware and firmware check
-    -- like the one at the top of this file.
-    -- So raising this error will not stop the preset list from being received.
-    -- That's OK for now. A player can try connecting an unsupported instrument,
-    -- at their own risk, and see what happens.
-    error("Hardware type " .. hardwareTypeName .. " is not supported.")
 end
 
 function onStartedReceivingUserPresets()
@@ -3214,7 +3074,7 @@ function onStartedReceivingUserPresets()
     local loadSystemPresetButton = controls.get(ControlNo.LoadSystemPresetButton)
     loadSystemPresetButton:setName("SELECT PRESET")
     -- end
-end    
+end
 
 function onSystemPresetReceived()
     -- The system preset's two-letter category code has been received.
@@ -3261,7 +3121,8 @@ function onUserPresetsReceived()
     gettingPresets = GettingPresets.None
     userNameIndex = 0
     if not haveSystemPresetsBeenReceived then
-        getSystemPresets()
+        requestSystemInfo()
+        --getSystemPresets()
     else
         onAllPresetsReceived()
     end
@@ -3281,7 +3142,7 @@ function printCcReceived(inFunction, channel, cc, value, description)
 end
 
 function refreshInfoText()
-    local infoText = info.getText() 
+    local infoText = info.getText()
     if infoText ~= PRESS_LOAD_PRESETS and infoText ~= GETTING_PRESETS then
         info.setText(versionText) -- Removes "Select Preset Pos" if shown. 
     end
@@ -3304,19 +3165,23 @@ function replaceLongSystemPresetNamesWithShortNames()
     end
 end
 
+function requestSystemInfo()
+    print("requestSystemInfo") -- TEMP
+    stream = Stream.SystemInfo
+    systemInfoBuffer = {}
+    systemPresetsChecksum = nil
+    sendCc(
+            "requestSystemInfo", 16, 109, 13,
+            "Request System Info (s_Sys)", true)
+end
+
 function savePersistableData()
     print("savePersistableData: Saving persistableData:") -- TEMP
-    print("    Hardware type = " .. hardwareTypeNames[hardwareType]) -- TEMP
-    if firmwareVersion ~= "" then
-        print("    Firmware version = " .. firmwareVersion) -- TEMP
-    else    
-        print("    Firmware version is empty!") -- TEMP
-    end
+    print("    systemPresetsChecksum = " .. systemPresetsChecksum) -- TEMP
     local totalSystemPresetCount = countSystemPresets() -- TEMP
     print("    Total system preset count = " .. tostring(totalSystemPresetCount)) -- TEMP
     persistableData.isSaved = true
-    persistableData.firmwareVersion = firmwareVersion
-    persistableData.hardwareType = hardwareType
+    persistableData.systemPresetsChecksum = systemPresetsChecksum
     persistableData.systemPresetCategories = systemPresetCategories
     persist(persistableData)
 end
@@ -3482,6 +3347,15 @@ function setSos2(valueObject, value)
     midi.sendControlChange(DEVICE_PORT, 1, 69, value)
 end
 
+function setSystemPresetsChecksum()
+    systemPresetsChecksum = systemInfoBuffer[6]
+            + systemInfoBuffer[5] * 128
+            + systemInfoBuffer[4] * 128 * 128
+            + systemInfoBuffer[3] * 128 * 128 * 128
+    print("setSystemPresetsChecksum: Set systemPresetsChecksum to " ..
+            tostring(systemPresetsChecksum)) --TEMP
+end
+
 -- Splits the delimited components of the specified string into a table.
 -- If not specified, the delimiter will be any whitespace.
 -- According to https://stackoverflow.com/questions/1426954/split-string-in-lua,
@@ -3528,8 +3402,8 @@ end
 -- slotNo: The 1-based user preset slot number, or zero if none has been selected or set.
 function updateUserPresetPos(slotNo)
     userPresetPosSelect = slotNo
-    print("updateUserPresetPos: userPresetPosSelect = "..userPresetPosSelect..
-        "; currentPreset.type = "..currentPreset.type) -- TEMP
+    print("updateUserPresetPos: userPresetPosSelect = " .. userPresetPosSelect ..
+            "; currentPreset.type = " .. currentPreset.type) -- TEMP
     local currentPresetGroup = groups.get(ControlNo.CurrentPresetGroup)
     local currentPresetButton = controls.get(ControlNo.CurrentPresetButton)
     if userPresetPosSelect > 0 then
