@@ -803,14 +803,14 @@ function midi.onMessage(midiInput, midiMessage)
                 "midi.onMessage", msg.channel, msg.controllerNumber, msg.value,
                 "Start of system presets (beginSysNames)")
         gettingPresets = GettingPresets.System
-        --print("Start of system preset list")
+        print("Start of system preset list") -- TEMP
         return
     end
     if (msg.controllerNumber == 109 and msg.value == 40) then
         -- SOR
         -- End of system preset list (endSysNames)    
         gettingPresets = GettingPresets.None
-        --print("End of system preset list")
+        print("End of system preset list") -- TEMP
         onSystemPresetsReceived(false)
         return
     end
@@ -829,109 +829,24 @@ function midi.onMessage(midiInput, midiMessage)
         onUserPresetsReceived() -- SOR
         return -- SOR
     end
-
     if msg.controllerNumber == 56 then
-        -- SOR
-        if msg.value == 20 then
-            -- Matrix Stream
-            -- Has no CC56=127 terminator - new stream terminates it
-            stream = Stream.Matrix
-            return
-        end
-    end
-
-    if (msg.controllerNumber == 56 and msg.value == 0) then
-        -- SOR
-        -- Start of system or user or loaded preset name stream
-        if gettingPresets == GettingPresets.System then
-            stream = Stream.SystemPresetName
-            systemPresetNameBuffer = ""
-        elseif isGettingCurrentPresetData then
-            stream = Stream.CurrentPresetName
-            currentPresetNameBuffer = ""
+        if msg.value == 127 then
+            onEndOfStream()
         else
-            -- Processing user presets (gettingPresets == GettingPresets.User)
-            userNameIndex = userNameIndex + 1 -- Index Lua arrays from 1
-            stream = Stream.UserPresetName
+            onStartOfStream(msg.value)
         end
         return
-    end
-
-    if (msg.controllerNumber == 56 and msg.value == 14) then
-        -- Convolution Stream
-        stream = Stream.Convolution -- SOR
-        return -- SOR
-    end
-
-    if (msg.controllerNumber == 56 and msg.value == 1) then
-        -- SOR
-        -- Start of Control Text or system preset filters context stream 
-        if gettingPresets == GettingPresets.System then
-            -- System preset filters context data, which will include 
-            -- the 2-letter category code.
-            stream = Stream.SystemPresetFilters
-            systemPresetFiltersBuffer = ""
-            return
-        end
-        -- Start of Control Text stream, which includes macro names.
-        controlTextBuffer = ""
-        return -- SOR
-    end
-
-    if msg.controllerNumber == 56 and msg.value == 127 then
-        -- SOR 
-        -- End of stream
-        if stream == Stream.CurrentPresetName then
-            stream = Stream.None
-            return
-        end
-        if stream == Stream.SystemPresetName then
-            stream = Stream.None
-            receivedSystemPresetName = trimTrailingNullChar(systemPresetNameBuffer)
-            return
-        end
-        if stream == Stream.SystemPresetFilters then
-            stream = Stream.None
-            receivedSystemPresetFilters = trimTrailingNullChar(systemPresetFiltersBuffer)
-            onSystemPresetReceived()
-            return
-        end
-    end
-
-    if (stream == Stream.UserPresetName and msg.controllerNumber == 56 and msg.value == 127) then
-        -- Stream Ends
-        stream = Stream.None -- SOR
-        if gettingPresets == GettingPresets.User then
-            if (userPresetNameBuffer == "" or userPresetNameBuffer == "-") then
-                userPresetNameBuffer = "Empty"
-            end
-            if (string.len(userPresetNameBuffer) > 14) then
-                -- Limit strings for congtrols to 14 chars
-                --print("userPresetNameBuffer:|"..userPresetNameBuffer.."|")
-                local tmpstr = userPresetNameBuffer
-                userPresetNameBuffer = string.sub(tmpstr, 1, 14)
-            end
-            -- Store Preset name in array 
-            userPresetNames[userNameIndex] = userPresetNameBuffer -- SOR
-        end
-        userPresetNameBuffer = "" -- Reset userPresetNameBuffer to accumulate the next name
-    elseif (stream == Stream.Convolution and msg.controllerNumber == 56 and msg.value == 127) then
-        -- SOR
-        stream = Stream.None -- SOR
-        processConvolution() -- Process the Convolution stream                    
-    elseif (stream == Stream.Matrix and msg.controllerNumber == 56 and msg.value == 127) then
-        stream = Stream.None  -- Won't hurt anything but 127 is not signal of matrix stream end
     end
 end
 
 function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
-    if (stream == Stream.SystemInfo) then
-        accumulateSystemInfoBuffer(noteNumber, pressure)
-        return
-    end
     if (stream == Stream.CurrentPresetName) then
         -- Accumulate loaded preset name buffer
         currentPresetNameBuffer = currentPresetNameBuffer .. string.char(noteNumber) .. string.char(pressure)
+        return
+    end
+    if (stream == Stream.SystemInfo) then
+        accumulateSystemInfoBuffer(noteNumber, pressure)
         return
     end
     if (stream == Stream.SystemPresetName) then
@@ -2553,7 +2468,6 @@ function accumulateSystemInfoBuffer(byte1, byte2)
     if #systemInfoBuffer == totalByteCount then
         stream = Stream.None
         setSystemPresetsChecksum()
-        getSystemPresets()
     end
 end
 
@@ -3027,6 +2941,83 @@ function onCurrentPresetDataReceived()
     end
 end
 
+function onEndOfStream()
+    if stream == Stream.Convolution then
+        processConvolution() -- Process the Convolution stream                    
+    elseif stream == Stream.SystemPresetFilters then
+        receivedSystemPresetFilters = trimTrailingNullChar(systemPresetFiltersBuffer)
+        onSystemPresetReceived()
+    elseif stream == Stream.SystemPresetName then
+        receivedSystemPresetName = trimTrailingNullChar(systemPresetNameBuffer)
+    elseif stream == Stream.UserPresetName then
+        if gettingPresets == GettingPresets.User then
+            if (userPresetNameBuffer == "" or userPresetNameBuffer == "-") then
+                userPresetNameBuffer = "Empty"
+            end
+            if (string.len(userPresetNameBuffer) > 14) then
+                -- Limit strings for congtrols to 14 chars
+                --print("userPresetNameBuffer:|"..userPresetNameBuffer.."|")
+                local tmpstr = userPresetNameBuffer
+                userPresetNameBuffer = string.sub(tmpstr, 1, 14)
+            end
+            -- Store Preset name in array 
+            userPresetNames[userNameIndex] = userPresetNameBuffer -- SOR
+        end
+        userPresetNameBuffer = "" -- Reset userPresetNameBuffer to accumulate the next name
+    end
+    stream = Stream.None
+end
+
+function onStartOfStream(streamNo)
+    if streamNo == 0 then
+        -- s_Name: System or user or loaded preset name stream
+        if gettingPresets == GettingPresets.System then
+            stream = Stream.SystemPresetName
+            systemPresetNameBuffer = ""
+        elseif isGettingCurrentPresetData then
+            stream = Stream.CurrentPresetName
+            currentPresetNameBuffer = ""
+        else
+            -- Processing user presets (gettingPresets == GettingPresets.User)
+            userNameIndex = userNameIndex + 1 -- Index Lua arrays from 1
+            stream = Stream.UserPresetName
+        end
+        return
+    end
+    if streamNo == 1 then
+        -- s_ConText: Control Text or system preset filters context stream 
+        if gettingPresets == GettingPresets.System then
+            -- System preset filters context data, which will include 
+            -- the 2-letter category code.
+            stream = Stream.SystemPresetFilters
+            systemPresetFiltersBuffer = ""
+            return
+        end
+        -- Start of Control Text stream, which includes macro names.
+        controlTextBuffer = ""
+        return
+    end
+    if streamNo == 13 then
+        -- s_Sys
+        print("onStartOfStream: Start of SystemInfo (s_Sys) stream") -- TEMP
+        stream = Stream.SystemInfo
+        systemInfoBuffer = {}
+        systemPresetsChecksum = ""
+        return
+    end
+    if streamNo == 14 then
+        -- s_Conv
+        stream = Stream.Convolution
+        return
+    end
+    if streamNo == 20 then
+        -- s_Mat_Poke
+        -- Has no CC56=127 terminator - new stream terminates it
+        stream = Stream.Matrix
+        return
+    end
+end
+
 function onFirmwareVersionReceived()
     -- There's no command to request the firmware version.
     -- The instrument sends it when user presets, 
@@ -3105,6 +3096,7 @@ function onSystemPresetReceived()
 end
 
 function onSystemPresetsReceived(fromPersistedData)
+    print("onSystemPresetsReceived: fromPersistedData = " .. tostring(fromPersistedData)) -- TEMP
     haveSystemPresetsBeenReceived = true
     if not fromPersistedData then
         replaceLongSystemPresetNamesWithShortNames()
@@ -3112,8 +3104,6 @@ function onSystemPresetsReceived(fromPersistedData)
         savePersistableData()
     end
     onAllPresetsReceived()
-    --selectPresetCategory(nil, nil)
-    --selectSystemPreset(nil, nil)
 end
 
 function onUserPresetsReceived()
@@ -3121,7 +3111,7 @@ function onUserPresetsReceived()
     gettingPresets = GettingPresets.None
     userNameIndex = 0
     if not haveSystemPresetsBeenReceived then
-        requestSystemInfo()
+        getSystemPresets()
     else
         onAllPresetsReceived()
     end
@@ -3162,16 +3152,6 @@ function replaceLongSystemPresetNamesWithShortNames()
             end
         end
     end
-end
-
-function requestSystemInfo()
-    print("requestSystemInfo") -- TEMP
-    stream = Stream.SystemInfo
-    systemInfoBuffer = {}
-    systemPresetsChecksum = ""
-    sendCc(
-            "requestSystemInfo", 16, 109, 13,
-            "Request System Info (s_Sys)", true)
 end
 
 function savePersistableData()
