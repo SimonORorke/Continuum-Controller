@@ -129,7 +129,7 @@ local systemInfoBuffer = {}
 local systemPresetFiltersBuffer = ""
 local systemPresetNameBuffer = ""
 local userPresetNameBuffer = ""
-local systemPresetsChecksum = ""
+local systemPresetsChecksum
 local versionText = ""
 
 -- Tables
@@ -173,18 +173,23 @@ macroControlNos["vi"] = ControlNo.MacroVI_Value
 -- Added by SOR: Get system presets.
 local persistableData = {}
 -- Do initial recall
---print("Recalling persistableData")
 recall(persistableData)
+print("Recalled persistableData") -- TEMP
 -- Uncomment any of these to force system presets to be got from the instrument.
 -- persistableData.isSaved = false
--- persistableData.systemPresetsChecksum = ""
+-- persistableData.systemPresetsChecksum = nil
 -- persistableData.systemPresetCategories = {}
-if not persistableData.isSaved then
-    --print("persistableData not available")
+if not persistableData.isSaved then -- TEMP
+    print("persistableData not available")
     -- Not strictly necessary,
     --  provided isSaved is always checked before accessing these items.
-    persistableData.systemPresetsChecksum = ""
+    persistableData.systemPresetsChecksum = nil
     persistableData.systemPresetCategories = {}
+else
+    print("persistableData available:") -- TEMP
+    print("    isSaved = " .. tostring(persistableData.isSaved)) -- TEMP
+    print("    systemPresetsChecksum = " .. persistableData.systemPresetsChecksum) -- TEMP
+    print("    systemPresetCategories count = " .. #persistableData.systemPresetCategories) -- TEMP
 end
 
 -- For selecting and loading a system preset.
@@ -2457,20 +2462,6 @@ function loadSystemPreset(valueObject, value)
             selectedSystemPreset.presetNo - 1, selectedSystemPreset.name) -- SOR
 end
 
-function accumulateSystemInfoBuffer(byte1, byte2)
-    local totalByteCount = 20
-    local byte1Index = #systemInfoBuffer + 1
-    local byte2Index = byte1Index + 1
-    print("accumulateSystemInfoBuffer, bytes " .. byte1Index .. " and " .. byte2Index ..
-            ": " .. tostring(math.floor(byte1)) .. " " .. tostring(math.floor(byte2))) -- TEMP
-    systemInfoBuffer[byte1Index] = byte1
-    systemInfoBuffer[byte2Index] = byte2
-    if #systemInfoBuffer == totalByteCount then
-        stream = Stream.None
-        setSystemPresetsChecksum()
-    end
-end
-
 -- Set Pedal 1 Assignment
 function assignPedal1 (valueObject, value)
     if (pedal1Init == false) then
@@ -2730,6 +2721,19 @@ function setConvRight4 (valueObject, value)
     convolutionPoke(27, val)
 end
 
+function accumulateSystemInfoBuffer(byte1, byte2)
+    local totalByteCount = 20
+    local byte1Index = #systemInfoBuffer + 1
+    local byte2Index = byte1Index + 1
+    --print("accumulateSystemInfoBuffer, bytes " .. byte1Index .. " and " .. byte2Index ..
+    --        ": " .. tostring(math.floor(byte1)) .. " " .. tostring(math.floor(byte2))) -- TEMP
+    systemInfoBuffer[byte1Index] = byte1
+    systemInfoBuffer[byte2Index] = byte2
+    if #systemInfoBuffer == totalByteCount then
+        setSystemPresetsChecksum()
+    end
+end
+
 -- For debugging.
 function countSystemPresets()
     local result = 0
@@ -2839,14 +2843,25 @@ end
 -- When false, system presets may be populated from data persisted on the E1.
 function isSystemPresetsUpdateRequired()
     print("isSystemPresetsUpdateRequired") -- TEMP
+    if persistableData.isSaved then
+        print("    persistableData available:") -- TEMP
+        print("        isSaved = " .. tostring(persistableData.isSaved)) -- TEMP
+        print("        systemPresetsChecksum = " .. persistableData.systemPresetsChecksum) -- TEMP
+        print("        systemPresetCategories count = " .. #persistableData.systemPresetCategories) -- TEMP
+    end
     if not persistableData.isSaved
             or #persistableData.systemPresetCategories == 0
-            or systemPresetsChecksum == "" then
+            or not persistableData.systemPresetsChecksum then
         print("    True: There is no persisted data") -- TEMP
         return true
     end
     if persistableData.systemPresetsChecksum ~= systemPresetsChecksum then
         print("    True: systemPresetsChecksum has changed") -- TEMP
+        if systemPresetsChecksum then
+            print("        New systemPresetsChecksum = " .. systemPresetsChecksum) -- TEMP
+        else
+            print("        New systemPresetsChecksum not specified") -- TEMP
+        end
         return true
     end
     print("    False: systemPresetsChecksum has not changed") -- TEMP
@@ -2947,6 +2962,8 @@ function onEndOfStream()
     elseif stream == Stream.SystemPresetFilters then
         receivedSystemPresetFilters = trimTrailingNullChar(systemPresetFiltersBuffer)
         onSystemPresetReceived()
+    elseif stream == Stream.SystemInfo then
+        print("onEndOfStream: End of SystemInfo (s_Sys) stream") -- TEMP
     elseif stream == Stream.SystemPresetName then
         receivedSystemPresetName = trimTrailingNullChar(systemPresetNameBuffer)
     elseif stream == Stream.UserPresetName then
@@ -2966,6 +2983,25 @@ function onEndOfStream()
         userPresetNameBuffer = "" -- Reset userPresetNameBuffer to accumulate the next name
     end
     stream = Stream.None
+end
+
+function onFirmwareVersionReceived()
+    -- There's no command to request the firmware version.
+    -- The instrument sends it when user presets, 
+    -- system presets, current preset details etc. have been requested.
+    -- The data arrives before presets start being received.
+    -- Normally we would only need to check it when user presets have just been
+    -- requested. However, a bug in firmware 10.65 and not expected to be
+    -- fixed till 10.69 has caused it not to be sent with user presets.
+    -- So, to be safe, we will process it every time.
+    --if gettingPresets ~= GettingPresets.Requested then
+    --    print("onFirmwareVersionReceived: Bypassing, as not awaiting user presets.") -- TEMP
+    --    return
+    --end
+    print("onFirmwareVersionReceived") -- TEMP
+    firmwareVersion = ((128 * highVersion) + lowVersion) / 100
+    print("    Firmware version = " .. firmwareVersion) -- TEMP
+    versionText = "Ver: " .. E1_PRESET_VERSION .. "/" .. firmwareVersion
 end
 
 function onStartOfStream(streamNo)
@@ -3002,7 +3038,7 @@ function onStartOfStream(streamNo)
         print("onStartOfStream: Start of SystemInfo (s_Sys) stream") -- TEMP
         stream = Stream.SystemInfo
         systemInfoBuffer = {}
-        systemPresetsChecksum = ""
+        systemPresetsChecksum = nil 
         return
     end
     if streamNo == 14 then
@@ -3016,25 +3052,6 @@ function onStartOfStream(streamNo)
         stream = Stream.Matrix
         return
     end
-end
-
-function onFirmwareVersionReceived()
-    -- There's no command to request the firmware version.
-    -- The instrument sends it when user presets, 
-    -- system presets, current preset details etc. have been requested.
-    -- The data arrives before presets start being received.
-    -- Normally we would only need to check it when user presets have just been
-    -- requested. However, a bug in firmware 10.65 and not expected to be
-    -- fixed till 10.69 has caused it not to be sent with user presets.
-    -- So, to be safe, we will process it every time.
-    --if gettingPresets ~= GettingPresets.Requested then
-    --    print("onFirmwareVersionReceived: Bypassing, as not awaiting user presets.") -- TEMP
-    --    return
-    --end
-    print("onFirmwareVersionReceived") -- TEMP
-    firmwareVersion = ((128 * highVersion) + lowVersion) / 100
-    print("    Firmware version = " .. firmwareVersion) -- TEMP
-    versionText = "Ver: " .. E1_PRESET_VERSION .. "/" .. firmwareVersion
 end
 
 function onStartedReceivingUserPresets()
@@ -3340,8 +3357,7 @@ function setSystemPresetsChecksum()
             .. "-" .. tostring(math.floor(systemInfoBuffer[4]))
             .. "-" .. tostring(math.floor(systemInfoBuffer[5]))
             .. "-" .. tostring(math.floor(systemInfoBuffer[6]))
-    print("setSystemPresetsChecksum: Set systemPresetsChecksum to " ..
-            tostring(systemPresetsChecksum)) --TEMP
+    print("setSystemPresetsChecksum: Set systemPresetsChecksum to " .. systemPresetsChecksum) --TEMP
 end
 
 -- Splits the delimited components of the specified string into a table.
