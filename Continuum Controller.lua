@@ -3134,17 +3134,17 @@ function onUserPresetsReceived()
     end
 end
 
--- rxOrTx: From the perspective of the instrument,
--- so back to front from the perspective of the E1 preset.
--- rx: Receive Message (Send message to DSP)
--- tx: Transmit Message (Read message from DSP) 
+-- rxOrTx: From the perspective of this E1 preset,
+-- as per the Haken Editor log.
+-- rx: Receive Message (Read message from DSP)
+-- tx: Transmit Message (Send message to DSP) 
 function printCc(inFunction, rxOrTx, channel, cc, value, description)
     print(rxOrTx .. ": ch" .. channel .. " cc" .. cc .. " "
             .. value .. " (" .. description .. " - in " .. inFunction .. ")")
 end
 
 function printCcReceived(inFunction, channel, cc, value, description)
-    printCc(inFunction, "tx", channel, cc, value, description)
+    printCc(inFunction, "rx", channel, cc, value, description)
 end
 
 function refreshInfoText()
@@ -3185,7 +3185,7 @@ end
 function sendCc(inFunction, channel, cc, value, description, print)
     midi.sendControlChange(DEVICE_PORT, channel, cc, value)
     if print then
-        printCc(inFunction, "rx", channel, cc, value, description)
+        printCc(inFunction, "tx", channel, cc, value, description)
     end
 end
 
