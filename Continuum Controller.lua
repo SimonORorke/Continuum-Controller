@@ -513,7 +513,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         -- Firmware High Address
         printCcReceived(
                 "midi.onControlChange", chan, cc, val,
-                "Firmware High Address")
+                "VersHi Firmware High Address")
         highVersion = value
         return -- SOR
     end
@@ -521,7 +521,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         -- Firmware Low Address
         printCcReceived(
                 "midi.onControlChange", chan, cc, val,
-                "Firmware Low Address")
+                "VersLo Firmware Low Address")
         lowVersion = value
         onFirmwareVersionReceived()
         return
@@ -806,16 +806,18 @@ function midi.onMessage(midiInput, midiMessage)
         -- Start of system preset list (beginSysNames)
         printCcReceived(
                 "midi.onMessage", msg.channel, msg.controllerNumber, msg.value,
-                "Start of system presets (beginSysNames)")
+                "beginSysNames Start of system presets")
         gettingPresets = GettingPresets.System
-        print("Start of system preset list") -- TEMP
+        --print("Start of system preset list") -- TEMP
         return
     end
     if (msg.controllerNumber == 109 and msg.value == 40) then
-        -- SOR
         -- End of system preset list (endSysNames)    
         gettingPresets = GettingPresets.None
-        print("End of system preset list") -- TEMP
+        --print("End of system preset list") -- TEMP
+        printCcReceived(
+                "midi.onMessage", msg.channel, msg.controllerNumber, msg.value,
+                "endSysNames End of of system presets")
         onSystemPresetsReceived(false)
         return
     end
@@ -824,13 +826,16 @@ function midi.onMessage(midiInput, midiMessage)
         -- Start User Names Found
         printCcReceived(
                 "midi.onMessage", msg.channel, msg.controllerNumber, msg.value,
-                "Start of user presets")
+                "beginUserNames Start of user presets")
         onStartedReceivingUserPresets()
         return -- SOR
     end
     if (msg.controllerNumber == 109 and msg.value == 55) then
         -- End User Names Found
         --print("Finished getting user presets")
+        printCcReceived(
+                "midi.onMessage", msg.channel, msg.controllerNumber, msg.value,
+                "endUserNames End of of user presets")
         onUserPresetsReceived() -- SOR
         return -- SOR
     end
@@ -2818,7 +2823,7 @@ function getPresets(valueObject, value)
     -- Request user presets
     sendCc(
             "getPresets", 16, 109, 32,
-            "Request user presets", true)
+            "userToMidi Request user presets", true)
 end
 
 function getSystemPresets()
@@ -2831,7 +2836,7 @@ function getSystemPresets()
         -- Request system preset names (sysToMidi).
         sendCc(
                 "getSystemPresets", 16, 109, 39,
-                "Request system preset names (sysToMidi)", true)
+                "sysToMidi Request system preset names", true)
     else
         print("    Getting system presets from persisted data.") -- TEMP
         systemPresetCategories = persistableData.systemPresetCategories
@@ -2856,11 +2861,10 @@ function isSystemPresetsUpdateRequired()
         return true
     end
     if persistableData.systemPresetsChecksum ~= systemPresetsChecksum then
-        print("    True: systemPresetsChecksum has changed") -- TEMP
         if systemPresetsChecksum then
-            print("        New systemPresetsChecksum = " .. systemPresetsChecksum) -- TEMP
+            print("    True: systemPresetsChecksum has changed to " .. systemPresetsChecksum) -- TEMP
         else
-            print("        New systemPresetsChecksum not specified") -- TEMP
+            print("    True: systemPresetsChecksum has not been received") -- TEMP
         end
         return true
     end
@@ -2957,13 +2961,19 @@ function onCurrentPresetDataReceived()
 end
 
 function onEndOfStream()
+    local channel = 16 -- For debug prints
+    local ccNo = 56 -- For debug prints
+    local value = 127 -- For debug prints
     if stream == Stream.Convolution then
         processConvolution() -- Process the Convolution stream                    
     elseif stream == Stream.SystemPresetFilters then
         receivedSystemPresetFilters = trimTrailingNullChar(systemPresetFiltersBuffer)
         onSystemPresetReceived()
     elseif stream == Stream.SystemInfo then
-        print("onEndOfStream: End of SystemInfo (s_Sys) stream") -- TEMP
+        --print("onEndOfStream: End of SystemInfo (s_Sys) stream") -- TEMP
+        printCcReceived(
+                "onEndOfStream", channel, ccNo, streamNo,
+                "End of SystemInfo stream")
     elseif stream == Stream.SystemPresetName then
         receivedSystemPresetName = trimTrailingNullChar(systemPresetNameBuffer)
     elseif stream == Stream.UserPresetName then
@@ -3005,6 +3015,8 @@ function onFirmwareVersionReceived()
 end
 
 function onStartOfStream(streamNo)
+    local channel = 16 -- For debug prints
+    local ccNo = 56 -- For debug prints
     if streamNo == 0 then
         -- s_Name: System or user or loaded preset name stream
         if gettingPresets == GettingPresets.System then
@@ -3036,6 +3048,9 @@ function onStartOfStream(streamNo)
     if streamNo == 13 then
         -- s_Sys
         print("onStartOfStream: Start of SystemInfo (s_Sys) stream") -- TEMP
+        printCcReceived(
+                "onStartOfStream", channel, ccNo, streamNo,
+                "s_Sys Start of SystemInfo stream")
         stream = Stream.SystemInfo
         systemInfoBuffer = {}
         systemPresetsChecksum = nil 
@@ -3140,7 +3155,7 @@ end
 -- tx: Transmit Message (Send message to DSP) 
 function printCc(inFunction, rxOrTx, channel, cc, value, description)
     print(rxOrTx .. ": ch" .. channel .. " cc" .. cc .. " "
-            .. value .. " (" .. description .. " - in " .. inFunction .. ")")
+            .. value .. " " .. description .. " - in " .. inFunction)
 end
 
 function printCcReceived(inFunction, channel, cc, value, description)
