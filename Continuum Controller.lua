@@ -120,6 +120,7 @@ local firmwareVersion = ""
 local gettingPresets = GettingPresets.None
 local hasJustLoaded = true
 local haveSystemPresetsBeenReceived = false
+local haveUserPresetsBeenReceived = false
 local isGettingCurrentPresetData = false
 --local isWaitingForE1PresetLoadToComplete = true
 local receivedSystemPresetFilters = ""
@@ -828,7 +829,7 @@ function midi.onMessage(midiInput, midiMessage)
                 "midi.onMessage", msg.channel, msg.controllerNumber, msg.value,
                 "beginUserNames Start of user presets")
         onStartedReceivingUserPresets()
-        return -- SOR
+        return
     end
     if (msg.controllerNumber == 109 and msg.value == 55) then
         -- End User Names Found
@@ -836,8 +837,8 @@ function midi.onMessage(midiInput, midiMessage)
         printCcReceived(
                 "midi.onMessage", msg.channel, msg.controllerNumber, msg.value,
                 "endUserNames End of of user presets")
-        onUserPresetsReceived() -- SOR
-        return -- SOR
+        onUserPresetsReceived()
+        return
     end
     if msg.controllerNumber == 56 then
         if msg.value == 127 then
@@ -2819,6 +2820,9 @@ function getPresets(valueObject, value)
         print("getPresets: Ignoring phantom re-entry") -- TEMP
         return
     end
+    -- Ensure system info is received every time user presets are requested.
+    -- See comment in onUserPresetsReceived.
+    systemPresetsChecksum = nil
     print("getPresets: Requesting user presets") -- TEMP
     -- Request user presets
     sendCc(
@@ -3083,6 +3087,7 @@ function onStartedReceivingUserPresets()
     currentPreset.loadState = PresetLoadState.AlreadyLoaded
     currentPreset.type = PresetType.Unknown
     haveSystemPresetsBeenReceived = false
+    haveUserPresetsBeenReceived = false
     userPresetPosSelect = 0
     setControlValue(ControlNo.UserPresetPos, 0)
     updateUserPresetPos(0)
@@ -3139,13 +3144,22 @@ function onSystemPresetsReceived(fromPersistedData)
 end
 
 function onUserPresetsReceived()
+    haveUserPresetsBeenReceived = true
     setUserPresetNames()
     gettingPresets = GettingPresets.None
     userNameIndex = 0
-    if not haveSystemPresetsBeenReceived then
+    -- When user presets are requested,
+    -- firmware version and system info are usually received before
+    -- the user preset list.
+    -- However, in 10.65 and possibly other firmware versions,
+    -- they are sent after the user preset list.
+    -- We need the system preset checksum, which is part of system info,
+    -- to determine whether system presets need to be refreshed from the instrument.
+    -- So defend this E1 preset from this variability in the behaviour of the
+    -- Haken Audio firmware.
+    if systemPresetsChecksum then
+        -- System info has been received.
         getSystemPresets()
-    else
-        onAllPresetsReceived()
     end
 end
 
@@ -3373,6 +3387,12 @@ function setSystemPresetsChecksum()
             .. "-" .. tostring(math.floor(systemInfoBuffer[5]))
             .. "-" .. tostring(math.floor(systemInfoBuffer[6]))
     print("setSystemPresetsChecksum: Set systemPresetsChecksum to " .. systemPresetsChecksum) --TEMP
+    -- When user presets have been requested, the checksum may be received 
+    -- either before or after the user preset list.
+    -- See comment in onUserPresetsReceived.
+    if haveUserPresetsBeenReceived and not haveSystemPresetsBeenReceived then
+        getSystemPresets()
+    end
 end
 
 -- Splits the delimited components of the specified string into a table.
