@@ -3375,6 +3375,12 @@ end
 -- Stores the variable for the received system presets checksum,
 -- which is used to determine whether we need to get 
 -- the system preset list from the instrument.
+-- There are frequent changes to where the firmware stores system presets internally.
+-- The checksum is just a basic check of the system preset memory, 
+-- so in different firmware versions the will often be different checksums,
+-- even when there has been no real change to the system presets.
+-- For Continuum Controller, this is a very minor point: it does not really matter 
+-- if system presets are refreshed on a firmware version change when system presets have not changed.
 function setSystemPresetsChecksum()
     --systemPresetsChecksum = systemInfoBuffer[6]
     --        + systemInfoBuffer[5] * 128
