@@ -2,6 +2,7 @@
 
 ##### **by Richard Kram and Simon O'Rorke.** 
 
+------
 Electra One preset for controlling the Haken Continuum and the EaganMatrix Module.
 
 ------
