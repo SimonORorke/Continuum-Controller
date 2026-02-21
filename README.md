@@ -43,7 +43,7 @@ This [Video on Operation](https://www.youtube.com/watch?v=MzKwRkp7vH8&t=372s) wa
 
 **Support and Feedback**
 
-Please post suggestions, support questions and issues to [Continuum Controller's Electra One Forum topic](https://forum.electra.one/t/continuum-controller).
+Please post suggestions, support questions and issues to [the Continuum Controller's Electra One Forum topic](https://forum.electra.one/t/continuum-controller).
 
 You are also welcome to discuss Continuum Controller in the Haken Continuum Users group on Facebook. However, to ensure a response from the developers, you should post to the Electra One Forum topic.
 
