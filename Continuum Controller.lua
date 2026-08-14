@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global
 -- Check if E1 model and firmware requirements are met.
 -- The firmware version is required for persist() and recall().
 -- Assert will terminate the script on a failed check. SOR
@@ -2823,8 +2824,16 @@ function getPresets(valueObject, value)
     -- Ensure system info is received every time user presets are requested.
     -- See comment in onUserPresetsReceived.
     systemPresetsChecksum = nil
-    print("getPresets: Requesting user presets") -- TEMP
+    -- This fixes a breaking change in firmware 10.77 where the instrument would
+    -- otherwise not send full preset data when a new preset is loaded.
+    -- It also fixes a problem where a Slim21 received nothing on requesting
+    -- user presets. These issues are discussed in Haken Audio tickets 7331
+    -- and 7352 respectively. 
+    sendCc(
+            "getPresets", 16, 109, 45,
+            "matRefresh Ensure full preset data", true)
     -- Request user presets
+    print("getPresets: Requesting user presets") -- TEMP
     sendCc(
             "getPresets", 16, 109, 32,
             "userToMidi Request user presets", true)
