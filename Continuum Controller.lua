@@ -2830,8 +2830,8 @@ function getPresets(valueObject, value)
     -- user presets. These issues are discussed in Haken Audio tickets 7331
     -- and 7352 respectively. 
     sendCc(
-            "getPresets", 16, 109, 45,
-            "matRefresh Ensure full preset data", true)
+            "getPresets", 16, 45, 124,
+            "ccMatOp matRefresh Ensure full preset data", true)
     -- Request user presets
     print("getPresets: Requesting user presets") -- TEMP
     sendCc(
