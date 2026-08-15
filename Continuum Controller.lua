@@ -7,11 +7,11 @@ assert(
         "Electra One firmware version 4.0.0 or higher is required."
 )
 local DEVICE_PORT = PORT_1
-local GETTING_PRESETS = "Getting presets..." -- SOR
-local E1_PRESET_VERSION = "2.0" -- SOR
--- Names longer than this will be truncated when shown on controls. SOR
+local GETTING_PRESETS = "Getting presets..."
+local E1_PRESET_VERSION = "2.1.1"
+-- Names longer than this will be truncated when shown on controls.
 local MAX_NAME_LENGTH = 14
-local PRESS_LOAD_PRESETS = "Press Load Presets" -- SOR
+local PRESS_LOAD_PRESETS = "Press Load Presets"
 
 -- Global Initialization flags
 local storeInitialized = false -- Don't call certain things on Electra One startup procedure
@@ -1194,7 +1194,7 @@ function midi.onProgramChange(midiInput, channel, programNumber)
 end
 
 function preset.onLoad()
-    -- print("preset.onLoad")
+    print("preset.onLoad: Continuum Controller preset version " .. E1_PRESET_VERSION)
     -- We do not currently support automatic loading of presets on startup.
     -- So let's do what we can to encourage the player to press Load Presets
     -- once the instrument is connected.
