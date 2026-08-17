@@ -140,8 +140,8 @@ local versionText = ""
 local currentPreset = {} -- SOR
 -- 0 for user preset, 126 for unknown preset type, 
 -- otherwise system preset category number.
-currentPreset.bankMsb = 0
-currentPreset.bankLsb = 0 -- Can be > 0 if more than 128 presets in a category.
+currentPreset.bankMsb = 0 -- (ccBankH)
+currentPreset.bankLsb = 0 -- (ccBankL) Can be > 0 if more than 128 presets in a category.
 currentPreset.programNo = 0 -- 0-based index within bank.
 currentPreset.name = ""
 currentPreset.loadState = PresetLoadState.AlreadyLoaded
@@ -176,22 +176,22 @@ macroControlNos["vi"] = ControlNo.MacroVI_Value
 local persistableData = {}
 -- Do initial recall
 recall(persistableData)
-print("Recalled persistableData") -- TEMP
+print("Recalled persistableData")
 -- Uncomment any of these to force system presets to be got from the instrument.
 -- persistableData.isSaved = false
 -- persistableData.systemPresetsChecksum = nil
 -- persistableData.systemPresetCategories = {}
-if not persistableData.isSaved then -- TEMP
+if not persistableData.isSaved then
     print("persistableData not available")
     -- Not strictly necessary,
     --  provided isSaved is always checked before accessing these items.
     persistableData.systemPresetsChecksum = nil
     persistableData.systemPresetCategories = {}
 else
-    print("persistableData available:") -- TEMP
-    print("    isSaved = " .. tostring(persistableData.isSaved)) -- TEMP
-    print("    systemPresetsChecksum = " .. persistableData.systemPresetsChecksum) -- TEMP
-    print("    systemPresetCategories count = " .. #persistableData.systemPresetCategories) -- TEMP
+    print("persistableData available:")
+    print("    isSaved = " .. tostring(persistableData.isSaved))
+    print("    systemPresetsChecksum = " .. persistableData.systemPresetsChecksum)
+    print("    systemPresetCategories count = " .. #persistableData.systemPresetCategories)
 end
 
 -- For selecting and loading a system preset.
@@ -810,13 +810,13 @@ function midi.onMessage(midiInput, midiMessage)
                 "midi.onMessage", msg.channel, msg.controllerNumber, msg.value,
                 "beginSysNames Start of system presets")
         gettingPresets = GettingPresets.System
-        --print("Start of system preset list") -- TEMP
+        --print("Start of system preset list")
         return
     end
     if (msg.controllerNumber == 109 and msg.value == 40) then
         -- End of system preset list (endSysNames)    
         gettingPresets = GettingPresets.None
-        --print("End of system preset list") -- TEMP
+        --print("End of system preset list")
         printCcReceived(
                 "midi.onMessage", msg.channel, msg.controllerNumber, msg.value,
                 "endSysNames End of of system presets")
@@ -1175,7 +1175,6 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
 end -- of pPress settings
 
 function midi.onProgramChange(midiInput, channel, programNumber)
-    -- SOR
     if channel == 16 and isGettingCurrentPresetData then
         -- This is the last item in the current preset data.
         isGettingCurrentPresetData = false
@@ -1235,8 +1234,8 @@ function loadUserPreset(valueObject, value)
     local presetNo = presetPos + presetOffset -- 1-based for userPresetNames table index.
     local programNo = presetNo - 1 -- 0-based for Program change 0..127
     if (presetNo >= 1 and presetNo <= 128) then
-        local bankMsb = 0 -- 0 = User Presets
-        local bankLsb = 0 -- Because there are a maximum of 128 user presets
+        local bankMsb = 0 -- 0 = User Presets (ccBankH)
+        local bankLsb = 0 -- Because there are a maximum of 128 user presets (ccBankL)
         local presetName = userPresetNames[presetNo]
         --print("loadUserPreset: Set presetName to "..presetName)
         loadPreset(bankMsb, bankLsb, programNo, presetName)
@@ -2733,7 +2732,7 @@ function accumulateSystemInfoBuffer(byte1, byte2)
     local byte1Index = #systemInfoBuffer + 1
     local byte2Index = byte1Index + 1
     --print("accumulateSystemInfoBuffer, bytes " .. byte1Index .. " and " .. byte2Index ..
-    --        ": " .. tostring(math.floor(byte1)) .. " " .. tostring(math.floor(byte2))) -- TEMP
+    --        ": " .. tostring(math.floor(byte1)) .. " " .. tostring(math.floor(byte2)))
     systemInfoBuffer[byte1Index] = byte1
     systemInfoBuffer[byte2Index] = byte2
     if #systemInfoBuffer == totalByteCount then
@@ -2779,7 +2778,7 @@ function getControlValue(controlNo)
 end
 
 function getCurrentPresetData()
-    print("getCurrentPresetData") -- TEMP
+    print("getCurrentPresetData")
     stream = Stream.ControlText
     isGettingCurrentPresetData = true
     -- Send get Current Preset Msg to get Macro labels and control values
@@ -2805,7 +2804,7 @@ function getPresets(valueObject, value)
         -- So do not proceed to request the preset list.
         -- The player must instead push the Load Presets button to get the preset lists
         -- manually.
-        print("getPresets: Automatic getting presets on startup is disabled.") -- TEMP
+        print("getPresets: Automatic getting presets on startup is disabled.")
         hasJustLoaded = false
         return
     end
@@ -2818,7 +2817,7 @@ function getPresets(valueObject, value)
     -- For unknown reason, getPresets gets called twice
     -- when the Load Presets button is pressed.
     if gettingPresets == GettingPresets.User then
-        print("getPresets: Ignoring phantom re-entry") -- TEMP
+        print("getPresets: Ignoring phantom re-entry")
         return
     end
     -- Ensure system info is received every time user presets are requested.
@@ -2826,32 +2825,30 @@ function getPresets(valueObject, value)
     systemPresetsChecksum = nil
     -- This fixes a breaking change in firmware 10.77 where the instrument would
     -- otherwise not send full preset data when a new preset is loaded.
-    -- It also fixes a problem where a Slim21 received nothing on requesting
-    -- user presets. These issues are discussed in Haken Audio tickets 7331
-    -- and 7352 respectively. 
+    -- See Haken Audio ticket 7331. 
     sendCc(
             "getPresets", 16, 45, 124,
             "ccMatOp matRefresh Ensure full preset data", true)
     -- Request user presets
-    print("getPresets: Requesting user presets") -- TEMP
+    print("getPresets: Requesting user presets")
     sendCc(
             "getPresets", 16, 109, 32,
             "userToMidi Request user presets", true)
 end
 
 function getSystemPresets()
-    print("getSystemPresets") -- TEMP
+    print("getSystemPresets")
     if isSystemPresetsUpdateRequired() then
         for category = 1, #systemPresetCategories do
             systemPresetCategories[category] = {}
         end
-        print("    Requesting system presets.") -- TEMP
+        print("    Requesting system presets.")
         -- Request system preset names (sysToMidi).
         sendCc(
                 "getSystemPresets", 16, 109, 39,
                 "sysToMidi Request system preset names", true)
     else
-        print("    Getting system presets from persisted data.") -- TEMP
+        print("    Getting system presets from persisted data.")
         systemPresetCategories = persistableData.systemPresetCategories
         onSystemPresetsReceived(true)
     end
@@ -2860,34 +2857,34 @@ end
 -- Returns whether system presets must be updated from the instrument.
 -- When false, system presets may be populated from data persisted on the E1.
 function isSystemPresetsUpdateRequired()
-    print("isSystemPresetsUpdateRequired") -- TEMP
+    print("isSystemPresetsUpdateRequired")
     if persistableData.isSaved then
-        print("    persistableData available:") -- TEMP
-        print("        isSaved = " .. tostring(persistableData.isSaved)) -- TEMP
-        print("        systemPresetsChecksum = " .. persistableData.systemPresetsChecksum) -- TEMP
-        print("        systemPresetCategories count = " .. #persistableData.systemPresetCategories) -- TEMP
+        print("    persistableData available:")
+        print("        isSaved = " .. tostring(persistableData.isSaved))
+        print("        systemPresetsChecksum = " .. persistableData.systemPresetsChecksum)
+        print("        systemPresetCategories count = " .. #persistableData.systemPresetCategories)
     end
     if not persistableData.isSaved
             or #persistableData.systemPresetCategories == 0
             or not persistableData.systemPresetsChecksum then
-        print("    True: There is no persisted data") -- TEMP
+        print("    True: There is no persisted data")
         return true
     end
     if persistableData.systemPresetsChecksum ~= systemPresetsChecksum then
         if systemPresetsChecksum then
-            print("    True: systemPresetsChecksum has changed to " .. systemPresetsChecksum) -- TEMP
+            print("    True: systemPresetsChecksum has changed to " .. systemPresetsChecksum)
         else
-            print("    True: systemPresetsChecksum has not been received") -- TEMP
+            print("    True: systemPresetsChecksum has not been received")
         end
         return true
     end
-    print("    False: systemPresetsChecksum has not changed") -- TEMP
+    print("    False: systemPresetsChecksum has not changed")
     return false
 end
 
 -- Loads a system or user preset.
--- bankMsb: category for system preset, 0 for user preset.
--- bankLsb: 0 for user presets and most categories.
+-- bankMsb (ccBankH): category for system preset, 0 for user preset.
+-- bankLsb (ccBankL): 0 for user presets and most categories.
 --     Can be > 0 for categories with more than 128 presets.
 -- programNo: zero-based program number.
 -- presetName:  preset name for display on the Current Preset control.
@@ -2932,7 +2929,7 @@ end
 function onCurrentPresetDataReceived()
     print("onCurrentPresetDataReceived: currentPreset.programNo = " .. currentPreset.programNo ..
             "; currentPreset.loadState = " .. tostring(currentPreset.loadState) ..
-            "; currentPreset.type = " .. currentPreset.type) -- TEMP
+            "; currentPreset.type = " .. currentPreset.type)
     resetMute() -- Reset in case on from previous preset
     if currentPreset.type == PresetType.Unknown then
         -- We must have just received the data for the preset that was
@@ -2983,7 +2980,7 @@ function onEndOfStream()
         receivedSystemPresetFilters = trimTrailingNullChar(systemPresetFiltersBuffer)
         onSystemPresetReceived()
     elseif stream == Stream.SystemInfo then
-        --print("onEndOfStream: End of SystemInfo (s_Sys) stream") -- TEMP
+        --print("onEndOfStream: End of SystemInfo (s_Sys) stream")
         printCcReceived(
                 "onEndOfStream", channel, ccNo, streamNo,
                 "End of SystemInfo stream")
@@ -3018,12 +3015,12 @@ function onFirmwareVersionReceived()
     -- fixed till 10.69 has caused it not to be sent with user presets.
     -- So, to be safe, we will process it every time.
     --if gettingPresets ~= GettingPresets.Requested then
-    --    print("onFirmwareVersionReceived: Bypassing, as not awaiting user presets.") -- TEMP
+    --    print("onFirmwareVersionReceived: Bypassing, as not awaiting user presets.")
     --    return
     --end
-    print("onFirmwareVersionReceived") -- TEMP
+    print("onFirmwareVersionReceived")
     firmwareVersion = ((128 * highVersion) + lowVersion) / 100
-    print("    Firmware version = " .. firmwareVersion) -- TEMP
+    print("    Firmware version = " .. firmwareVersion)
     versionText = "Ver: " .. E1_PRESET_VERSION .. "/" .. firmwareVersion
 end
 
@@ -3060,7 +3057,7 @@ function onStartOfStream(streamNo)
     end
     if streamNo == 13 then
         -- s_Sys
-        print("onStartOfStream: Start of SystemInfo (s_Sys) stream") -- TEMP
+        print("onStartOfStream: Start of SystemInfo (s_Sys) stream")
         printCcReceived(
                 "onStartOfStream", channel, ccNo, streamNo,
                 "s_Sys Start of SystemInfo stream")
@@ -3083,14 +3080,14 @@ function onStartOfStream(streamNo)
 end
 
 function onStartedReceivingUserPresets()
-    print("onStartedReceivingUserPresets") -- TEMP
+    print("onStartedReceivingUserPresets")
     gettingPresets = GettingPresets.User
     info.setText(GETTING_PRESETS)
     local loadPresetsButton = controls.get(ControlNo.LoadPresetsButton)
     loadPresetsButton:setColor(ORANGE)
     userNameIndex = 0
-    currentPreset.bankMsb = 0
-    currentPreset.bankLsb = 0
+    currentPreset.bankMsb = 0 -- (ccBankH)
+    currentPreset.bankLsb = 0 -- (ccBankL)
     currentPreset.programNo = 0
     currentPreset.name = ""
     currentPreset.loadState = PresetLoadState.AlreadyLoaded
@@ -3142,11 +3139,11 @@ function onSystemPresetReceived()
 end
 
 function onSystemPresetsReceived(fromPersistedData)
-    print("onSystemPresetsReceived: fromPersistedData = " .. tostring(fromPersistedData)) -- TEMP
+    print("onSystemPresetsReceived: fromPersistedData = " .. tostring(fromPersistedData))
     haveSystemPresetsBeenReceived = true
     if not fromPersistedData then
         replaceLongSystemPresetNamesWithShortNames()
-        print("onSystemPresetsReceived: Saving persistabe data") -- TEMP
+        print("onSystemPresetsReceived: Saving persistabe data")
         savePersistableData()
     end
     onAllPresetsReceived()
@@ -3210,10 +3207,10 @@ function replaceLongSystemPresetNamesWithShortNames()
 end
 
 function savePersistableData()
-    print("savePersistableData: Saving persistableData:") -- TEMP
-    print("    systemPresetsChecksum = " .. systemPresetsChecksum) -- TEMP
-    local totalSystemPresetCount = countSystemPresets() -- TEMP
-    print("    Total system preset count = " .. tostring(totalSystemPresetCount)) -- TEMP
+    print("savePersistableData: Saving persistableData:")
+    print("    systemPresetsChecksum = " .. systemPresetsChecksum)
+    local totalSystemPresetCount = countSystemPresets()
+    print("    Total system preset count = " .. tostring(totalSystemPresetCount))
     persistableData.isSaved = true
     persistableData.systemPresetsChecksum = systemPresetsChecksum
     persistableData.systemPresetCategories = systemPresetCategories
@@ -3457,7 +3454,7 @@ end
 function updateUserPresetPos(slotNo)
     userPresetPosSelect = slotNo
     print("updateUserPresetPos: userPresetPosSelect = " .. userPresetPosSelect ..
-            "; currentPreset.type = " .. currentPreset.type) -- TEMP
+            "; currentPreset.type = " .. currentPreset.type)
     local currentPresetGroup = groups.get(ControlNo.CurrentPresetGroup)
     local currentPresetButton = controls.get(ControlNo.CurrentPresetButton)
     if userPresetPosSelect > 0 then
