@@ -8,7 +8,7 @@ assert(
 )
 local DEVICE_PORT = PORT_1
 local GETTING_PRESETS = "Getting presets..."
-local E1_PRESET_VERSION = "2.1.1"
+local E1_PRESET_VERSION = "2.0.1"
 -- Names longer than this will be truncated when shown on controls.
 local MAX_NAME_LENGTH = 14
 local PRESS_LOAD_PRESETS = "Press Load Presets"
@@ -23,7 +23,6 @@ local pedal2Init = false
 
 -- Other Globals
 local macrosLoaded = false
-local userNameIndex = 0
 local presetOffset = 0 -- Offset to change user preset on Continuum as only 16 are shown, need to track bank 
 local userPresetPosSelect = 0
 local muteVal = 60 -- Default pre-gain (but will be set from reading presets)
@@ -1175,6 +1174,13 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
 end -- of pPress settings
 
 function midi.onProgramChange(midiInput, channel, programNumber)
+    if gettingPresets == GettingPresets.User then -- User preset list item details received
+        -- Store preset name in array.
+        -- programNumber is 1-based, at least for user presets.
+        userPresetNames[programNumber] = userPresetNameBuffer 
+        userPresetNameBuffer = "" -- Reset userPresetNameBuffer to accumulate the next name
+        return
+    end
     if channel == 16 and isGettingCurrentPresetData then
         -- This is the last item in the current preset data.
         isGettingCurrentPresetData = false
@@ -2992,15 +2998,12 @@ function onEndOfStream()
                 userPresetNameBuffer = "Empty"
             end
             if (string.len(userPresetNameBuffer) > 14) then
-                -- Limit strings for congtrols to 14 chars
+                -- Limit strings for controls to 14 chars
                 --print("userPresetNameBuffer:|"..userPresetNameBuffer.."|")
                 local tmpstr = userPresetNameBuffer
                 userPresetNameBuffer = string.sub(tmpstr, 1, 14)
             end
-            -- Store Preset name in array 
-            userPresetNames[userNameIndex] = userPresetNameBuffer -- SOR
         end
-        userPresetNameBuffer = "" -- Reset userPresetNameBuffer to accumulate the next name
     end
     stream = Stream.None
 end
@@ -3037,7 +3040,6 @@ function onStartOfStream(streamNo)
             currentPresetNameBuffer = ""
         else
             -- Processing user presets (gettingPresets == GettingPresets.User)
-            userNameIndex = userNameIndex + 1 -- Index Lua arrays from 1
             stream = Stream.UserPresetName
         end
         return
@@ -3085,7 +3087,6 @@ function onStartedReceivingUserPresets()
     info.setText(GETTING_PRESETS)
     local loadPresetsButton = controls.get(ControlNo.LoadPresetsButton)
     loadPresetsButton:setColor(ORANGE)
-    userNameIndex = 0
     currentPreset.bankMsb = 0 -- (ccBankH)
     currentPreset.bankLsb = 0 -- (ccBankL)
     currentPreset.programNo = 0
@@ -3153,7 +3154,6 @@ function onUserPresetsReceived()
     haveUserPresetsBeenReceived = true
     setUserPresetNames()
     gettingPresets = GettingPresets.None
-    userNameIndex = 0
     -- When user presets are requested,
     -- firmware version and system info are usually received before
     -- the user preset list.
