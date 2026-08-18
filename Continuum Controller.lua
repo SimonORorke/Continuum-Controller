@@ -1175,6 +1175,8 @@ end -- of pPress settings
 
 function midi.onProgramChange(midiInput, channel, programNumber)
     if gettingPresets == GettingPresets.User then -- User preset list item details received
+        print("midi.onProgramChange: Getting user presets; programNumber = "
+            .. tostring(programNumber) .. "; userPresetNameBuffer = " .. userPresetNameBuffer)
         -- Store preset name in array.
         -- programNumber is 1-based, at least for user presets.
         userPresetNames[programNumber] = userPresetNameBuffer 
