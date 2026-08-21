@@ -45,7 +45,7 @@ local userPresetNames = { "U1", "U2", "U3", "U4", "U5", "U6", "U7", "U8", "U9", 
 --     for category = Category.Strings, Category.Other1 do
 
 -- An enumeration (enum) of category numbers.
-local Category = {} -- SOR
+local Category = {}
 Category.Strings = 1
 Category.Winds = 2
 Category.Vocal = 3
@@ -62,7 +62,7 @@ Category.Utility = 13
 Category.Other1 = 14
 
 -- An enumeration (enum) of control numbers.
-local ControlNo = {} -- SOR
+local ControlNo = {}
 ControlNo.Category = 46
 ControlNo.CurrentPresetButton = 50
 ControlNo.CurrentPresetGroup = 49
@@ -79,27 +79,27 @@ ControlNo.UserPresetPos = 32
 
 -- An enumeration (enum) indicating which type of preset list, if any,
 -- is being received from the instrument.
-local GettingPresets = {} -- SOR
+local GettingPresets = {}
 GettingPresets.None = 0
 GettingPresets.User = 1
 GettingPresets.System = 2
 --GettingPresets.Requested = 3
 
 -- An enumeration (enum) of preset load states.
-local PresetLoadState = {} -- SOR
+local PresetLoadState = {}
 -- The preset was already loaded on the instrument when the E1 preset was loaded.
 PresetLoadState.AlreadyLoaded = 0
 PresetLoadState.Loading = 1 -- The preset is being loaded.
 PresetLoadState.Loaded = 2 -- The preset has been loaded by this E1 preset.
 
 -- An enumeration (enum) of preset types.
-local PresetType = {} -- SOR
+local PresetType = {}
 PresetType.Unknown = 0 -- See comment above currentPreset.Type.
 PresetType.User = 1
 PresetType.System = 2
 
 -- An enumeration (enum) of preset data stream types.
-local Stream = {} -- SOR
+local Stream = {}
 Stream.None = 0
 Stream.UserPresetName = 1
 Stream.SystemPresetName = 2
@@ -136,7 +136,7 @@ local versionText = ""
 -- Tables
 
 -- Parameters used to load a preset.
-local currentPreset = {} -- SOR
+local currentPreset = {}
 -- 0 for user preset, 126 for unknown preset type, 
 -- otherwise system preset category number.
 currentPreset.bankMsb = 0 -- (ccBankH)
@@ -156,14 +156,14 @@ currentPreset.loadState = PresetLoadState.AlreadyLoaded
 -- 0 is for user presets and 127 for system presets.)
 currentPreset.type = PresetType.Unknown
 
-local macroControls = {} -- SOR
+local macroControls = {}
 for controlNo = ControlNo.MacroI_Value, ControlNo.MacroVI_Value do
     macroControls[controlNo] = controls.get(controlNo)
 end
 
 -- A dictionary for looking up the macro control number 
 -- corresponding to the macro id provided by the instrument.
-local macroControlNos = {} -- SOR
+local macroControlNos = {}
 macroControlNos["i"] = ControlNo.MacroI_Value
 macroControlNos["ii"] = ControlNo.MacroII_Value
 macroControlNos["iii"] = ControlNo.MacroIII_Value
@@ -194,7 +194,7 @@ else
 end
 
 -- For selecting and loading a system preset.
-local selectedSystemPreset = {} -- SOR
+local selectedSystemPreset = {}
 selectedSystemPreset.category = Category.Strings
 selectedSystemPreset.bankLsb = 0 -- Can be > 0 if more than 128 presets in a category.
 selectedSystemPreset.presetNo = 0 -- 0 if none selected.
@@ -235,10 +235,10 @@ shortPresetNames["Additive Gnilham"] = "Add Gnilham"
 shortPresetNames["Additive Vocal 1 Transform"] = "Add Vocal1 Tr"
 shortPresetNames["Additive Vocal 1"] = "Add Vocal1"
 shortPresetNames["Analog ADSR - Var1"] = "Analog ADSR V1"
-shortPresetNames["Analog Echo Ext"] = "AnalogEcho Ext" -- SOR
+shortPresetNames["Analog Echo Ext"] = "AnalogEcho Ext"
 shortPresetNames["Analog Overload"] = "Analog Ovrload"
 shortPresetNames["Another Big One"] = "Another BigOne"
-shortPresetNames["Another Big One Wbl"] = "AnothBigOneWbl" -- SOR
+shortPresetNames["Another Big One Wbl"] = "AnothBigOneWbl"
 shortPresetNames["Anthophila Organ"] = "Anthoph Organ"
 shortPresetNames["Around the Periapsis Ch1"] = "AroundPeriap1"
 shortPresetNames["Around the Periapsis"] = "AroundPeriapsi"
@@ -255,8 +255,8 @@ shortPresetNames["BiqGraph - Basic"] = "BiqGraphBasic"
 shortPresetNames["BiqMouth - Basic"] = "BiqMouthBasic"
 shortPresetNames["Boson Particles"] = "BosonParticles"
 shortPresetNames["Bowed Double Reed"] = "Bowed Dbl Reed"
-shortPresetNames["Breath Pipe Wbl"] = "Breath PipeWbl" -- SOR
-shortPresetNames["Breath Wind Wbl"] = "Breath WindWbl" -- SOR
+shortPresetNames["Breath Pipe Wbl"] = "Breath PipeWbl"
+shortPresetNames["Breath Wind Wbl"] = "Breath WindWbl"
 shortPresetNames["Celestial Basin"] = "CelestialBasin"
 shortPresetNames["Celestial Following"] = "Celest Follow"
 shortPresetNames["Chinese Clarinet"] = "Chinese Clar"
@@ -291,7 +291,7 @@ shortPresetNames["Dirty Oscillator v2"] = "Dirty Osc v2"
 shortPresetNames["Distant Transmission Choir"] = "DistTransChoir"
 shortPresetNames["Dolce Cristallo Space"] = "CristalloSpace"
 shortPresetNames["Dolce Cristallo"] = "DolceCristallo"
-shortPresetNames["Double Reed Wbl"] = "Double ReedWbl" -- SOR
+shortPresetNames["Double Reed Wbl"] = "Double ReedWbl"
 shortPresetNames["Drum-Machine Windowed"] = "Drum-Machine"
 shortPresetNames["Dual Ladder Sweep"] = "DualLadrSweep"
 shortPresetNames["Dual Resonators"] = "DualResonators"
@@ -305,11 +305,11 @@ shortPresetNames["Electric Guitar Saturated"] = "El Guitar Sat"
 shortPresetNames["Electric Guitar"] = "El Guitar"
 shortPresetNames["Electric Harpsychord"] = "El Harpsychord"
 shortPresetNames["Exposure Ensemble"] = "ExposureEnsem"
-shortPresetNames["Feedback Yangqin"] = "FeedbckYangqin" -- SOR
+shortPresetNames["Feedback Yangqin"] = "FeedbckYangqin"
 shortPresetNames["Filter -  The Ladder"] = "Filter Ladder"
 shortPresetNames["Flutter Blossom T"] = "FluterBlossomT"
-shortPresetNames["Flutter Clarinet Wbl"] = "FlutterClarWbl" -- SOR
-shortPresetNames["Gamelan Spinner Wbl"] = "GamelanSpinWbl" -- SOR
+shortPresetNames["Flutter Clarinet Wbl"] = "FlutterClarWbl"
+shortPresetNames["Gamelan Spinner Wbl"] = "GamelanSpinWbl"
 shortPresetNames["FM DreamPiano - Var1"] = "FM Piano-Var1"
 shortPresetNames["FOF VariableRes"] = "FOFVariableRes"
 shortPresetNames["Fragaria Fields"] = "Fragaria Field"
@@ -318,19 +318,19 @@ shortPresetNames["Glass Chorus Reverse"] = "GlassChorusRev"
 shortPresetNames["GrainSilo Woodwind"] = "GrainSilo wind"
 shortPresetNames["Grandfather Clock"] = "Grand Clock"
 shortPresetNames["Grinding Stone Calliope"] = "Grind Calliope"
-shortPresetNames["Hal Dreams of Macros"] = "HalDreamMacros" -- SOR
-shortPresetNames["Hals Meditation"] = "HalsMeditation" -- SOR
+shortPresetNames["Hal Dreams of Macros"] = "HalDreamMacros"
+shortPresetNames["Hals Meditation"] = "HalsMeditation"
 shortPresetNames["Happy Birthday Ed 20"] = "HappyBirthEd20"
 shortPresetNames["Harmonic Looper"] = "HarmonicLooper"
 shortPresetNames["Harmonic Resonator"] = "Harmonic Reson"
-shortPresetNames["Harmonic Viol Wbl"] = "HarmoncViolWbl" -- SOR
+shortPresetNames["Harmonic Viol Wbl"] = "HarmoncViolWbl"
 shortPresetNames["Harmonoid Spark"] = "HarmSpark"
 shortPresetNames["Heavenly Corporation Ch1"] = "Heaven CorpCh1"
 shortPresetNames["Jaymar Toy Piano"] = "JaymarToyPiano"
 shortPresetNames["Jenny Dark Acid - Var1"] = "JennyDarkAcid1"
 shortPresetNames["Jenny Dark Acid"] = "JennyDarkAcid"
 shortPresetNames["Jenny FromTo - Var1"] = "Jenny FromTo 1"
-shortPresetNames["Jenny Trumpet Wbl"] = "JennyTrumptWbl" -- SOR
+shortPresetNames["Jenny Trumpet Wbl"] = "JennyTrumptWbl"
 shortPresetNames["Jenny Shepard Down - Var1"] = "JenShepDown V1"
 shortPresetNames["Jenny Shepard Down"] = "JenShepardDown"
 shortPresetNames["Jenny Shepard Up"] = "JennyShepardUp"
@@ -358,8 +358,8 @@ shortPresetNames["Kinetic as Filter"] = "Kinetic Filter"
 shortPresetNames["Kinetic Bowed FDN"] = "Kin Bowed FCN"
 shortPresetNames["Kinetic Cabinet"] = "KineticCabinet"
 shortPresetNames["Kinetic Contioline"] = "Kin Contioline"
-shortPresetNames["Kinetic Disto Analog"] = "KinDistoAnalog" -- SOR
-shortPresetNames["Kinetic Evil Bell"] = "KinetcEvilBell" -- SOR
+shortPresetNames["Kinetic Disto Analog"] = "KinDistoAnalog"
+shortPresetNames["Kinetic Evil Bell"] = "KinetcEvilBell"
 shortPresetNames["Kinetic Friction"] = "Kin Friction"
 shortPresetNames["Kinetic MicroMotor"] = "Kin MicroMotor"
 shortPresetNames["Kinetic Rubber Skin"] = "Kin RubberSkin"
@@ -393,8 +393,8 @@ shortPresetNames["Morphing Wavebank Pad 2"] = "Morph WB Pad 2"
 shortPresetNames["Mountain Slider Ch1"] = "Mount SliderC1"
 shortPresetNames["Mountain Slider"] = "Mountain Slide"
 shortPresetNames["Mouth Sequence Ch1"] = "MouthSeq Ch1"
-shortPresetNames["MPE 12 Voice 6x"] = "MPE 12Voice 6x" -- SOR
-shortPresetNames["MPE 12 Voice 8x"] = "MPE 12Voice 8x" -- SOR
+shortPresetNames["MPE 12 Voice 6x"] = "MPE 12Voice 6x"
+shortPresetNames["MPE 12 Voice 8x"] = "MPE 12Voice 8x"
 shortPresetNames["MtoStereo Delay"] = "Stereo Delay"
 shortPresetNames["Music Box Because Ch1"] = "MusBoxBecause1"
 shortPresetNames["Music Box Because"] = "MusBoxBecause"
@@ -410,7 +410,7 @@ shortPresetNames["Old Pad Machine"] = "OldPad Machine"
 shortPresetNames["Omnisphere 1 Perform"] = "Omni 1 Perform"
 shortPresetNames["Omnisphere 2 Round"] = "Omni 2 Round"
 shortPresetNames["Omnisphere 3 Initial Round"] = "Omni 3 InitRnd"
-shortPresetNames["Omnisphere 4 Semitone"] = "Omni4 Semitone" -- SOR
+shortPresetNames["Omnisphere 4 Semitone"] = "Omni4 Semitone"
 shortPresetNames["Omnisphere 5 Mono"] = "Omni 5 Mono"
 shortPresetNames["Organo Espressivo"] = "Org Espressivo"
 shortPresetNames["Osc - A440 at -35"] = "Osc 440-35dB"
@@ -469,10 +469,10 @@ shortPresetNames["Sympathy String"] = "Sympathy Str"
 shortPresetNames["Synchronous Orbits"] = "SynchOrbits"
 shortPresetNames["Synthetic Cathedral"] = "SynthCathedral"
 shortPresetNames["The Long Goodbye"] = "TheLongGoodbye"
-shortPresetNames["The Long Goodbye Wbl"] = "LongGoodbyeWbl" -- SOR
+shortPresetNames["The Long Goodbye Wbl"] = "LongGoodbyeWbl"
 shortPresetNames["The Slow Descent"] = "TheSlowDescent"
 shortPresetNames["The Touch Guitar"] = "Touch Guitar"
-shortPresetNames["The Wind on Callisto"] = "WindOnCallisto" -- SOR
+shortPresetNames["The Wind on Callisto"] = "WindOnCallisto"
 shortPresetNames["Through the Photodiode"] = "ThruPhotodiode"
 shortPresetNames["Tibetan Throat Stick"] = "Tibetan Throat"
 shortPresetNames["Tremolo Resonator"] = "Trem Resonator"
@@ -516,7 +516,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
                 "midi.onControlChange", chan, cc, val,
                 "VersHi Firmware High Address")
         highVersion = value
-        return -- SOR
+        return
     end
     if (chan == 16 and cc == 103) then
         -- Firmware Low Address
@@ -530,144 +530,144 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     if (chan == 16 and cc == 71) then
         -- Polyphony
         if (val < 16) then
-            setControlValue(183, val) -- SOR
+            setControlValue(183, val)
         else
             --print("Polyphony > 15: "..val)
         end
-        return -- SOR
+        return
     end
     if (chan == 16 and cc == 72) then
         -- DSP Polyphony
-        setControlValue(234, val) -- SOR
-        return -- SOR
+        setControlValue(234, val)
+        return
     end
     if (chan == 16 and cc == 73) then
         -- CVC Polyphony
-        setControlValue(172, val) -- SOR
-        return -- SOR
+        setControlValue(172, val)
+        return
     end
 
     -- End Read Only Controls
     if (chan == 1 and cc == 12) then
         -- Set i
-        setControlValue(ControlNo.MacroI_Value, val) -- SOR
-        return -- SOR
+        setControlValue(ControlNo.MacroI_Value, val)
+        return
     end
     if (chan == 1 and cc == 13) then
         -- Set ii
-        setControlValue(ControlNo.MacroII_Value, val) -- SOR
-        return -- SOR
+        setControlValue(ControlNo.MacroII_Value, val)
+        return
     end
     if (chan == 1 and cc == 14) then
         -- Set iii
-        setControlValue(ControlNo.MacroIII_Value, val) -- SOR
-        return -- SOR
+        setControlValue(ControlNo.MacroIII_Value, val)
+        return
     end
     if (chan == 1 and cc == 15) then
         -- Set iv
-        setControlValue(ControlNo.MacroIV_Value, val) -- SOR
-        return -- SOR
+        setControlValue(ControlNo.MacroIV_Value, val)
+        return
     end
     if (chan == 1 and cc == 16) then
         -- Set v
-        setControlValue(ControlNo.MacroV_Value, val) -- SOR
-        return -- SOR
+        setControlValue(ControlNo.MacroV_Value, val)
+        return
     end
     if (chan == 1 and cc == 17) then
         -- Set vi
-        setControlValue(ControlNo.MacroVI_Value, val) -- SOR
+        setControlValue(ControlNo.MacroVI_Value, val)
         -- Set all macro names here as this will always be the last macro output SOR
         setMacroNames()
-        return -- SOR
+        return
     end
     -- Gain & Attenuation Settings
     if (chan == 1 and cc == 26) then
         -- Pre-Gain
-        setControlValue(48, val) -- SOR
-        return -- SOR
+        setControlValue(48, val)
+        return
     end
     if (chan == 1 and cc == 18) then
         -- Post-Gain
-        setControlValue(45, val) -- SOR
-        return -- SOR
+        setControlValue(45, val)
+        return
     end
     if (chan == 1 and cc == 27) then
         -- Attenuation
-        setControlValue(244, val) -- SOR
-        return -- SOR
+        setControlValue(244, val)
+        return
     end
     -- Recirculator settings
     if (chan == 1 and cc == 24) then
         -- Mix
-        setControlValue(86, val) -- SOR
-        return -- SOR
+        setControlValue(86, val)
+        return
     end
     if (chan == 1 and cc == 23) then
         -- R4
-        setControlValue(87, val) -- SOR
-        return -- SOR
+        setControlValue(87, val)
+        return
     end
     if (chan == 1 and cc == 22) then
         -- R3
-        setControlValue(88, val) -- SOR
-        return -- SOR
+        setControlValue(88, val)
+        return
     end
     if (chan == 1 and cc == 21) then
         -- R2
-        setControlValue(89, val) -- SOR
-        return -- SOR
+        setControlValue(89, val)
+        return
     end
     if (chan == 1 and cc == 20) then
         -- R1
-        setControlValue(90, val) -- SOR
-        return -- SOR
+        setControlValue(90, val)
+        return
     end
     if (chan == 1 and cc == 95) then
         -- R5
-        setControlValue(91, val) -- SOR
-        return -- SOR
+        setControlValue(91, val)
+        return
     end
     if (chan == 1 and cc == 96) then
         -- R6
-        setControlValue(92, val) -- SOR
-        return -- SOR
+        setControlValue(92, val)
+        return
     end
     -- EQ
     if (chan == 1 and cc == 85) then
         -- Mix
-        setControlValue(137, val) -- SOR
-        return -- SOR
+        setControlValue(137, val)
+        return
     end
     if (chan == 1 and cc == 84) then
         -- Frequency
-        setControlValue(138, val) -- SOR
-        return -- SOR
+        setControlValue(138, val)
+        return
     end
     if (chan == 1 and cc == 83) then
         -- Tilt
-        setControlValue(139, val) -- SOR
-        return -- SOR
+        setControlValue(139, val)
+        return
     end
     -- Compressor
     if (chan == 1 and cc == 93) then
         -- Tilt
-        setControlValue(133, val) -- SOR
-        return -- SOR
+        setControlValue(133, val)
+        return
     end
     if (chan == 1 and cc == 92) then
         -- Ratio
-        setControlValue(134, val) -- SOR
-        return -- SOR
+        setControlValue(134, val)
+        return
     end
     if (chan == 1 and cc == 91) then
         -- Attack
-        setControlValue(135, val) -- SOR
-        return -- SOR
+        setControlValue(135, val)
+        return
     end
     if (chan == 1 and cc == 90) then
         -- Threshold
-        setControlValue(136, val) -- SOR
-        return -- SOR
+        setControlValue(136, val)
+        return
     end
     -- Set Sus, Sos1, Sos2
     -- Amended by SOR: Control value updates.
@@ -700,46 +700,46 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
     -- Audio Input
     if (chan == 1 and cc == 19) then
         -- Audio Input Level
-        setControlValue(237, val) -- SOR
-        return -- SOR
+        setControlValue(237, val)
+        return
     end
     -- Ped1
     if (chan == 1 and cc == 76) then
         -- Ped 1 Min Range
         --print("Initializing Pedal 1 Min to "..val)
-        setControlValue(175, val) -- SOR
-        return -- SOR
+        setControlValue(175, val)
+        return
     end
     if (chan == 1 and cc == 77) then
         -- Ped 1 Max Range
         --print("Initializing Pedal 1 Max to "..val)
-        setControlValue(176, val) -- SOR
-        return -- SOR
+        setControlValue(176, val)
+        return
     end
     -- Ped2
     if (chan == 1 and cc == 78) then
         -- Ped 2 Min Range
         --print("Initializing Pedal 2 Min to "..val)
-        setControlValue(177, val) -- SOR
-        return -- SOR
+        setControlValue(177, val)
+        return
     end
     if (chan == 1 and cc == 79) then
         -- Ped 2 Max Range
         --print("Initializing Pedal 2 Max to "..val)
-        setControlValue(178, val) -- SOR
-        return -- SOR
+        setControlValue(178, val)
+        return
     end
     -- Fine Tune
     if (chan == 1 and cc == 10) then
         -- Fine Tune +/- 60 cents
-        setControlValue(227, val) -- SOR
-        return -- SOR
+        setControlValue(227, val)
+        return
     end
     -- Rounding
     if (chan == 1 and cc == 25) then
         -- Round Rate
-        setControlValue(213, val) -- SOR
-        return -- SOR
+        setControlValue(213, val)
+        return
     end
     if (chan == 1 and cc == 28) then
         -- Round Initial
@@ -757,7 +757,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
             --print("Unexpected Round Initial Read")
         end
         ctrlMsg:setValue(val)
-        return -- SOR
+        return
     end
     -- Mono Switch
     if (chan == 1 and cc == 9) then
@@ -778,7 +778,7 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
             --print("Initializing Mono Switch to "..1)
             ctrlMsg:setValue(1)
         end
-        return -- SOR
+        return
     end
 end -- CC event processing
 
@@ -787,7 +787,7 @@ function midi.onMessage(midiInput, midiMessage)
     local msg = midiMessage
     -- Added by SOR: Get system presets.
     if msg.channel ~= 16 then
-        -- SOR
+       
         return
     end
     -- Added by SOR: Control value updates.
@@ -871,13 +871,13 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         return
     end
     if (stream == Stream.Convolution) then
-        convolutionBuffer = convolutionBuffer .. math.floor(noteNumber) .. "|" .. math.floor(pressure) .. "|" -- SOR
+        convolutionBuffer = convolutionBuffer .. math.floor(noteNumber) .. "|" .. math.floor(pressure) .. "|"
         --print("CS=|"..convolutionBuffer.."|")--debugit       
         return
     end
     if (stream == Stream.UserPresetName) then
         -- Accumulate name global name buffer
-        userPresetNameBuffer = userPresetNameBuffer .. string.char(noteNumber) .. string.char(pressure) -- SOR
+        userPresetNameBuffer = userPresetNameBuffer .. string.char(noteNumber) .. string.char(pressure)
     end
     if (stream == Stream.ControlText) then
         -- Accumulate Control Text, which includes macro names.
@@ -901,7 +901,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         else
             --print("Not Valid Velocity Mode - Ignore: "..curVel)
         end
-        return -- SOR
+        return
     end
     if (stream == Stream.Matrix and channel == 16 and noteNumber == 62) then
         -- Recirculator Type
@@ -952,7 +952,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(curBend)
-        return -- SOR
+        return
     end
     -- Get Base Polyphony - Read Only
     if (stream == Stream.Matrix and channel == 16 and noteNumber == 39) then
@@ -962,7 +962,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(curBasePoly)
-        return -- SOR
+        return
     end
     -- Get Expanded Polyphony - Read Only
     if (stream == Stream.Matrix and channel == 16 and noteNumber == 11) then
@@ -972,7 +972,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(curBend)
-        return -- SOR
+        return
     end
     -- Increased Computation - Read Only
     if (stream == Stream.Matrix and channel == 16 and noteNumber == 5) then
@@ -983,19 +983,19 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         local ctrlMsg = controlValue:getMessage()
         --print("Increased Comp = "..incComp)
         ctrlMsg:setValue(incComp)
-        return -- SOR
+        return
     end
     -- Get Mono Mode
     if (stream == Stream.Matrix and channel == 16 and noteNumber == 46) then
         -- Mono Mode
-        setControlValue(140, pressure) -- SOR
-        return -- SOR
+        setControlValue(140, pressure)
+        return
     end
     -- Get Mono Interval
     if (stream == Stream.Matrix and channel == 16 and noteNumber == 48) then
         -- Mono Interval
-        setControlValue(267, pressure) -- SOR
-        return -- SOR
+        setControlValue(267, pressure)
+        return
     end
     --  SplitMode
     if (stream == Stream.Matrix and channel == 16 and noteNumber == 1) then
@@ -1005,7 +1005,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(splitMode)
-        return -- SOR
+        return
     end
     -- SplitPoint
     if (stream == Stream.Matrix and channel == 16 and noteNumber == 45) then
@@ -1015,7 +1015,7 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(splitPoint)
-        return -- SOR
+        return
     end
     -- Round Mode
     if (stream == Stream.Matrix and channel == 16 and noteNumber == 10) then
@@ -1025,21 +1025,21 @@ function midi.onAfterTouchPoly(midiInput, channel, noteNumber, pressure)
         local controlValue = ctrl:getValue("value")
         local ctrlMsg = controlValue:getMessage()
         ctrlMsg:setValue(roundMode)
-        return -- SOR
+        return
     end
     -- Get Pedal 1 Assignments
     if (stream == Stream.Matrix and channel == 16 and noteNumber == 52) then
         -- Pedal1 Assign
         --print("Initializing Pedal 1 Assign to "..pressure)
-        setControlValue(143, pressure) -- SOR
-        return -- SOR
+        setControlValue(143, pressure)
+        return
     end
     -- Get Pedal 2 Assignments
     if (stream == Stream.Matrix and channel == 16 and noteNumber == 53) then
         -- Pedal2 Assign
         --print("Initializing Pedal 2 Assign to "..pressure)
-        setControlValue(164, pressure) -- SOR
-        return -- SOR
+        setControlValue(164, pressure)
+        return
     end
 
     -- Get Octave Switch mode
@@ -1257,7 +1257,7 @@ function setUserPresetPos(valueObject, value)
     -- Get value without its decimal part.
     local slotNo = valueObject:getMessage():getValue()
     --print("setUserPresetPos: slotNo = " .. slotNo)
-    updateUserPresetPos(slotNo) -- SOR
+    updateUserPresetPos(slotNo)
 end
 
 function storeUserPreset(valueObject, value)
@@ -1331,7 +1331,7 @@ function storeUserPreset(valueObject, value)
         end
     end
     -- Sequence needed to just store current preset back to its position
-    local programNo = userPresetPosSelect - 1 -- SOR
+    local programNo = userPresetPosSelect - 1
     --print("Storing to Preset position: "..programNo)
     midi.sendControlChange(DEVICE_PORT, 16, 56, 127) -- End Preset string
     midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- Send CC0/CC32
@@ -1339,7 +1339,7 @@ function storeUserPreset(valueObject, value)
     midi.sendControlChange(DEVICE_PORT, 16, 112, programNo) -- Send Store Command
     midi.sendControlChange(DEVICE_PORT, 16, 0, 0) -- Send CC0/C32
     -- Send Program change - current preset to user position
-    midi.sendProgramChange(DEVICE_PORT, 16, programNo) -- SOR    
+    midi.sendProgramChange(DEVICE_PORT, 16, programNo)    
 end
 
 -- Set User Preset names - they are controls 1-16
@@ -1688,7 +1688,7 @@ function xposeMiddleC(valueObject, value)
     local xAmt = 0
     local newMiddleC = valueObject:getMessage():getValue()
     --print("Setting Middle C to "..newMiddleC)
-    setMiddleC(newMiddleC) -- SOR
+    setMiddleC(newMiddleC)
     -- Change the transpose indicator
     control = controls.get(78)
     if (newMiddleC == 0) then
@@ -1718,7 +1718,7 @@ function xposeMiddleCx(valueObject, value)
     elseif (newMiddleC == 80) then
         newMiddleC = 64
     end
-    setMiddleC(newMiddleC) -- SOR
+    setMiddleC(newMiddleC)
     --print("newMiddleC = "..newMiddleC) 
     -- Change the transpose indicator
     control = controls.get(78)
@@ -2041,7 +2041,7 @@ end
 
 function getMacros()
     if (macrosLoaded == true) then
-        stream = Stream.ControlText -- SOR
+        stream = Stream.ControlText
         --print ("getMacros - should not be called until pressed")
         midi.sendControlChange(DEVICE_PORT, 16, 109, 22) -- Send get Current Preset Msg to get Macro labels and control values
     else
@@ -2129,7 +2129,7 @@ function setMonoSwitch(valueObject, value)
         val = 1
     end
     --print("setMonoSwitch: Setting Mono Switch to "..val)
-    midi.sendControlChange(DEVICE_PORT, 1, 9, val) -- SOR
+    midi.sendControlChange(DEVICE_PORT, 1, 9, val)
 end
 
 function setOctRange(valueObject, value)
@@ -2420,7 +2420,7 @@ function selectSystemPreset(valueObject, value)
     --print("selectSystemPreset: valueObject:getMessage():getValue() = "
     --        ..valueObject:getMessage():getValue().."; value = "..value)
     local presetNoBeforeCorrection = valueObject:getMessage():getValue()
-    selectedSystemPreset.presetNo = getMaxPresetIndex(systemPresets, presetNoBeforeCorrection) -- SOR
+    selectedSystemPreset.presetNo = getMaxPresetIndex(systemPresets, presetNoBeforeCorrection)
     local loadSystemPresetButton = controls.get(ControlNo.LoadSystemPresetButton)
     if (selectedSystemPreset.presetNo == 0) then
         loadSystemPresetButton:setName("SELECT PRESET")
@@ -2473,7 +2473,7 @@ function loadSystemPreset(valueObject, value)
     end
     --print("loadSystemPreset: selectedSystemPreset.name = "..selectedSystemPreset.name)
     loadPreset(tmpCategory, selectedSystemPreset.bankLsb,
-            selectedSystemPreset.presetNo - 1, selectedSystemPreset.name) -- SOR
+            selectedSystemPreset.presetNo - 1, selectedSystemPreset.name)
 end
 
 -- Set Pedal 1 Assignment
@@ -2497,7 +2497,7 @@ function assignPedal2 (valueObject, value)
         pedal2Init = true
         return
     end
-    local val = getControlValue(164) -- SOR
+    local val = getControlValue(164)
     --print ("assignPedal2: Setting Pedal 2 assignment to "..val)
     matrixPoke(53, val) -- set assignment
 end
@@ -2646,9 +2646,9 @@ function processConvolution()
     local phaseCancellationCompensation = convParams[29]
     ctrlMsg:setValue(phaseCancellationCompensation)
     if phaseCancellationCompensation == 1 then
-        ctrl:setName("Compensate On") -- SOR
+        ctrl:setName("Compensate On")
     elseif phaseCancellationCompensation == 0 then
-        ctrl:setName("Compensate Off") -- SOR
+        ctrl:setName("Compensate Off")
     else
         --print("EP - Unknown value: "..epval)
     end
