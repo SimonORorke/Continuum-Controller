@@ -3272,12 +3272,8 @@ function setMacroName(macroString)
 end
 
 function setMacroNames()
-    --print("setMacroNames")
+    print("setMacroNames")
     stream = Stream.None
-    -- Blank out macro names.
-    for controlNo = ControlNo.MacroI_Value, ControlNo.MacroVI_Value do
-        macroControls[controlNo]:setName("")
-    end
     -- The Control Text string consists of two or three lines in this order:
     -- a line containing macro names, which might be blank or omitted;
     -- a line containing the category and any other filters;
@@ -3287,8 +3283,17 @@ function setMacroNames()
     local controlTextLines = splitString(controlTextBuffer, lineThrow)
     local controlTextLinesCount = #controlTextLines
     if controlTextLinesCount == 0 then
-        --print "Error: No Control Text lines."
+        print "Error: No Control Text lines."
         return
+    end
+    -- In firmware 10.77, after the preset data has been received,
+    -- for a system preset, some additional data is received, including an empty
+    -- Control Text string. Why?
+    -- So, to allow for the correct Control Text string having already been received,
+    -- don't blank out macro names till after the check for an empty Control Text string.
+    -- Blank out macro names.
+    for controlNo = ControlNo.MacroI_Value, ControlNo.MacroVI_Value do
+        macroControls[controlNo]:setName("")
     end
     local macrosLine = controlTextLines[1]
     -- If the first line is blank, in which case its trimmed length will be zero,
