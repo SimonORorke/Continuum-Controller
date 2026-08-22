@@ -8,7 +8,7 @@ assert(
 )
 local DEVICE_PORT = PORT_1
 local GETTING_PRESETS = "Getting presets..."
-local E1_PRESET_VERSION = "2.0.1"
+local E1_PRESET_VERSION = "2.0.2"
 -- Names longer than this will be truncated when shown on controls.
 local MAX_NAME_LENGTH = 14
 local PRESS_LOAD_PRESETS = "Press Load Presets"
@@ -1204,8 +1204,8 @@ function midi.onProgramChange(midiInput, channel, programNumber)
         --print("midi.onProgramChange: Getting user presets; programNumber = "
         --    .. tostring(programNumber) .. "; userPresetNameBuffer = " .. userPresetNameBuffer)
         -- Store preset name in array.
-        -- programNumber is 1-based, at least for user presets.
-        userPresetNames[programNumber] = userPresetNameBuffer 
+        -- programNumber is 0-based, Lua array is 1-based.
+        userPresetNames[programNumber + 1] = userPresetNameBuffer 
         userPresetNameBuffer = "" -- Reset userPresetNameBuffer to accumulate the next name
         return
     end
