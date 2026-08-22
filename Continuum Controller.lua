@@ -696,7 +696,6 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         return
     end
     -- Set Sus, Sos1, Sos2
-    -- Amended by SOR: Control value updates.
     if (chan == 1 and cc == 64) then
         --Sus
         -- But the firmware does not save this,
@@ -705,7 +704,6 @@ function midi.onControlChange(midiInput, channel, controllerNumber, value)
         setControlValue(260, val)
         return
     end
-    -- Amended by SOR: Control value updates.
     if (chan == 1 and cc == 66) then
         -- Sos1
         -- But the firmware does not save this,
@@ -811,12 +809,9 @@ end -- CC event processing
 function midi.onMessage(midiInput, midiMessage)
     -- Process incoming Midi Message Events
     local msg = midiMessage
-    -- Added by SOR: Get system presets.
     if msg.channel ~= 16 then
-       
         return
     end
-    -- Added by SOR: Control value updates.
     if msg.controllerNumber == 109 and msg.value == 26 then
         -- doneTxDsp
         if currentPreset.loadState == PresetLoadState.Loading then
