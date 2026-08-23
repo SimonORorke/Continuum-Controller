@@ -1,4 +1,4 @@
-**Continuum Controller v2.0.2**
+**Continuum Controller v2.1**
 
 ##### **by Richard Kram and Simon O'Rorke.** 
 

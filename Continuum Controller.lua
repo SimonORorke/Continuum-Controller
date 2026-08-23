@@ -8,7 +8,7 @@ assert(
 )
 local DEVICE_PORT = PORT_1
 local GETTING_PRESETS = "Getting presets..."
-local E1_PRESET_VERSION = "2.0.2"
+local E1_PRESET_VERSION = "2.1"
 -- Names longer than this will be truncated when shown on controls.
 local MAX_NAME_LENGTH = 14
 local PRESS_LOAD_PRESETS = "Press Load Presets"
@@ -2994,6 +2994,13 @@ function onCurrentPresetDataReceived()
         --print("    Setting user preset position to "..presetNo)
         updateUserPresetPos(presetNo)
         setControlValue(ControlNo.UserPresetPos, presetNo)
+        -- To load the user preset, the player will have pressed the preset's button on
+        -- the middle or bottom set of controls.  That will have activated the control set
+        -- containing the preset's button; so now the knobs will control the buttons in that
+        -- control set.  Yet, after loading a user preset, the player is much more likely
+        -- to want to use the knobs to set macro values than to load a different user preset.
+        -- So activate (focus) the top control set, whose first row contains tha macros.
+        pages.setActiveControlSet(CONTROL_SET_1)
     else
         setControlValue(ControlNo.UserPresetPos, 0)
     end
