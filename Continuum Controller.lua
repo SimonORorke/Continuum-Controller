@@ -503,7 +503,7 @@ shortPresetNames["Uki Pizz w Snap"] = "Vln PizzSnap"
 shortPresetNames["Unanswered Question"] = "Unans Question"
 shortPresetNames["Underwater Ceramics"] = "Underwater Cer"
 shortPresetNames["UnderSample&Crush Basics"] = "UndrSampCrshBc"
-shortPresetNames["UnderSample&Crush Basics"] = "UndrSampCrshMg"
+shortPresetNames["UnderSample&Crush Magic"] = "UndrSampCrshMg"
 shortPresetNames["Vibrato Organ T"] = "Vibrato Org T"
 shortPresetNames["Vintage Electro"] = "VintageElectro"
 shortPresetNames["Vln Vla Cel Bass 1"] = "VlnVlaCelCb1"
@@ -3304,7 +3304,7 @@ function setMacroNames()
     local controlTextLines = splitString(controlTextBuffer, lineThrow)
     local controlTextLinesCount = #controlTextLines
     if controlTextLinesCount == 0 then
-        print "Error: No Control Text lines."
+        print "setMacroNames: No Control Text lines."
         return
     end
     -- In firmware 10.77, after the preset data has been received,
