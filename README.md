@@ -37,7 +37,7 @@ Connect to Slim Continuum using Electra One Port 1 Midi DIN Output/Input to Cont
 
 **Documentation**
 
-See [the user guide](https://github.com/SimonORorke/Continuum-Controller/blob/main/Using%20the%20Electra%20One%20Continuum%20Controller%20Application.pdf), which will also eventually be available in the User Guides folder of Haken Editor/Firmware distributions.
+See [the user guide](https://github.com/SimonORorke/Continuum-Controller/blob/main/Using%20the%20Electra%20One%20Continuum%20Controller%20Application.pdf), which is also available in the User Guides folder of Haken Editor/Firmware distributions.
 
 This [Video on Operation](https://www.youtube.com/watch?v=MzKwRkp7vH8&t=372s) was made for an earlier version but is still very useful.
 
